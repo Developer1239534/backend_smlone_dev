@@ -62,52 +62,19 @@ router.post('/submit', async (req, res) => {
     };
     
     const assignedHouseId = houseMap[dominantOption];
-
     // Get House Details
     const houseResult = await pool.query('SELECT * FROM houses WHERE id = $1', [assignedHouseId]);
     const houseDetails = houseResult.rows[0];
 
-    // Save to Database
-    const saveResult = await pool.query(
-      `INSERT INTO user_results (student_id, assigned_house, answers)
-       VALUES ($1, $2, $3) RETURNING id`,
-      [studentId, assignedHouseId, JSON.stringify(answers)]
-    );
-
     res.json({
       success: true,
       result: {
-        recordId: saveResult.rows[0].id,
         scores,
         assignedHouse: houseDetails
       }
     });
   } catch (error) {
     console.error('Error submitting quiz:', error);
-    res.status(500).json({ success: false, message: 'Internal Server Error' });
-  }
-});
-
-// GET /api/quiz/backend-history/:studentId
-// Returns the history of quiz results for a specific student
-router.get('/backend-history/:studentId', async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    const result = await pool.query(`
-      SELECT ur.id, ur.student_id, ur.assigned_house, ur.created_at, 
-             h.name as house_name, h.description as house_description, h.core_value as house_core_value
-      FROM user_results ur
-      JOIN houses h ON ur.assigned_house = h.id
-      WHERE ur.student_id = $1
-      ORDER BY ur.created_at DESC
-    `, [studentId]);
-
-    res.json({
-      success: true,
-      data: result.rows
-    });
-  } catch (error) {
-    console.error('Error fetching history:', error);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });

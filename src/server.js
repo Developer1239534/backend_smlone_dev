@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 
 const quizRoutes = require('./routes/quizRoutes');
-const studentRoutes = require('./routes/studentRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -18,8 +18,7 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 app.use('/api/quiz', quizRoutes);
-app.use('/api/auth', studentRoutes);      // POST /api/auth/login
-app.use('/api/students', studentRoutes);  // GET/PUT /api/students/:id
+app.use('/api/dashboard-trainee', dashboardRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);

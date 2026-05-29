@@ -16,11 +16,3 @@ CREATE TABLE IF NOT EXISTS questions (
   option_d TEXT NOT NULL,
   option_e TEXT NOT NULL
 );
-
-CREATE TABLE IF NOT EXISTS user_results (
-  id SERIAL PRIMARY KEY,
-  student_id VARCHAR(100) NOT NULL,
-  assigned_house VARCHAR(50) REFERENCES houses(id),
-  answers JSONB NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
