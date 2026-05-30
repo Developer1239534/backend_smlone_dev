@@ -51,18 +51,18 @@ router.post('/fonnte', async (req, res) => {
 
   console.log(`[Fonnte Webhook] Received message from ${sender}: "${message}"`);
 
-  // Pattern matching: "Request ID dan Password - [Student ID]"
+  // Pattern matching: "Request ID dan Password - [Full Name]"
   const match = message.match(/^Request ID dan Password\s*-\s*(.+)$/i);
   
   if (match) {
-    const studentId = match[1].trim();
+    const fullName = match[1].trim();
     let replyMessage = '';
 
     try {
-      // Query the database for the trainee's ID directly (exact match)
+      // Query the database for the trainee's name (case-insensitive exact match)
       const queryResult = await db.query(
-        'SELECT id, trainee_name FROM dashboard_trainne WHERE id = $1',
-        [studentId]
+        'SELECT id, trainee_name FROM dashboard_trainne WHERE LOWER(trainee_name) = LOWER($1)',
+        [fullName]
       );
 
       if (queryResult.rows.length > 0) {
@@ -82,9 +82,9 @@ router.post('/fonnte', async (req, res) => {
         );
 
         // 4. Construct response message containing ID and temporary password
-        replyMessage = `Halo! Student ID Anda adalah *${trainee.id}* (Nama: *${trainee.trainee_name}*).\n\nBerikut adalah password sementara Anda untuk masuk ke dashboard:\n🔑 Password: *${tempPassword}*\n\nSilakan gunakan Student ID dan password ini untuk login di website!`;
+        replyMessage = `Halo! Akun Anda berhasil diidentifikasi.\n\nBerikut adalah kredensial login Anda:\n🆔 Student ID: *${trainee.id}*\n🔑 Password: *${tempPassword}*\n\nSilakan gunakan Student ID dan password ini untuk login di website SMLONE!`;
       } else {
-        replyMessage = `Maaf, Student ID *${studentId}* tidak ditemukan di database kami. Pastikan penulisan ID Anda sudah benar.`;
+        replyMessage = `Maaf, trainee dengan nama lengkap *${fullName}* tidak ditemukan di database kami. Pastikan penulisan nama lengkap Anda sudah benar dan sesuai.`;
       }
     } catch (err) {
       console.error('[Fonnte Webhook] Database error:', err.message);
@@ -119,12 +119,11 @@ router.post('/fonnte', async (req, res) => {
     }
   } else {
     // Optional: reply with help format if message looks like an attempt to get credentials but format is wrong
-    const lowerMsg = message.toLowerCase();
-    if (lowerMsg.includes('request id') || lowerMsg.includes('password') || lowerMsg.includes('id murid')) {
+    if (message.toLowerCase().includes('request id') || message.toLowerCase().includes('password') || message.toLowerCase().includes('student id')) {
       const fonnteToken = process.env.FONNTE_TOKEN;
       if (!fonnteToken) return;
 
-      const helpMessage = 'Format pesan salah. Gunakan format:\n\n*Request ID dan Password - [ID Murid Anda]*\n\nContoh:\n*Request ID dan Password - 27*';
+      const helpMessage = 'Format pesan salah. Gunakan format:\n\n*Request ID dan Password - [Nama Lengkap Anda]*\n\nContoh:\n*Request ID dan Password - Budi Santoso*';
       
       try {
         await fetch('https://api.fonnte.com/send', {
