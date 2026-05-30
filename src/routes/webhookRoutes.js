@@ -51,11 +51,11 @@ router.post('/fonnte', async (req, res) => {
 
   console.log(`[Fonnte Webhook] Received message from ${sender}: "${message}"`);
 
-  // Pattern matching: "Request Student ID - [Student ID]"
-  const match = message.match(/^Request Student ID\s*-\s*(.+)$/i);
+  // Pattern matching: supports both "Request ID dan Password - [Student ID]" and "Request Student ID - [Student ID]"
+  const match = message.match(/^(Request ID dan Password|Request Student ID)\s*-\s*(.+)$/i);
   
   if (match) {
-    const studentId = match[1].trim();
+    const studentId = match[2].trim();
     let replyMessage = '';
 
     try {
@@ -119,11 +119,12 @@ router.post('/fonnte', async (req, res) => {
     }
   } else {
     // Optional: reply with help format if message looks like an attempt to get student ID but format is wrong
-    if (message.toLowerCase().includes('student id') || message.toLowerCase().includes('id murid')) {
+    const lowerMessage = message.toLowerCase();
+    if (lowerMessage.includes('student id') || lowerMessage.includes('id murid') || lowerMessage.includes('id dan password') || lowerMessage.includes('password')) {
       const fonnteToken = process.env.FONNTE_TOKEN;
       if (!fonnteToken) return;
 
-      const helpMessage = 'Format pesan salah. Gunakan format:\n\n*Request Student ID - [ID Murid Anda]*\n\nContoh:\n*Request Student ID - 27*';
+      const helpMessage = 'Format pesan salah. Gunakan format:\n\n*Request ID dan Password - [ID Murid Anda]*\n\nContoh:\n*Request ID dan Password - 27*';
       
       try {
         await fetch('https://api.fonnte.com/send', {
