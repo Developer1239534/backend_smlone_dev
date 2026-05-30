@@ -10,6 +10,7 @@ router.get('/fonnte', (req, res) => {
 
 // POST /api/webhook/fonnte
 router.post('/fonnte', async (req, res) => {
+  console.log('[Fonnte Webhook] Incoming Request Body:', req.body);
   const { sender, message, inboxid } = req.body;
 
   // Acknowledge the webhook request immediately to Fonnte
