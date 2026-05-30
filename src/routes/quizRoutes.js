@@ -157,7 +157,12 @@ router.get('/backend-history/:studentId', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: `Riwayat kuis untuk murid ID ${studentId} tidak ditemukan.` });
+      return res.status(200).json({
+        success: true,
+        hasHistory: false,
+        data: null,
+        message: `Riwayat kuis untuk murid ID ${studentId} belum ada.`
+      });
     }
 
     res.json({
