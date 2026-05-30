@@ -6,6 +6,16 @@ const db = require('../db/neonClient');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'smlone_secret_key_12345';
 
+// GET /api/auth/register
+router.get('/register', (req, res) => {
+  res.json({ success: true, message: 'Auth Register endpoint is active! Please send a POST request with id, email, and password to register.' });
+});
+
+// GET /api/auth/login
+router.get('/login', (req, res) => {
+  res.json({ success: true, message: 'Auth Login endpoint is active! Please send a POST request with email/id and password to login.' });
+});
+
 // 1. POST /api/auth/register
 router.post('/register', async (req, res) => {
   const { id, trainee_name, email, password } = req.body;
