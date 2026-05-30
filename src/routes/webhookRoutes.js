@@ -1,9 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs');
 const db = require('../db/neonClient');
 
 // Cache to store processed inbox IDs to prevent duplicate processing (Anti-Spam)
 const processedInboxIds = new Set();
+
+// Helper to generate a secure random alphanumeric password
+function generateRandomPassword(length = 8) {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
 
 // Webhook endpoint for Fonnte WhatsApp Gateway
 // GET /api/webhook/fonnte
@@ -56,7 +67,22 @@ router.post('/fonnte', async (req, res) => {
 
       if (queryResult.rows.length > 0) {
         const trainee = queryResult.rows[0];
-        replyMessage = `Halo! Student ID untuk *${trainee.trainee_name}* adalah *${trainee.id}*.`;
+        
+        // 1. Generate a temporary random password
+        const tempPassword = generateRandomPassword(8);
+        
+        // 2. Hash the temporary password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(tempPassword, salt);
+        
+        // 3. Save the hashed password to the database
+        await db.query(
+          'UPDATE dashboard_trainne SET password = $1 WHERE id = $2',
+          [hashedPassword, trainee.id]
+        );
+
+        // 4. Construct response message containing ID and temporary password
+        replyMessage = `Halo! Student ID untuk *${trainee.trainee_name}* adalah *${trainee.id}*.\n\nBerikut adalah password sementara Anda untuk masuk ke dashboard:\n🔑 Password: *${tempPassword}*\n\nSilakan gunakan Student ID dan password ini untuk login di website!`;
       } else {
         replyMessage = `Maaf, trainee dengan nama *${fullName}* tidak ditemukan di database kami. Pastikan penulisan nama lengkap Anda sudah benar.`;
       }
