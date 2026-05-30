@@ -82,10 +82,10 @@ router.post('/register', async (req, res) => {
 
 // 2. POST /api/auth/login
 router.post('/login', async (req, res) => {
-  const { email, id, password } = req.body;
+  const { email, id, username, studentId, traineeId, student_id, password } = req.body;
 
-  // Accept either email or id (student ID) for logging in
-  const identifier = email || id;
+  // Accept any common identifier field sent by the frontend
+  const identifier = email || id || username || studentId || traineeId || student_id;
 
   if (!identifier || !password) {
     return res.status(400).json({ success: false, message: 'Email/ID dan password wajib diisi.' });
