@@ -18,6 +18,16 @@ const studentRoutes = require('./routes/studentRoutes');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS email VARCHAR(255) DEFAULT NULL;');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS password VARCHAR(255) DEFAULT NULL;');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT NULL;');
+    
+    // Create quiz_history table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS quiz_history (
+        student_id VARCHAR(50) PRIMARY KEY,
+        assigned_house VARCHAR(50) NOT NULL,
+        scores JSONB NOT NULL,
+        submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     console.log('✅ Database schema verified!');
   } catch (err) {
     console.error('❌ Database migration error:', err.message);
