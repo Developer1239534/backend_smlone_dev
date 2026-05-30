@@ -51,18 +51,18 @@ router.post('/fonnte', async (req, res) => {
 
   console.log(`[Fonnte Webhook] Received message from ${sender}: "${message}"`);
 
-  // Pattern matching: "Request Student ID - [Full Name]"
+  // Pattern matching: "Request Student ID - [Student ID]"
   const match = message.match(/^Request Student ID\s*-\s*(.+)$/i);
   
   if (match) {
-    const fullName = match[1].trim();
+    const studentId = match[1].trim();
     let replyMessage = '';
 
     try {
-      // Query the database for the trainee's name (case-insensitive exact match)
+      // Query the database for the trainee's ID directly (exact match)
       const queryResult = await db.query(
-        'SELECT id, trainee_name FROM dashboard_trainne WHERE LOWER(trainee_name) = LOWER($1)',
-        [fullName]
+        'SELECT id, trainee_name FROM dashboard_trainne WHERE id = $1',
+        [studentId]
       );
 
       if (queryResult.rows.length > 0) {
@@ -82,9 +82,9 @@ router.post('/fonnte', async (req, res) => {
         );
 
         // 4. Construct response message containing ID and temporary password
-        replyMessage = `Halo! Student ID untuk *${trainee.trainee_name}* adalah *${trainee.id}*.\n\nBerikut adalah password sementara Anda untuk masuk ke dashboard:\n🔑 Password: *${tempPassword}*\n\nSilakan gunakan Student ID dan password ini untuk login di website!`;
+        replyMessage = `Halo! Student ID Anda adalah *${trainee.id}* (Nama: *${trainee.trainee_name}*).\n\nBerikut adalah password sementara Anda untuk masuk ke dashboard:\n🔑 Password: *${tempPassword}*\n\nSilakan gunakan Student ID dan password ini untuk login di website!`;
       } else {
-        replyMessage = `Maaf, trainee dengan nama *${fullName}* tidak ditemukan di database kami. Pastikan penulisan nama lengkap Anda sudah benar.`;
+        replyMessage = `Maaf, Student ID *${studentId}* tidak ditemukan di database kami. Pastikan penulisan ID Anda sudah benar.`;
       }
     } catch (err) {
       console.error('[Fonnte Webhook] Database error:', err.message);
@@ -123,7 +123,7 @@ router.post('/fonnte', async (req, res) => {
       const fonnteToken = process.env.FONNTE_TOKEN;
       if (!fonnteToken) return;
 
-      const helpMessage = 'Format pesan salah. Gunakan format:\n\n*Request Student ID - [Nama Lengkap Anda]*\n\nContoh:\n*Request Student ID - Budi Santoso*';
+      const helpMessage = 'Format pesan salah. Gunakan format:\n\n*Request Student ID - [ID Murid Anda]*\n\nContoh:\n*Request Student ID - 27*';
       
       try {
         await fetch('https://api.fonnte.com/send', {
