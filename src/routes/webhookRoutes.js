@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
+// Cache to store processed inbox IDs to prevent duplicate processing (Anti-Spam)
+const processedInboxIds = new Set();
+
 // Webhook endpoint for Fonnte WhatsApp Gateway
 // GET /api/webhook/fonnte
 router.get('/fonnte', (req, res) => {
@@ -19,6 +22,20 @@ router.post('/fonnte', async (req, res) => {
   // If no sender or message, stop processing
   if (!sender || !message) {
     return;
+  }
+
+  // Anti-Spam / Deduplication: If this message was already processed recently, skip it
+  if (inboxid && processedInboxIds.has(inboxid)) {
+    console.log(`[Fonnte Webhook] Duplicate request ignored for inboxid: ${inboxid}`);
+    return;
+  }
+
+  // Register inboxid in cache and set to auto-remove after 2 minutes
+  if (inboxid) {
+    processedInboxIds.add(inboxid);
+    setTimeout(() => {
+      processedInboxIds.delete(inboxid);
+    }, 120000); // 2 minutes
   }
 
   console.log(`[Fonnte Webhook] Received message from ${sender}: "${message}"`);
