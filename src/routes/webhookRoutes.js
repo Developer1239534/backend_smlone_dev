@@ -3,6 +3,11 @@ const router = express.Router();
 const db = require('../db/neonClient');
 
 // Webhook endpoint for Fonnte WhatsApp Gateway
+// GET /api/webhook/fonnte
+router.get('/fonnte', (req, res) => {
+  res.json({ success: true, message: 'Fonnte WhatsApp Webhook is active and waiting for POST requests!' });
+});
+
 // POST /api/webhook/fonnte
 router.post('/fonnte', async (req, res) => {
   const { sender, message, inboxid } = req.body;
