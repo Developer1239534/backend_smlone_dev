@@ -133,6 +133,12 @@ router.post('/login', async (req, res) => {
 
         // Return token and trainee profile information (excluding password)
         const { password, ...traineeProfile } = trainee;
+        
+        // Add robust aliases for Student ID to ensure perfect frontend compatibility
+        traineeProfile.studentId = trainee.id;
+        traineeProfile.student_id = trainee.id;
+        traineeProfile.traineeId = trainee.id;
+
         res.json({
           success: true,
           message: 'Login berhasil.',
