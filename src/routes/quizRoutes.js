@@ -18,6 +18,11 @@ router.get('/questions', async (req, res) => {
   }
 });
 
+// GET /api/quiz/submit
+router.get('/submit', (req, res) => {
+  res.json({ success: true, message: 'Quiz Submit endpoint is active! Please send a POST request with studentId and answers array to submit kuis.' });
+});
+
 // POST /api/quiz/submit
 // Accepts answers array, calculates the dominant House, and returns the result
 router.post('/submit', async (req, res) => {
