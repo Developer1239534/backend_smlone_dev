@@ -82,6 +82,7 @@ router.post('/register', async (req, res) => {
 
 // 2. POST /api/auth/login
 router.post('/login', async (req, res) => {
+  console.log('[Auth Login] Request Body:', req.body);
   const { email, id, username, studentId, traineeId, student_id, password } = req.body;
 
   // Accept any common identifier field sent by the frontend
