@@ -1,12 +1,27 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const db = require('./db/neonClient');
 
 const quizRoutes = require('./routes/quizRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const dashboardApiRoutes = require('./routes/dashboardApiRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
+const authRoutes = require('./routes/authRoutes');
+const studentRoutes = require('./routes/studentRoutes');
+
+// Auto DB migration for new columns
+(async () => {
+  try {
+    console.log('🔄 Checking database schema...');
+    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS email VARCHAR(255) DEFAULT NULL;');
+    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS password VARCHAR(255) DEFAULT NULL;');
+    console.log('✅ Database schema verified!');
+  } catch (err) {
+    console.error('❌ Database migration error:', err.message);
+  }
+})();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -23,6 +38,8 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/quiz', quizRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/students', studentRoutes);
 
 // Custom Dashboard & Contact Endpoints
 app.use('/api/dashboard', dashboardApiRoutes);
@@ -40,4 +57,5 @@ app.use('/api/webhook', webhookRoutes);
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
+
 
