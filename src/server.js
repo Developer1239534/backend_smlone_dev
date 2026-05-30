@@ -6,6 +6,7 @@ const quizRoutes = require('./routes/quizRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const dashboardApiRoutes = require('./routes/dashboardApiRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const webhookRoutes = require('./routes/webhookRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -32,6 +33,10 @@ app.use('/contact', dashboardApiRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);
 
+// Webhook Endpoints
+app.use('/api/webhook', webhookRoutes);
+
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
+
