@@ -97,7 +97,7 @@ router.post('/fonnte', async (req, res) => {
       const fonnteToken = process.env.FONNTE_TOKEN;
       if (!fonnteToken) return;
 
-      const helpMessage = 'Format pesan salah. Gunakan format:\n\n*Request Student ID - [Nama Lengkap Anda]*\n\nContoh:\n*Request Student ID - Valerie Legolas Cen*';
+      const helpMessage = 'Format pesan salah. Gunakan format:\n\n*Request Student ID - [Nama Lengkap Anda]*\n\nContoh:\n*Request Student ID - Budi Santoso*';
       
       try {
         await fetch('https://api.fonnte.com/send', {
