@@ -17,6 +17,7 @@ const studentRoutes = require('./routes/studentRoutes');
     console.log('🔄 Checking database schema...');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS email VARCHAR(255) DEFAULT NULL;');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS password VARCHAR(255) DEFAULT NULL;');
+    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT NULL;');
     console.log('✅ Database schema verified!');
   } catch (err) {
     console.error('❌ Database migration error:', err.message);

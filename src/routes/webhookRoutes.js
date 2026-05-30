@@ -16,6 +16,20 @@ function generateRandomPassword(length = 8) {
   return password;
 }
 
+// Helper to generate a unique random 6-digit Student ID
+async function generateUniqueStudentId() {
+  let isUnique = false;
+  let newId = '';
+  while (!isUnique) {
+    newId = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit random number
+    const result = await db.query('SELECT 1 FROM dashboard_trainne WHERE id = $1', [newId]);
+    if (result.rows.length === 0) {
+      isUnique = true;
+    }
+  }
+  return newId;
+}
+
 // Webhook endpoint for Fonnte WhatsApp Gateway
 // GET /api/webhook/fonnte
 router.get('/fonnte', (req, res) => {
@@ -51,40 +65,42 @@ router.post('/fonnte', async (req, res) => {
 
   console.log(`[Fonnte Webhook] Received message from ${sender}: "${message}"`);
 
-  // Pattern matching: "Request ID dan Password - [Student ID]"
-  const match = message.match(/^Request ID dan Password\s*-\s*(.+)$/i);
-  
-  if (match) {
-    const studentId = match[1].trim();
+  // Check if message is exactly "Request ID dan Password" (case-insensitive)
+  if (message.trim().toLowerCase() === 'request id dan password') {
     let replyMessage = '';
 
     try {
-      // Query the database for the trainee's ID directly (exact match)
+      // 1. Check if a trainee with this phone number (sender) already exists
       const queryResult = await db.query(
-        'SELECT id FROM dashboard_trainne WHERE id = $1',
-        [studentId]
+        'SELECT id FROM dashboard_trainne WHERE phone = $1',
+        [sender]
       );
 
+      // Generate a temporary random password
+      const tempPassword = generateRandomPassword(8);
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(tempPassword, salt);
+
       if (queryResult.rows.length > 0) {
+        // Trainee already exists, update password and return their ID and new password
         const trainee = queryResult.rows[0];
         
-        // 1. Generate a temporary random password
-        const tempPassword = generateRandomPassword(8);
-        
-        // 2. Hash the temporary password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(tempPassword, salt);
-        
-        // 3. Save the hashed password to the database
         await db.query(
           'UPDATE dashboard_trainne SET password = $1 WHERE id = $2',
           [hashedPassword, trainee.id]
         );
 
-        // 4. Construct response message containing ONLY Student ID and password (no names)
         replyMessage = `Student ID: *${trainee.id}*\nPassword: *${tempPassword}*`;
       } else {
-        replyMessage = `Student ID *${studentId}* tidak ditemukan.`;
+        // Trainee does not exist, create a new unique ID and register them
+        const newId = await generateUniqueStudentId();
+        
+        await db.query(
+          'INSERT INTO dashboard_trainne (id, trainee_name, phone, password, status) VALUES ($1, $2, $3, $4, $5)',
+          [newId, `Trainee ${sender}`, sender, hashedPassword, 'Active']
+        );
+
+        replyMessage = `Student ID: *${newId}*\nPassword: *${tempPassword}*`;
       }
     } catch (err) {
       console.error('[Fonnte Webhook] Database error:', err.message);
@@ -124,7 +140,7 @@ router.post('/fonnte', async (req, res) => {
       const fonnteToken = process.env.FONNTE_TOKEN;
       if (!fonnteToken) return;
 
-      const helpMessage = 'Format pesan salah. Gunakan format:\n\n*Request ID dan Password - [ID Murid Anda]*\n\nContoh:\n*Request ID dan Password - 27*';
+      const helpMessage = 'Format pesan salah. Silakan kirim pesan berisi:\n\n*Request ID dan Password*';
       
       try {
         await fetch('https://api.fonnte.com/send', {
