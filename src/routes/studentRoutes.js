@@ -102,13 +102,31 @@ const handleStudentUpdate = async (req, res) => {
       return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
     }
 
+    let resolvedProfilePicture = profile_picture;
+
+    // Check for uploaded file in req.files
+    let uploadedFile = null;
+    if (req.files) {
+      if (req.files.image && req.files.image[0]) {
+        uploadedFile = req.files.image[0];
+      } else if (req.files.profile_picture && req.files.profile_picture[0]) {
+        uploadedFile = req.files.profile_picture[0];
+      }
+    }
+
+    if (uploadedFile) {
+      console.log(`[Cloudinary Upload] Uploading file for student ID: ${id} via PUT/PATCH`);
+      const uploadResult = await uploadToCloudinary(uploadedFile.buffer);
+      resolvedProfilePicture = uploadResult.secure_url;
+    }
+
     const updates = [];
     const values = [];
     let paramIndex = 1;
 
-    if (profile_picture !== undefined) {
+    if (resolvedProfilePicture !== undefined) {
       updates.push(`profile_picture = $${paramIndex++}`);
-      values.push(profile_picture);
+      values.push(resolvedProfilePicture);
     }
 
     if (trainee_name !== undefined) {
@@ -162,9 +180,10 @@ router.get('/:id', (req, res) => {
   });
 });
 
-router.patch('/:id', handleStudentUpdate);
+router.patch('/:id', uploadMiddleware, handleStudentUpdate);
 router.post('/:id', handlePasswordReset);
-router.put('/:id', handleStudentUpdate);
+router.put('/:id', uploadMiddleware, handleStudentUpdate);
+
 
 // 4. POST /api/students/:id/profile-picture - Upload Profile Picture to Cloudinary
 router.post('/:id/profile-picture', uploadMiddleware, async (req, res) => {
