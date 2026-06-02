@@ -91,7 +91,7 @@ const handleStudentUpdate = async (req, res) => {
     files: req.files ? Object.keys(req.files) : null
   });
 
-  const { password, newPassword, phone, profile_picture, trainee_name } = req.body;
+  const { password, newPassword, phone, profile_picture, image, imageUrl, trainee_name } = req.body;
 
   // If password/newPassword is provided in request body, delegate to handlePasswordReset
   if (password || newPassword) {
@@ -109,7 +109,8 @@ const handleStudentUpdate = async (req, res) => {
       return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
     }
 
-    let resolvedProfilePicture = profile_picture;
+    const incomingPic = profile_picture || image || imageUrl;
+    let resolvedProfilePicture = incomingPic;
 
     // Check for uploaded file in req.files
     let uploadedFile = null;
@@ -125,9 +126,9 @@ const handleStudentUpdate = async (req, res) => {
       console.log(`[Cloudinary Upload] Uploading file for student ID: ${id} via PUT/PATCH`);
       const uploadResult = await uploadToCloudinary(uploadedFile.buffer);
       resolvedProfilePicture = uploadResult.secure_url;
-    } else if (profile_picture && (profile_picture.startsWith('data:image/') || (profile_picture.startsWith('http') && !profile_picture.includes('cloudinary.com')))) {
+    } else if (incomingPic && (incomingPic.startsWith('data:image/') || (incomingPic.startsWith('http') && !incomingPic.includes('cloudinary.com')))) {
       console.log(`[Cloudinary Upload] Uploading body string/url for student ID: ${id} via PUT/PATCH`);
-      const uploadResult = await cloudinary.uploader.upload(profile_picture, {
+      const uploadResult = await cloudinary.uploader.upload(incomingPic, {
         folder: 'smlone/profiles'
       });
       resolvedProfilePicture = uploadResult.secure_url;
