@@ -7,7 +7,7 @@ const db = require('../db/neonClient');
 // PATCH or POST or PUT /api/students/:id
 const handlePasswordReset = async (req, res) => {
   const { id } = req.params;
-  const { password, newPassword } = req.body;
+  const { password, newPassword, phone } = req.body;
 
   const targetPassword = password || newPassword;
 
@@ -15,15 +15,29 @@ const handlePasswordReset = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Password baru (password / newPassword) wajib diisi.' });
   }
 
+  if (!phone) {
+    return res.status(400).json({ success: false, message: 'Nomor telepon (phone) wajib diisi untuk verifikasi.' });
+  }
+
   try {
-    // Check if student exists
+    // Check if student exists and retrieve phone number
     const traineeResult = await db.query(
-      'SELECT id FROM dashboard_trainne WHERE id = $1',
+      'SELECT id, phone FROM dashboard_trainne WHERE id = $1',
       [id]
     );
 
     if (traineeResult.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
+    }
+
+    const trainee = traineeResult.rows[0];
+
+    // Normalize phone numbers for robust comparison (keep only digits)
+    const normalizedInputPhone = String(phone).replace(/\D/g, '');
+    const normalizedDbPhone = trainee.phone ? String(trainee.phone).replace(/\D/g, '') : '';
+
+    if (!normalizedDbPhone || normalizedInputPhone !== normalizedDbPhone) {
+      return res.status(400).json({ success: false, message: 'Nomor telepon tidak cocok atau tidak terdaftar untuk ID ini.' });
     }
 
     // Hash the new password

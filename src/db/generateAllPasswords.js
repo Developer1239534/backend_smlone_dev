@@ -22,7 +22,7 @@ function generateUniqueSmlonePassword() {
 async function generateAllPasswords() {
   try {
     console.log('🔄 Fetching all trainees from Neon database...');
-    const result = await db.query('SELECT id, trainee_name, email, password FROM dashboard_trainne ORDER BY id ASC');
+    const result = await db.query('SELECT id, trainee_name, password FROM dashboard_trainne ORDER BY id ASC');
     const trainees = result.rows;
     console.log(`📋 Found ${trainees.length} trainees in the database.`);
 
@@ -45,7 +45,6 @@ async function generateAllPasswords() {
       generatedList.push({
         id: trainee.id,
         name: trainee.trainee_name,
-        email: trainee.email || 'N/A',
         password: plainPassword
       });
     }
@@ -57,15 +56,14 @@ async function generateAllPasswords() {
     reportContent += `Total Trainees: ${trainees.length}\n`;
     reportContent += `Passwords Generated & Updated Now: ${updatedCount}\n\n`;
     reportContent += '------------------------------------------------------------\n';
-    reportContent += 'ID\t| Name\t\t\t\t| Email\t\t| Password\n';
+    reportContent += 'ID\t| Name\t\t\t\t| Password\n';
     reportContent += '------------------------------------------------------------\n';
 
     for (const item of generatedList) {
       // Pad name for layout alignment
       const paddedName = item.name.padEnd(30, ' ').substring(0, 30);
       const paddedId = item.id.padEnd(6, ' ');
-      const paddedEmail = item.email.padEnd(18, ' ').substring(0, 18);
-      reportContent += `${paddedId}\t| ${paddedName}\t| ${paddedEmail}\t| ${item.password}\n`;
+      reportContent += `${paddedId}\t| ${paddedName}\t| ${item.password}\n`;
     }
 
     reportContent += '\n============================================================\n';

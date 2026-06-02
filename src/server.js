@@ -7,7 +7,6 @@ const quizRoutes = require('./routes/quizRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const dashboardApiRoutes = require('./routes/dashboardApiRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const webhookRoutes = require('./routes/webhookRoutes');
 const authRoutes = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 
@@ -15,7 +14,7 @@ const studentRoutes = require('./routes/studentRoutes');
 (async () => {
   try {
     console.log('🔄 Checking database schema...');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS email VARCHAR(255) DEFAULT NULL;');
+    await db.query('ALTER TABLE dashboard_trainne DROP COLUMN IF EXISTS email CASCADE;');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS password VARCHAR(255) DEFAULT NULL;');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT NULL;');
     
@@ -61,9 +60,6 @@ app.use('/contact', dashboardApiRoutes);
 // Admin Management Endpoints
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);
-
-// Webhook Endpoints
-app.use('/api/webhook', webhookRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);

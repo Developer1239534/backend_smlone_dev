@@ -533,8 +533,8 @@ async function syncTrainees() {
     );
     console.log(`✅ Deleted ${deleteResult.rowCount} trainees not in the list.`);
 
-    // Upsert the parsed trainees and set email/phone to NULL
-    console.log('🔄 Syncing, inserting new, and clearing email/phone/password for matched trainees...');
+    // Upsert the parsed trainees and set phone/password to NULL
+    console.log('🔄 Syncing, inserting new, and clearing phone/password for matched trainees...');
     let updatedCount = 0;
     let insertedCount = 0;
 
@@ -542,25 +542,25 @@ async function syncTrainees() {
       // Check if trainee exists
       const check = await db.query('SELECT id FROM dashboard_trainne WHERE id = $1', [trainee.id]);
       if (check.rows.length > 0) {
-        // Update: set email/phone/password to NULL and ensure name/status are synced
+        // Update: set phone/password to NULL and ensure name/status are synced
         await db.query(`
           UPDATE dashboard_trainne
-          SET trainee_name = $1, status = $2, email = NULL, phone = NULL, password = NULL
+          SET trainee_name = $1, status = $2, phone = NULL, password = NULL
           WHERE id = $3
         `, [trainee.name, trainee.status, trainee.id]);
         updatedCount++;
       } else {
         // Insert new
         await db.query(`
-          INSERT INTO dashboard_trainne (id, trainee_name, status, email, phone, password)
-          VALUES ($1, $2, $3, NULL, NULL, NULL)
+          INSERT INTO dashboard_trainne (id, trainee_name, status, phone, password)
+          VALUES ($1, $2, $3, NULL, NULL)
         `, [trainee.id, trainee.name, trainee.status]);
         insertedCount++;
       }
     }
 
     console.log(`✅ Database synced successfully!`);
-    console.log(`   - Trainees updated (email, phone, password cleared): ${updatedCount}`);
+    console.log(`   - Trainees updated (phone, password cleared): ${updatedCount}`);
     console.log(`   - New trainees inserted: ${insertedCount}`);
 
     process.exit(0);
