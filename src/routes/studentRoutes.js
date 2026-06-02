@@ -135,6 +135,30 @@ const handleStudentUpdate = async (req, res) => {
         folder: 'smlone/profiles'
       });
       resolvedProfilePicture = uploadResult.secure_url;
+    } else if (resolvedProfilePicture === null || resolvedProfilePicture === '' || resolvedProfilePicture === 'null' || resolvedProfilePicture === 'undefined') {
+      resolvedProfilePicture = null; // Ensure it is stored as NULL in the database
+      
+      // Try to delete old image from Cloudinary to free up space
+      try {
+        const currentTraineeResult = await db.query(
+          'SELECT profile_picture FROM dashboard_trainne WHERE id = $1',
+          [id]
+        );
+        const oldPic = currentTraineeResult.rows[0]?.profile_picture;
+        if (oldPic && oldPic.includes('cloudinary.com')) {
+          const parts = oldPic.split('/');
+          const uploadIndex = parts.indexOf('upload');
+          if (uploadIndex !== -1 && parts.length > uploadIndex + 2) {
+            let publicIdWithExt = parts.slice(uploadIndex + 2).join('/');
+            const lastDotIndex = publicIdWithExt.lastIndexOf('.');
+            const publicId = lastDotIndex !== -1 ? publicIdWithExt.substring(0, lastDotIndex) : publicIdWithExt;
+            console.log(`[Cloudinary Delete] Destroying old image: ${publicId}`);
+            await cloudinary.uploader.destroy(publicId);
+          }
+        }
+      } catch (cloudinaryDeleteError) {
+        console.error('[Cloudinary Delete Error]:', cloudinaryDeleteError.message);
+      }
     }
 
     const updates = [];
