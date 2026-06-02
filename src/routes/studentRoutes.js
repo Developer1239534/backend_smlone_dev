@@ -8,7 +8,8 @@ const cloudinary = require('../config/cloudinary');
 const upload = multer({ storage: multer.memoryStorage() });
 const uploadMiddleware = upload.fields([
   { name: 'image', maxCount: 1 },
-  { name: 'profile_picture', maxCount: 1 }
+  { name: 'profile_picture', maxCount: 1 },
+  { name: 'profile_photo', maxCount: 1 }
 ]);
 
 const uploadToCloudinary = (fileBuffer, folder = 'smlone/profiles') => {
@@ -91,7 +92,7 @@ const handleStudentUpdate = async (req, res) => {
     files: req.files ? Object.keys(req.files) : null
   });
 
-  const { password, newPassword, phone, profile_picture, image, imageUrl, trainee_name } = req.body;
+  const { password, newPassword, phone, profile_picture, image, imageUrl, profile_photo, trainee_name } = req.body;
 
   // If password/newPassword is provided in request body, delegate to handlePasswordReset
   if (password || newPassword) {
@@ -109,7 +110,7 @@ const handleStudentUpdate = async (req, res) => {
       return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
     }
 
-    const incomingPic = profile_picture || image || imageUrl;
+    const incomingPic = profile_picture || image || imageUrl || profile_photo;
     let resolvedProfilePicture = incomingPic;
 
     // Check for uploaded file in req.files
@@ -119,6 +120,8 @@ const handleStudentUpdate = async (req, res) => {
         uploadedFile = req.files.image[0];
       } else if (req.files.profile_picture && req.files.profile_picture[0]) {
         uploadedFile = req.files.profile_picture[0];
+      } else if (req.files.profile_photo && req.files.profile_photo[0]) {
+        uploadedFile = req.files.profile_photo[0];
       }
     }
 
