@@ -82,6 +82,71 @@ const handlePasswordReset = async (req, res) => {
   }
 };
 
+const handleStudentUpdate = async (req, res) => {
+  const { id } = req.params;
+  const { password, newPassword, phone, profile_picture, trainee_name } = req.body;
+
+  // If password/newPassword is provided in request body, delegate to handlePasswordReset
+  if (password || newPassword) {
+    return handlePasswordReset(req, res);
+  }
+
+  try {
+    // Check if trainee exists
+    const traineeResult = await db.query(
+      'SELECT id FROM dashboard_trainne WHERE id = $1',
+      [id]
+    );
+
+    if (traineeResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
+    }
+
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (profile_picture !== undefined) {
+      updates.push(`profile_picture = $${paramIndex++}`);
+      values.push(profile_picture);
+    }
+
+    if (trainee_name !== undefined) {
+      updates.push(`trainee_name = $${paramIndex++}`);
+      values.push(trainee_name);
+    }
+
+    if (phone !== undefined) {
+      updates.push(`phone = $${paramIndex++}`);
+      values.push(phone);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, message: 'Tidak ada data profil yang dikirim untuk diperbarui.' });
+    }
+
+    values.push(id);
+    const query = `UPDATE dashboard_trainne SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
+    await db.query(query, values);
+
+    // Get updated trainee profile (excluding password)
+    const updatedResult = await db.query('SELECT * FROM dashboard_trainne WHERE id = $1', [id]);
+    const updatedTrainee = updatedResult.rows[0];
+    if (updatedTrainee) {
+      delete updatedTrainee.password;
+    }
+
+    res.json({
+      success: true,
+      message: 'Profil trainee berhasil diperbarui.',
+      data: updatedTrainee
+    });
+  } catch (err) {
+    console.error('[Profile Update Error]:', err.message);
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan server saat memperbarui profil.' });
+  }
+};
+
 router.get('/', (req, res) => {
   res.json({
     success: true,
@@ -97,9 +162,9 @@ router.get('/:id', (req, res) => {
   });
 });
 
-router.patch('/:id', handlePasswordReset);
+router.patch('/:id', handleStudentUpdate);
 router.post('/:id', handlePasswordReset);
-router.put('/:id', handlePasswordReset);
+router.put('/:id', handleStudentUpdate);
 
 // 4. POST /api/students/:id/profile-picture - Upload Profile Picture to Cloudinary
 router.post('/:id/profile-picture', uploadMiddleware, async (req, res) => {
