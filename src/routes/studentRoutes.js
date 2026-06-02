@@ -47,6 +47,21 @@ const handlePasswordReset = async (req, res) => {
   }
 };
 
+router.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Student endpoint is active! To reset password, send a PATCH, POST, or PUT request to /api/students/:id with the new password in the request body.'
+  });
+});
+
+router.get('/:id', (req, res) => {
+  const { id } = req.params;
+  res.json({
+    success: true,
+    message: `Student Reset Password endpoint is active for ID: ${id}! Please send a PATCH, POST, or PUT request with 'password' in the request body to reset the password.`
+  });
+});
+
 router.patch('/:id', handlePasswordReset);
 router.post('/:id', handlePasswordReset);
 router.put('/:id', handlePasswordReset);
