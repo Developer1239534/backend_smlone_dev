@@ -17,6 +17,7 @@ const studentRoutes = require('./routes/studentRoutes');
     await db.query('ALTER TABLE dashboard_trainne DROP COLUMN IF EXISTS email CASCADE;');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS password VARCHAR(255) DEFAULT NULL;');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT NULL;');
+    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(500) DEFAULT NULL;');
     
     // Create quiz_history table
     await db.query(`

@@ -2,6 +2,27 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../db/neonClient');
+const multer = require('multer');
+const cloudinary = require('../config/cloudinary');
+
+const upload = multer({ storage: multer.memoryStorage() });
+const uploadMiddleware = upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'profile_picture', maxCount: 1 }
+]);
+
+const uploadToCloudinary = (fileBuffer, folder = 'smlone/profiles') => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    uploadStream.end(fileBuffer);
+  });
+};
 
 // 3. Forgot / Reset Password
 // PATCH or POST or PUT /api/students/:id
@@ -79,5 +100,72 @@ router.get('/:id', (req, res) => {
 router.patch('/:id', handlePasswordReset);
 router.post('/:id', handlePasswordReset);
 router.put('/:id', handlePasswordReset);
+
+// 4. POST /api/students/:id/profile-picture - Upload Profile Picture to Cloudinary
+router.post('/:id/profile-picture', uploadMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { imageUrl, image: bodyImage } = req.body;
+
+  try {
+    // Check if trainee exists
+    const checkResult = await db.query('SELECT id FROM dashboard_trainne WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
+    }
+
+    let secureUrl = '';
+
+    // Scenario 1: File Upload (multipart/form-data)
+    let uploadedFile = null;
+    if (req.files) {
+      if (req.files.image && req.files.image[0]) {
+        uploadedFile = req.files.image[0];
+      } else if (req.files.profile_picture && req.files.profile_picture[0]) {
+        uploadedFile = req.files.profile_picture[0];
+      }
+    }
+
+    if (uploadedFile) {
+      console.log(`[Cloudinary Upload] Uploading file for student ID: ${id}`);
+      const uploadResult = await uploadToCloudinary(uploadedFile.buffer);
+      secureUrl = uploadResult.secure_url;
+    } 
+    // Scenario 2: Base64 String or URL from request body
+    else if (imageUrl || bodyImage) {
+      const inputImage = imageUrl || bodyImage;
+      console.log(`[Cloudinary Upload] Uploading image link/base64 for student ID: ${id}`);
+      const uploadResult = await cloudinary.uploader.upload(inputImage, {
+        folder: 'smlone/profiles'
+      });
+      secureUrl = uploadResult.secure_url;
+    } 
+    // No image provided
+    else {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Silakan kirim file gambar (multipart form-data dengan nama field "image" atau "profile_picture"), atau kirim JSON body dengan "imageUrl" / "image".' 
+      });
+    }
+
+    // Save Cloudinary URL to database
+    await db.query(
+      'UPDATE dashboard_trainne SET profile_picture = $1 WHERE id = $2',
+      [secureUrl, id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Foto profil berhasil diperbarui.',
+      profile_picture: secureUrl
+    });
+  } catch (error) {
+    console.error('[Cloudinary Upload Error]:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Terjadi kesalahan saat mengunggah foto profil ke Cloudinary.', 
+      error: error.message 
+    });
+  }
+});
 
 module.exports = router;
