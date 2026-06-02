@@ -3,13 +3,19 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const db = require('./neonClient');
 
-// Helper to generate a secure random alphanumeric password
-function generateRandomPassword(length = 8) {
+// Helper to generate a unique secure random password containing "smlone"
+const generatedPasswords = new Set();
+function generateUniqueSmlonePassword() {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let password = '';
-  for (let i = 0; i < length; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
+  let password;
+  do {
+    let suffix = '';
+    for (let i = 0; i < 5; i++) {
+      suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    password = `smlone-${suffix}`;
+  } while (generatedPasswords.has(password));
+  generatedPasswords.add(password);
   return password;
 }
 
@@ -24,23 +30,17 @@ async function generateAllPasswords() {
     let updatedCount = 0;
 
     for (const trainee of trainees) {
-      let plainPassword = '';
+      // Generate a new unique password containing 'smlone' for ALL trainees
+      const plainPassword = generateUniqueSmlonePassword();
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(plainPassword, salt);
       
-      // If the trainee doesn't have a password yet, generate one
-      if (!trainee.password) {
-        plainPassword = generateRandomPassword(8);
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(plainPassword, salt);
-        
-        // Update password in database
-        await db.query(
-          'UPDATE dashboard_trainne SET password = $1 WHERE id = $2',
-          [hashedPassword, trainee.id]
-        );
-        updatedCount++;
-      } else {
-        plainPassword = '[ALREADY REGISTERED / HAS PASSWORD]';
-      }
+      // Update password in database
+      await db.query(
+        'UPDATE dashboard_trainne SET password = $1 WHERE id = $2',
+        [hashedPassword, trainee.id]
+      );
+      updatedCount++;
 
       generatedList.push({
         id: trainee.id,
