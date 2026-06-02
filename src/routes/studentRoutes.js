@@ -118,6 +118,12 @@ const handleStudentUpdate = async (req, res) => {
       console.log(`[Cloudinary Upload] Uploading file for student ID: ${id} via PUT/PATCH`);
       const uploadResult = await uploadToCloudinary(uploadedFile.buffer);
       resolvedProfilePicture = uploadResult.secure_url;
+    } else if (profile_picture && (profile_picture.startsWith('data:image/') || (profile_picture.startsWith('http') && !profile_picture.includes('cloudinary.com')))) {
+      console.log(`[Cloudinary Upload] Uploading body string/url for student ID: ${id} via PUT/PATCH`);
+      const uploadResult = await cloudinary.uploader.upload(profile_picture, {
+        folder: 'smlone/profiles'
+      });
+      resolvedProfilePicture = uploadResult.secure_url;
     }
 
     const updates = [];
