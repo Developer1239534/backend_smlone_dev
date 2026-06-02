@@ -84,6 +84,13 @@ const handlePasswordReset = async (req, res) => {
 
 const handleStudentUpdate = async (req, res) => {
   const { id } = req.params;
+
+  console.log('[Student Update Request]:', {
+    id,
+    body: req.body,
+    files: req.files ? Object.keys(req.files) : null
+  });
+
   const { password, newPassword, phone, profile_picture, trainee_name } = req.body;
 
   // If password/newPassword is provided in request body, delegate to handlePasswordReset
@@ -191,9 +198,15 @@ router.post('/:id', handlePasswordReset);
 router.put('/:id', uploadMiddleware, handleStudentUpdate);
 
 
-// 4. POST /api/students/:id/profile-picture - Upload Profile Picture to Cloudinary
 router.post('/:id/profile-picture', uploadMiddleware, async (req, res) => {
   const { id } = req.params;
+
+  console.log('[Student Profile Picture Upload Request]:', {
+    id,
+    body: req.body,
+    files: req.files ? Object.keys(req.files) : null
+  });
+
   const { imageUrl, image: bodyImage } = req.body;
 
   try {
