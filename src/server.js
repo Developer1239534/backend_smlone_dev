@@ -9,6 +9,7 @@ const dashboardApiRoutes = require('./routes/dashboardApiRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
+const adminTraineesRoutes = require('./routes/adminTraineesRoutes');
 
 // Auto DB migration for new columns
 (async () => {
@@ -59,6 +60,8 @@ app.use('/api/contact', dashboardApiRoutes);
 app.use('/contact', dashboardApiRoutes);
 
 // Admin Management Endpoints
+app.use('/api/admin/trainees', adminTraineesRoutes);
+app.use('/admin/trainees', adminTraineesRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);
 
