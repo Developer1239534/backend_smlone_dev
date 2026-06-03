@@ -105,22 +105,22 @@ router.put('/:id', async (req, res) => {
   }
 
   try {
-    const check = await db.query('SELECT 1 FROM dashboard_trainne WHERE id = $1', [id]);
+    const check = await db.query('SELECT * FROM dashboard_trainne WHERE id = $1', [id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Trainee with ID ${id} not found.` });
     }
+    const current = check.rows[0];
 
-    // If password is being updated, hash it
+    // If password is being updated, hash it. If empty string or undefined, keep old.
     let passwordValue = data.password;
-    if (passwordValue && !passwordValue.startsWith('$2a$') && !passwordValue.startsWith('$2b$')) {
-      // It's a plain text password, we need to hash it
+    if (passwordValue && passwordValue !== '' && !passwordValue.startsWith('$2a$') && !passwordValue.startsWith('$2b$')) {
       passwordValue = await bcrypt.hash(passwordValue, 10);
-    } else if (!passwordValue) {
-       // Keep existing password if not provided in full update? 
-       // Usually PUT replaces everything, but we shouldn't wipe password if not sent.
-       const curr = await db.query('SELECT password FROM dashboard_trainne WHERE id = $1', [id]);
-       passwordValue = curr.rows[0].password;
+    } else {
+      passwordValue = current.password;
     }
+
+    // Keep old profile picture if frontend sends empty string
+    const profilePictureValue = (data.profile_picture !== undefined && data.profile_picture !== '') ? data.profile_picture : current.profile_picture;
 
     const updateQuery = `
       UPDATE dashboard_trainne SET
@@ -135,14 +135,30 @@ router.put('/:id', async (req, res) => {
     `;
 
     const values = [
-      data.trainee_name, data.status || null, data.program || null, data.class || null,
-      data.level || null, data.membership_expiry || null, data.hubungi_kami || null,
-      data.last_speaking_project || null, data.progress_ke_next_level || null,
-      data.highlight_terbaru || null, data.pengumuman || null, data.weekly_report || null,
-      data.quarterly_report || null, data.referral_code || null, data.gold_rank || null,
-      data.progress_video || null, data.laporan_sebelumnya || null,
-      data.laporan_quarter_sebelumnya || null, data.completed_speaking_project || null,
-      passwordValue, data.phone || null, data.profile_picture || null, data.tanggal_lahir || null, id
+      data.trainee_name, 
+      data.status !== undefined ? data.status : current.status,
+      data.program !== undefined ? data.program : current.program,
+      data.class !== undefined ? data.class : current.class,
+      data.level !== undefined ? data.level : current.level,
+      data.membership_expiry !== undefined ? data.membership_expiry : current.membership_expiry,
+      data.hubungi_kami !== undefined ? data.hubungi_kami : current.hubungi_kami,
+      data.last_speaking_project !== undefined ? data.last_speaking_project : current.last_speaking_project,
+      data.progress_ke_next_level !== undefined ? data.progress_ke_next_level : current.progress_ke_next_level,
+      data.highlight_terbaru !== undefined ? data.highlight_terbaru : current.highlight_terbaru,
+      data.pengumuman !== undefined ? data.pengumuman : current.pengumuman,
+      data.weekly_report !== undefined ? data.weekly_report : current.weekly_report,
+      data.quarterly_report !== undefined ? data.quarterly_report : current.quarterly_report,
+      data.referral_code !== undefined ? data.referral_code : current.referral_code,
+      data.gold_rank !== undefined ? data.gold_rank : current.gold_rank,
+      data.progress_video !== undefined ? data.progress_video : current.progress_video,
+      data.laporan_sebelumnya !== undefined ? data.laporan_sebelumnya : current.laporan_sebelumnya,
+      data.laporan_quarter_sebelumnya !== undefined ? data.laporan_quarter_sebelumnya : current.laporan_quarter_sebelumnya,
+      data.completed_speaking_project !== undefined ? data.completed_speaking_project : current.completed_speaking_project,
+      passwordValue, 
+      data.phone !== undefined ? data.phone : current.phone,
+      profilePictureValue, 
+      data.tanggal_lahir !== undefined ? data.tanggal_lahir : current.tanggal_lahir, 
+      id
     ];
 
     const result = await db.query(updateQuery, values);
@@ -169,6 +185,14 @@ router.patch('/:id', async (req, res) => {
     const check = await db.query('SELECT 1 FROM dashboard_trainne WHERE id = $1', [id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Trainee with ID ${id} not found.` });
+    }
+
+    // Ignore empty strings for certain fields to prevent accidental deletion
+    if (updates.password === '') {
+      delete updates.password;
+    }
+    if (updates.profile_picture === '') {
+      delete updates.profile_picture;
     }
 
     // Check if password needs to be hashed
