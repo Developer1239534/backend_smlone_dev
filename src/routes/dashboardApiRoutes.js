@@ -56,7 +56,8 @@ router.patch('/profile/:id', async (req, res) => {
   
   const updateData = {};
   for (const field of allowedFields) {
-    if (updates[field] !== undefined) {
+    // Only update if the field is actually provided and not an empty string
+    if (updates[field] !== undefined && updates[field] !== '') {
       updateData[field] = updates[field];
     }
   }
