@@ -34,7 +34,10 @@ router.get('/profile/:id', async (req, res) => {
       program: trainee.program,
       class: trainee.class,
       level: trainee.level,
-      membership_expiry: trainee.membership_expiry
+      membership_expiry: trainee.membership_expiry,
+      phone: trainee.phone,
+      tanggal_lahir: trainee.tanggal_lahir,
+      profile_picture: trainee.profile_picture
     }
   });
 });
