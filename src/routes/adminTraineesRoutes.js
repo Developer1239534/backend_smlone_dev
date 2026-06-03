@@ -69,10 +69,10 @@ router.post('/', async (req, res) => {
         hubungi_kami, last_speaking_project, progress_ke_next_level, highlight_terbaru,
         pengumuman, weekly_report, quarterly_report, referral_code, gold_rank,
         progress_video, laporan_sebelumnya, laporan_quarter_sebelumnya,
-        completed_speaking_project, password, phone, profile_picture
+        completed_speaking_project, password, phone, profile_picture, tanggal_lahir
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23
+        $17, $18, $19, $20, $21, $22, $23, $24
       ) RETURNING *;
     `;
 
@@ -84,7 +84,7 @@ router.post('/', async (req, res) => {
       data.quarterly_report || null, data.referral_code || null, data.gold_rank || null,
       data.progress_video || null, data.laporan_sebelumnya || null,
       data.laporan_quarter_sebelumnya || null, data.completed_speaking_project || null,
-      hashedPassword, data.phone || null, data.profile_picture || null
+      hashedPassword, data.phone || null, data.profile_picture || null, data.tanggal_lahir || null
     ];
 
     const result = await db.query(insertQuery, values);
@@ -129,8 +129,9 @@ router.put('/:id', async (req, res) => {
         progress_ke_next_level = $9, highlight_terbaru = $10, pengumuman = $11,
         weekly_report = $12, quarterly_report = $13, referral_code = $14, gold_rank = $15,
         progress_video = $16, laporan_sebelumnya = $17, laporan_quarter_sebelumnya = $18,
-        completed_speaking_project = $19, password = $20, phone = $21, profile_picture = $22
-      WHERE id = $23 RETURNING *;
+        completed_speaking_project = $19, password = $20, phone = $21, profile_picture = $22,
+        tanggal_lahir = $23
+      WHERE id = $24 RETURNING *;
     `;
 
     const values = [
@@ -141,7 +142,7 @@ router.put('/:id', async (req, res) => {
       data.quarterly_report || null, data.referral_code || null, data.gold_rank || null,
       data.progress_video || null, data.laporan_sebelumnya || null,
       data.laporan_quarter_sebelumnya || null, data.completed_speaking_project || null,
-      passwordValue, data.phone || null, data.profile_picture || null, id
+      passwordValue, data.phone || null, data.profile_picture || null, data.tanggal_lahir || null, id
     ];
 
     const result = await db.query(updateQuery, values);
