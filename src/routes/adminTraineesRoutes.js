@@ -54,8 +54,8 @@ router.get('/:id', async (req, res) => {
 // 3. POST /api/admin/trainees - Create a new trainee
 router.post('/', async (req, res) => {
   const data = req.body;
-  if (!data.id || !data.trainee_name) {
-    return res.status(400).json({ success: false, message: 'id and trainee_name are required.' });
+  if (!data.id) {
+    return res.status(400).json({ success: false, message: 'id is required.' });
   }
 
   try {
@@ -64,6 +64,10 @@ router.post('/', async (req, res) => {
     if (check.rows.length > 0) {
       return res.status(409).json({ success: false, message: `Trainee with ID ${data.id} already exists.` });
     }
+
+    // Set default values if not provided
+    const traineeName = data.trainee_name || `Trainee ${data.id}`;
+    const statusValue = data.status || 'Active';
 
     // Hash password if provided, else generate default password 'smlone{id}'
     let plainPassword = data.password;
@@ -86,7 +90,7 @@ router.post('/', async (req, res) => {
     `;
 
     const values = [
-      data.id, data.trainee_name, data.status || null, data.program || null, data.class || null,
+      data.id, traineeName, statusValue, data.program || null, data.class || null,
       data.level || null, data.membership_expiry || null, data.hubungi_kami || null,
       data.last_speaking_project || null, data.progress_ke_next_level || null,
       data.highlight_terbaru || null, data.pengumuman || null, data.weekly_report || null,
