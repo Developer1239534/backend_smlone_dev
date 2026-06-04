@@ -1,0 +1,490 @@
+id	Trainee_name	Status	 Program	CLASS	Level	Membership exp	Last speaking project	Highliht terbary	Pengumuman 	Laporan Terkini	Tautan Tambahan 
+27	Valerie Legolas Cen	Active	Junior/Youth Program	Obsidian	Sergeant	22 Mei 2027					
+45	Aaron Goldwin Semarak	Active (Grace Period)	Junior/Youth Program	Millman (Sat 1-3)	General	25 Juni 2026					
+48	Justin Maxwell	Active	Junior/Youth Program	Millman (Sat 1-3)	General	1 September 2026					
+49	Richmond Osyan Sudilan	Active	Junior/Youth Program	Spielberg (Sat 4-6)	General	20 November 2026					
+50	Kenichi Zhou	Active	Junior/Youth Program	Kiyosaki (Sat 4-6)	Lt. Colonel	2 Oktober 2026					
+51	Cedric Yago	Active (Grace Period)	Junior/Youth Program	Millman (Sat 1-3)	Lt. General	26 September 2026					
+60	Sharleen Velicia Lim	Active	Junior/Youth Program	Millman (Sat 1-3)	Colonel	7 Juni 2026					
+64	Jillian Rusly	Active (Grace Period)	Junior/Youth Program	Doyle (Sat 1-3)	Colonel	3 November 2026					
+125	Jayxen Maxwell	Active	Junior/Youth Program	Winfrey (Thursday 4-6)	Colonel	5 September 2027					
+141	Russell William Tanner	Active	Junior/Youth Program	Newton (Tue 4-6)	Sergeant	9 Agustus 2026					
+149	Elaine Velicia	Active	Junior/Youth Program	Jade	Sergeant	22 April 2027					
+249	Emily Santo	Active	Junior/Youth Program	Alexandrite	Sergeant	25 November 2026					
+274	Candice Winardi Wong	Active	Junior/Youth Program	Sigmund	Colonel	14 September 2026					
+329	Vrederick Benaricco Tanjaya	Active	Junior/Youth Program	Spielberg (Sat 4-6)	Colonel	5 Desember 2026					
+333	Jasmine Yenarti	Active	Junior/Youth Program	Clinton (Fri 3-5)	Colonel	4 Oktober 2026					
+368	Felice Vallerie Angkasa	Active	Junior/Youth Program	Spielberg (Sat 4-6)	Lt. Colonel	2 Oktober 2026					
+440	Sofia Grace Wu	Active	Junior/Youth Program	Sapphire	Lt. Colonel	21 Agustus 2026					
+528	Kiery Keionna Kie	Active (Grace Period)	Junior/Youth Program	Millman (Sat 1-3)	General	10 Oktober 2026					
+531	Max Chen	Active	Junior/Youth Program	Obsidian	Colonel	24 April 2027					
+532	Yasmin Fadhila Azzakiyah	Active	Junior/Youth Program	Ruby	Colonel	8 Mei 2027					
+545	Brandon Chiang	Active	Junior/Youth Program	Sigmund	Colonel	19 November 2026					
+255	Denzel Geraldo Wijaya	Active	Junior/Youth Program	Clinton (Fri 3-5)	General	22 Juli 2026					
+269	Fresia Victoria Chendry	Active	Junior/Youth Program	Gladwell	Colonel	9 November 2026					
+285	Clairine Joshanley	Active	Junior/Youth Program	Kiyosaki (Sat 4-6)	Colonel	10 Agustus 2026					
+301	Chloe Zhou	Active	Junior/Youth Program	Spielberg (Sat 4-6)	Lt. General	10 Agustus 2026					
+375	Darren Gabriel	Active	Junior/Youth Program	Grande (Thu 4-6 PM)	Colonel	15 Agustus 2026					
+429	Charrelle Anthony	Active	Junior/Youth Program	Topaz	Lt. General	13 April 2027					
+442	Beatrys Vanesa Moiras	Active	Junior/Youth Program	Alexandrite	Lt. Colonel	6 Agustus 2026					
+443	Candyce Valezka Moiras	Active	Junior/Youth Program	Robbins (Sat 1-3)	Lt. Colonel	10 Juni 2026					
+482	Reizo Kazuo Wong	Active	Junior/Youth Program	Sapphire	Sergeant	8 Agustus 2026					
+483	Jolie Huang	Active	Junior/Youth Program	Millman (Sat 1-3)	Lt. Colonel	6 Januari 2027					
+490	Shane Ferrucio Lim	Active	Junior/Youth Program	Sigmund	Lt. General	14 Oktober 2026					
+548	Fiona Candiof	Active	Junior/Youth Program	Spielberg (Sat 4-6)	Lt. Colonel	15 April 2027					
+553	Florencia Hewi	Active	Junior/Youth Program	Mandela	Lt. Colonel	5 Mei 2027					
+566	Jollyn Felicia Wong	Active	Junior/Youth Program	Spielberg (Sat 4-6)	Colonel	7 Juli 2026					
+569	Josevin Carel H.	Active	Junior/Youth Program	Sigmund	Lt. Colonel	7 Agustus 2026					
+574	Brandon Tiojaya	Active	Junior/Youth Program	Mandela	Lt. Colonel	28 Oktober 2026					
+575	Mandy Ellen Sanusi	Active	Junior/Youth Program	Graham	Colonel	20 September 2026					
+580	Vivienne Zheng	Active	Junior/Youth Program	Kiyosaki (Sat 4-6)	General	4 Agustus 2026					
+581	Nicholas Zheng	Active	Junior/Youth Program	Spielberg (Sat 4-6)	Lt. General	4 Agustus 2026					
+582	Ethan Aldrich Lie	Active	Junior/Youth Program	Gandhi	Lt. Colonel	17 Agustus 2026					
+585	Harvey Wijaya	Active	Junior/Youth Program	Kiyosaki (Sat 4-6)	Lt. Colonel	11 Maret 2027					
+586	Annabella Wijaya	Active	Junior/Youth Program	Mandela	Lt. Colonel	11 Desember 2026					
+587	Enrico Victorian	Active	Junior/Youth Program	Pearl	Colonel	16 April 2027					
+601	Mikaella Hutteleigh Ng	Active	Junior/Youth Program	Robbins (Sat 1-3)	Colonel	6 Juli 2026					
+602	Alexandra Joan Micheline	Active	Junior/Youth Program	Emerald	Colonel	22 September 2026					
+604	Hugo Viandi	Active	Junior/Youth Program	Robbins (Sat 1-3)	Sergeant	15 Agustus 2026					
+613	Junior Auson Halim	Active	Junior/Youth Program	Clinton (Fri 3-5)	Lt. Colonel	2 November 2026					
+614	Rayden Chiang	Active	Junior/Youth Program	DaVinci	Colonel	2 November 2026					
+618	Yamin Yenardo	Active (Grace Period)	Junior/Youth Program	Graham	Private	28 Oktober 2026					
+621	Ufaira Tiandra Dalimunthe	Active (Grace Period)	Junior/Youth Program	Graham	Private	28 April 2027					
+625	Audrey Hartono Lee	Active	Junior/Youth Program	Gladwell	Lt. Colonel	1 Juli 2027					
+629	Joey Frederica Ang	Active	Junior/Youth Program	Gates (Sat 10-12)	Lt. Colonel	17 Agustus 2026					
+631	Queency Joycelyn Yieginia	Active	Junior/Youth Program	Gates (Sat 10-12)	Lt. Colonel	20 Oktober 2026					
+633	Fiona Jolys Chong	Active	Junior/Youth Program	Alexandrite	Lt. Colonel	11 Juli 2026					
+636	Zia Arafa Khairina	Active	Junior/Youth Program	Alexandrite	Private	28 November 2026					
+638	Chloe Olivia Ruslie	Active	Junior/Youth Program	Graham	Private	28 November 2026					
+639	Bianca Olivia Ruslie	Active (Grace Period)	Junior/Youth Program	Clinton (Fri 3-5)	Lt. Colonel	2 Juli 2026					
+651	Ashley Claire Lorence	Active	Junior/Youth Program	Spielberg (Sat 4-6)	Lt. Colonel	22 Juli 2026					
+654	Rayden Oh	Active	Junior/Youth Program	Newton (Tue 4-6)	Sergeant	22 Juli 2026					
+665	Khoo Shu Han	Active	Junior/Youth Program	Denver	Sergeant	5 November 2026					
+670	Christian Anderson Lee	Active	Junior/Youth Program	Tracy (Sat 4-6)	Lt. Colonel	2 Agustus 2026					
+673	Nathan Immanuel Winanto	Active	Junior/Youth Program	DaVinci	Colonel	2 Maret 2027					
+675	Maxen Zo Leon	Active	Junior/Youth Program	Millman (Sat 1-3)	Colonel	4 Agustus 2026					
+676	Grace Alexandra	Active	Junior/Youth Program	Galileo (Wed 4-6)	Lt. General	14 April 2027					
+679	Fiorenza Eleanor Wijaya	Active	Junior/Youth Program	Tracy (Sat 4-6)	Lt. Colonel	2 Agustus 2026					
+680	Gracelyn Yap	Active	Junior/Youth Program	Tracy (Sat 4-6)	Lt. Colonel	4 April 2027					
+683	Stanley Ace Lorence	Active	Junior/Youth Program	Gates (Sat 10-12)	Lt. Colonel	9 September 2026					
+686	Owen Linwood	Active	Junior/Youth Program	Robbins (Sat 1-3)	Lt. Colonel	11 April 2027					
+704	Morgan Valentino Lowis	Active	Junior/Youth Program	Doyle (Sat 1-3)	Colonel	2 Maret 2027					
+707	Samho Gunawan	Active	Junior/Youth Program	Clinton (Fri 3-5)	Sergeant	1 Agustus 2026					
+709	Winston Lawrence	Active	Junior/Youth Program	Sigmund	Sergeant	16 Juni 2026					
+716	Chloe Vallerie Jie	Active	Junior/Youth Program	Millman (Sat 1-3)	Colonel	23 September 2026					
+717	Dmitri Meddef Njo	Active (Grace Period)	Junior/Youth Program	Graham	Lt. Colonel	29 Juli 2026					
+719	Davar Aly Harahap	Active	Junior/Youth Program	Gates (Sat 10-12)	Lt. Colonel	30 April 2027					
+726	Renzo Tanaka	Active	Junior/Youth Program	Gates (Sat 10-12)	Lt. Colonel	30 April 2027					
+735	Kenward Melvern Djohan	Active	Junior/Youth Program	DaVinci	Lt. Colonel	19 September 2026					
+736	Kendrick Melvern Djohan	Active	Junior/Youth Program	Spielberg (Sat 4-6)	Lt. Colonel	5 Oktober 2026					
+738	Adeline Njo	Active	Junior/Youth Program	Gandhi	Lt. Colonel	10 November 2026					
+739	Zoefiker Putera Ngadiman	Active	Junior/Youth Program	Galileo (Wed 4-6)	Lt. Colonel	27 Oktober 2026					
+740	Aubree Lisman	Active	Junior/Youth Program	Galileo (Wed 4-6)	Lt. General	4 Oktober 2026					
+741	Brayden Lisman	Active	Junior/Youth Program	Tracy (Sat 4-6)	Lt. Colonel	18 Juni 2027					
+745	Jesslyn	Active	Junior/Youth Program	Canfield	Sergeant	26 September 2026					
+751	Howie Chan	Active	Junior/Youth Program	Ruby	Sergeant	25 Juni 2026					
+754	Reagan Khei Subroto	Active	Junior/Youth Program	Grande (Thu 4-6 PM)	Lt. Colonel	21 Juni 2026					
+759	Warren Emanuel	Active (Grace Period)	Junior/Youth Program	Lincoln	Private	27 Oktober 2026					
+761	Richelle Zheng	Active (Grace Period)	Junior/Youth Program	Grande (Thu 4-6 PM)	Sergeant	30 Juni 2026					
+763	Safira Reynia Hanum	Active	Junior/Youth Program	Gates (Sat 10-12)	Sergeant	25 Juni 2026					
+767	Theodore Joachim Wihardjo	Active	Junior/Youth Program	Winfrey (Thursday 4-6)	Sergeant	25 November 2026					
+768	Josh Seravino Zhang	Active (Grace Period)	Junior/Youth Program	Doyle (Sat 1-3)	Sergeant	6 Juli 2026					
+779	Jayden Tarmidi	Active	Junior/Youth Program	Lincoln	Private	4 November 2026					
+783	Evelynn Lee	Active	Junior/Youth Program	Robbins (Sat 1-3)	Sergeant	2 Agustus 2026					
+784	Garrix Ardent Putra	Active	Junior/Youth Program	Gandhi	Sergeant	24 Juli 2026					
+785	Kelly Alyse Tanary	Active	Junior/Youth Program	DaVinci	Colonel	27 September 2026					
+790	Hardey Moeldoko Law	Active	Junior/Youth Program	Grande (Thu 4-6 PM)	Colonel	6 September 2026					
+801	Hillary Calista Tamado Panjaitan	Active	Junior/Youth Program	Lincoln	Private	9 Juli 2026					
+803	Lovea Fendy Kho	Active	Junior/Youth Program	Lincoln	Private	6 Agustus 2026					
+806	Efrata Iskandar Liunardi	Active	Junior/Youth Program	Lincoln	Private	9 Oktober 2026					
+809	Emilia Niko Nyoman	Active	Junior/Youth Program	Grande (Thu 4-6 PM)	Lt. Colonel	16 April 2027					
+811	Arthur Floyd Salim	Active	Junior/Youth Program	Galileo (Wed 4-6)	Lt. General	8 Juni 2026					
+819	Maria Jill Lumbantoruan	Active	Junior/Youth Program	Gates (Sat 10-12)	Lt. Colonel	2 September 2026					
+821	Vallerio	Active (Grace Period)	Junior/Youth Program	Lincoln	Private	6 Oktober 2026					
+822	Clarissa Olivia Anne Lammora Panjaitan	Active	Junior/Youth Program	Hogwarts		7 Januari 2027					
+835	Finn Aldrich Luman	Active	Junior/Youth Program	Lincoln	Private	15 Januari 2027					
+836	Kent Arthur Luman	Active	Junior/Youth Program	Wonderland		12 Juli 2026					
+837	Clairine Angela Indrajaya	Active	Junior/Youth Program	Dale (Sat 4-6)	Private	14 September 2026					
+838	Louis Harvey Soesanto	Active	Junior/Youth Program	Newton (Tue 4-6)	Lt. Colonel	19 Agustus 2026					
+842	Ethan Moeritz	Active	Junior/Youth Program	DaVinci	Lt. Colonel	12 Agustus 2026					
+845	Wallace Evencio	Active	Junior/Youth Program	Galileo (Wed 4-6)	Colonel	10 Agustus 2026					
+850	Karin Destynsia	Active	Junior/Youth Program	Clinton (Fri 3-5)	Sergeant	2 April 2027					
+852	Cellistia Cangdiago	Active	Junior/Youth Program	Tracy (Sat 4-6)	Lt. Colonel	17 Maret 2027					
+855	Cayden Louis Auwrich	Active	Junior/Youth Program	Mandela	Sergeant	20 Maret 2027					
+857	Hogan Chan	Active	Junior/Youth Program	Graham	Private	19 November 2026					
+858	Delmond Osyan Sudilan	Active	Junior/Youth Program	Winfrey (Thursday 4-6)	Lt. Colonel	25 Februari 2027					
+859	Clarissa Kho	Active	Junior/Youth Program	Tracy (Sat 4-6)	Lt. Colonel	7 April 2027					
+863	Bonita Gaudeti Sinaga	Active	Junior/Youth Program	Grande (Thu 4-6 PM)	Sergeant	25 Oktober 2026					
+865	Victoria Yap	Active	Junior/Youth Program	Winfrey (Thursday 4-6)	Sergeant	25 Oktober 2026					
+866	Carlsen Simen	Active	Junior/Youth Program	Ruby	Lt. Colonel	1 Agustus 2026					
+867	Cherlyn Simen	Active	Junior/Youth Program	DaVinci	Lt. Colonel	28 Agustus 2026					
+868	Sergio Garcia Ang	Active	Junior/Youth Program	Graham	Sergeant	1 Agustus 2026					
+872	Kenneth Samuel Lim	Active	Junior/Youth Program	Doyle (Sat 1-3)	Sergeant	3 Februari 2027					
+874	Muhammad Rafli Arkan	Active	Junior/Youth Program	Topaz	Sergeant	1 Agustus 2026					
+875	Clarissa Fredelyn Jeoh	Active	Junior/Youth Program	Gates (Sat 10-12)	Lt. Colonel	16 Agustus 2026					
+876	Jacqueline Vallerie Chen	Active	Junior/Youth Program	Lincoln	Private	17 November 2026					
+880	Joel Edward	Active	Junior/Youth Program	DaVinci	Lt. Colonel	13 November 2026					
+883	Joanne Lynch	Active	Junior/Youth Program	Tracy (Sat 4-6)	Lt. Colonel	15 Agustus 2026					
+887	Filia Cielo Lim	Active	Junior/Youth Program	Galileo (Wed 4-6)	Colonel	11 Maret 2027					
+889	Madelyn Odelia Lowis	Active	Junior/Youth Program	Gates (Sat 10-12)	Sergeant	10 September 2026					
+896	Nicolas Carlie Kuwira	Active	Junior/Youth Program	Neverland		20 Juli 2026					
+897	Valerie Ivana Chen	Active	Junior/Youth Program	Gladwell	Sergeant	27 Januari 2027					
+898	Ricson Stanlay	Active	Junior/Youth Program	Gladwell	Private	21 April 2027					
+902	Malcolm	Active	Junior/Youth Program	Galileo (Wed 4-6)	Lt. Colonel	18 Maret 2027					
+903	Harvey Oliver Lee	Active	Junior/Youth Program	Robbins (Sat 1-3)	Sergeant	12 Oktober 2026					
+904	Callista Aurelia Tasma	Active	Junior/Youth Program	Sigmund	Sergeant	11 Oktober 2026					
+909	Keona Jaileynn Lawrence	Active	Junior/Youth Program	Galileo (Wed 4-6)	Sergeant	11 Oktober 2026					
+910	Michael Thamida	Active	Junior/Youth Program	Newton (Tue 4-6)	Sergeant	6 Oktober 2026					
+911	Meivellynn Thamida	Active	Junior/Youth Program	Lincoln	Private	12 Agustus 2026					
+913	Roselie Kirana Wijaya	Active	Junior/Youth Program	Millman (Sat 1-3)	Sergeant	25 Oktober 2026					
+914	Leia Kaytlyn Tioe	Active	Junior/Youth Program	Dale (Sat 4-6)	Private	11 Februari 2027					
+922	Victoria Cenata	Active	Junior/Youth Program	Newton (Tue 4-6)	Sergeant	12 Mei 2027					
+927	Richela Stanlay	Active	Junior/Youth Program	Maxwell	Sergeant	15 Desember 2026					
+929	Trevor Hartono Lee	Active	Junior/Youth Program	Camelot		25 Juli 2026					
+932	Olivia Tjoa	Active	Junior/Youth Program	Robbins (Sat 1-3)	Sergeant	14 Juni 2027					
+933	Ivy Jeane Chanella	Active	Junior/Youth Program	Graham	Sergeant	10 Agustus 2027					
+935	Gisella Nyoto	Active (Grace Period)	Junior/Youth Program	Robbins (Sat 1-3)	Sergeant	14 Juni 2027					
+937	Jillian Claire Kuanrius	Active	Junior/Youth Program	Dale (Sat 4-6)	Private	18 November 2026					
+938	Reagan Nyoto	Active (Grace Period)	Junior/Youth Program	Newton (Tue 4-6)	Private	4 Maret 2027					
+939	Rexcaden Jazper Shu	Active (Grace Period)	Junior/Youth Program	Gandhi	Sergeant	16 Agustus 2026					
+942	Elaine Viandi	Active	Junior/Youth Program	Tracy (Sat 4-6)	Sergeant	8 Juli 2026					
+945	Angeline Felice Theo	Active	Junior/Youth Program	Lincoln	Private	18 Oktober 2026					
+947	Nayyara Ayaskara Prakasita	Active	Junior/Youth Program	Doyle (Sat 1-3)	Sergeant	22 Agustus 2026					
+948	Erick Winner Teo	Active	Junior/Youth Program	Graham	Sergeant	24 Juli 2026					
+950	Audrey Madison Loewe	Active	Junior/Youth Program	Maxwell	Sergeant	29 Oktober 2026					
+951	Mavin Jericho Phen	Active	Junior/Youth Program	Mandela	Sergeant	1 September 2026					
+955	Naomi Grace Edward	Active	Junior/Youth Program	Gladwell	Private	15 September 2026					
+956	Aileen Sophie Kesuma	Active	Junior/Youth Program	Lincoln	Private	15 Desember 2026					
+962	Ananda Putera Ngadiman	Active	Junior/Youth Program	Maxwell	Sergeant	8 Oktober 2026					
+963	Yasmina Athirah Rifqi	Active	Junior/Youth Program	Newton (Tue 4-6)	Sergeant	8 Oktober 2026					
+964	Yazeed Abizar Rifqi	Active	Junior/Youth Program	Newton (Tue 4-6)	Sergeant	8 Oktober 2026					
+965	Modric Agusta Daruma	Active	Junior/Youth Program	Newton (Tue 4-6)	Sergeant	8 Oktober 2026					
+968	Lady Valery Sinambela	Active	Junior/Youth Program	Maxwell	Sergeant	8 April 2027					
+970	Annabela Himeko Winarta	Active	Junior/Youth Program	Gladwell	Sergeant	12 November 2026					
+980	Ezio Lim	Active	Junior/Youth Program	Newton (Tue 4-6)	Sergeant	8 April 2027					
+981	Joey Milan Phen	Active	Junior/Youth Program	Doyle (Sat 1-3)	Private	19 Oktober 2026					
+982	Abigail Hazel Tamin	Active	Junior/Youth Program	Maxwell	Sergeant	29 April 2027					
+986	Jason Allen Tjoa	Active	Junior/Youth Program	Gladwell	Private	26 Oktober 2026					
+987	Caren Pandiago	Active	Junior/Youth Program	Whomville		24 Agustus 2026					
+988	Gavyn Wijaya	Active	Junior/Youth Program	Tracy (Sat 4-6)	Private	29 November 2026					
+989	Federico Fredelyn Jeoh	Active	Junior/Youth Program	Maxwell	Private	25 Juli 2026					
+990	Zason Riady Ko	Active	Junior/Youth Program	Gladwell	Sergeant	24 November 2026					
+991	Arya Kho	Active	Junior/Youth Program	Grande (Thu 4-6 PM)	Private	17 Juli 2026					
+992	James Ananda Wijaya	Active	Junior/Youth Program	DaVinci	Private	22 Juli 2026					
+995	Qori Putri Syahviah	Active	Junior/Youth Program	DaVinci	Private	22 Juli 2026					
+996	Venesia Anggini Purba	Active	Junior/Youth Program	Lincoln	Private	5 November 2026					
+997	Jovin Limcoln	Active	Junior/Youth Program	Gladwell	Sergeant	17 Juli 2026					
+998	Fedrick Wijaya	Active	Junior/Youth Program	Kiyosaki (Sat 4-6)	Private	21 Agustus 2026					
+999	Annabelle Grace Wu	Active	Junior/Youth Program	Kiyosaki (Sat 4-6)	Private	21 Agustus 2026					
+1003	Arthur Alexander Hakim	Active	Junior/Youth Program	Mandela	Private	21 Agustus 2026					
+1007	Davina Grace Ong	Active	Junior/Youth Program	Mandela	Private	21 Agustus 2026					
+1008	Sydney Princessa Lim	Active	Junior/Youth Program	Kiyosaki (Sat 4-6)	Private	21 Juni 2026					
+1009	Felicia Grace Ong	Active	Junior/Youth Program	Clinton (Fri 3-5)	Sergeant	11 Januari 2027					
+1010	Gracielle Grace Ong	Active	Junior/Youth Program	Gladwell	Sergeant	19 Juli 2026					
+1012	Clarence Aurelia Colim	Active (Grace Period)	Junior/Youth Program	Mandela	Private	5 Januari 2027					
+1015	Fransisca	Active	Junior/Youth Program	Maxwell	Sergeant	1 Agustus 2026					
+1017	Harvardo Lovenzo Susanto	Active	Junior/Youth Program	Newton (Tue 4-6)	Private	17 Juli 2026					
+1019	Louis Clinton Chai	Active	Junior/Youth Program	Spielberg (Sat 4-6)	Private	12 Juli 2026					
+1020	Caren Axella Natania Lumbantoruan	Active	Junior/Youth Program	Hogwarts		19 Juli 2026					
+1022	Efraim Lucas Dimitri	Active	Junior/Youth Program	Winfrey (Thursday 4-6)	Sergeant	17 Juli 2026					
+1023	Darryl Raynold Leowe	Active	Junior/Youth Program	Spielberg (Sat 4-6)	Sergeant	12 Juli 2026					
+1024	Chloe Audrey Chen	Active	Junior/Youth Program	Sapphire	Private	4 Juli 2026					
+1025	Hermione Lovely Susanto	Active	Junior/Youth Program	Winfrey (Thursday 4-6)	Private	8 September 2026					
+1027	Elnino Jehanra Saragih	Active	Junior/Youth Program	Gates (Sat 10-12)	Private	19 Juli 2026					
+1028	Darren Winston	Active	Junior/Youth Program	Clinton (Fri 3-5)	Private	11 Januari 2027					
+1029	Luna Antoinette Linne	Active	Junior/Youth Program	Canfield	Sergeant	26 Agustus 2026					
+1030	Valerie Rosalyn Yap	Active	Junior/Youth Program	Gandhi	Sergeant	16 Agustus 2026					
+1031	Jacques Lewinsky	Active	Junior/Youth Program	Gandhi	Private	16 Januari 2027					
+1033	Shelvina Howie	Active	Junior/Youth Program	Canfield	Sergeant	26 Agustus 2026					
+1034	Cherryl Riquelme Potan	Active	Junior/Youth Program	Gandhi	Private	23 Juli 2026					
+1037	Caitlyn Allison Yaphen	Active	Junior/Youth Program	Graham	Private	25 Juli 2026					
+1038	Devon Jau	Active	Junior/Youth Program	Canfield	Sergeant	26 Agustus 2026					
+1039	Naafa Maisyva Ginting	Active	Junior/Youth Program	Neverland		1 November 2026					
+1040	Shane Anastasya Kristy Simangunsong	Active	Junior/Youth Program	Winfrey (Thursday 4-6)	Private	7 Agustus 2026					
+1041	Chloe Taydey	Active	Junior/Youth Program	Clinton (Fri 3-5)	Sergeant	8 Agustus 2026					
+1043	Kenrich Thantio Yangderson	Active	Junior/Youth Program	Graham	Private	1 Februari 2027					
+1044	Dominic Kie	Active	Junior/Youth Program	Doyle (Sat 1-3)	Private	2 Agustus 2026					
+1045	Silvario Soedidjo	Active	Junior/Youth Program	Doyle (Sat 1-3)	Private	2 Agustus 2026					
+1047	Jordan Tanutama	Active	Junior/Youth Program	Canfield	Private	26 September 2026					
+1049	Rafael Maximillian Sitorus	Active	Junior/Youth Program	Canfield	Private	26 Agustus 2026					
+1050	Galang Roland Besch	Active	Junior/Youth Program	Gandhi	Private	13 Agustus 2026					
+1051	Timothy Anwi Panca	Active	Junior/Youth Program	Dale (Sat 4-6)	Private	20 Maret 2027					
+1053	Elaine Clemence Annabell	Active	Junior/Youth Program	Canfield	Sergeant	26 September 2026					
+1056	Yeslin Yap	Active	Junior/Youth Program	Canfield	Private	26 Agustus 2026					
+1057	Louis Xavier Leonardi	Active	Junior/Youth Program	Dale (Sat 4-6)	Private	13 Oktober 2026					
+1058	Gracia Tiffany Susanto	Active	Junior/Youth Program	Hogwarts		6 September 2026					
+1059	Meuthia Gadiza	Active	Junior/Youth Program	Clinton (Fri 3-5)	Sergeant	26 Agustus 2026					
+1060	Zac Aldrich Mayor	Active	Junior/Youth Program	Wonderland		3 Agustus 2026					
+1061	Kayden Skylar Sanso	Active	Junior/Youth Program	Wonderland		20 Januari 2027					
+1062	Queensya Lovely Reya	Active	Junior/Youth Program	Hogwarts		6 Juli 2026					
+1065	Maxwell Louis Jaya	Active	Junior/Youth Program	Gates (Sat 10-12)	Sergeant	6 April 2027					
+1066	Samuel Christopher Halim	Active (Grace Period)	Junior/Youth Program	Dale (Sat 4-6)	Private	6 April 2027					
+1067	Richester Casvio Liong	Active	Junior/Youth Program	Wonderland		15 Februari 2027					
+1071	Chloe Aurelia Ten	Active	Junior/Youth Program	Tracy (Sat 4-6)	Private	3 September 2026					
+1072	Hazel Natalie Ten	Active	Junior/Youth Program	Doyle (Sat 1-3)	Private	6 Juni 2027					
+1073	Scarlett Avery Ten	Active (Grace Period)	Junior/Youth Program	Gladwell	Private	6 Juni 2027					
+1074	Ayska Najya Prakasita	Active	Junior/Youth Program	Clinton (Fri 3-5)	Private	26 Juli 2026					
+1075	Bryan Michael Ng	Active	Junior/Youth Program	DaVinci	Private	2 Maret 2027					
+1076	Brayden Matthew Ng	Active	Junior/Youth Program	Tracy (Sat 4-6)	Private	3 Oktober 2026					
+1077	Alqueenza Syifa Winona	Active	Junior/Youth Program	Tracy (Sat 4-6)	Private	3 September 2026					
+1078	Ethan Kenny Daruma	Active	Junior/Youth Program	Pearl	Private	3 Oktober 2026					
+1079	Keigo Kusuno Soh	Active	Junior/Youth Program	Hogwarts		20 Januari 2027					
+1080	Reynara Amber Koiman	Active	Junior/Youth Program	Wonderland		20 Januari 2027					
+1081	Carlton Kho	Active	Junior/Youth Program	Wonderland		20 Januari 2027					
+1083	Gillian Alexa Pearl	Active (Grace Period)	Junior/Youth Program	Clinton (Fri 3-5)	Private	12 September 2026					
+1084	Leonard Nyoto	Active (Grace Period)	Junior/Youth Program	Maxwell	Sergeant	16 September 2026					
+1085	Garent Nyoto	Active (Grace Period)	Junior/Youth Program	Hogwarts		26 Juni 2026					
+1086	Kayden Ethan Zhou	Active	Junior/Youth Program	Robbins (Sat 1-3)	Private	11 April 2027					
+1088	Alesha Sofia Andhika	Active	Junior/Youth Program	Hogwarts		11 Januari 2027					
+1089	Jessica Jo	Active	Junior/Youth Program	Narnia		18 Juli 2026					
+1090	Healey Tjoe	Active	Junior/Youth Program	Narnia		11 Juli 2026					
+1093	Annastasia Hideko Winarta	Active	Junior/Youth Program	Narnia		11 Juli 2026					
+1096	Maxwell Kenson Wibisono	Active	Junior/Youth Program	Graham	Private	6 Mei 2027					
+1097	Reia Rose Winfield	Active	Junior/Youth Program	Graham	Private	7 Agustus 2026					
+1098	Naia Sydney Winfield	Active	Junior/Youth Program	Kiyosaki (Sat 4-6)	Sergeant	15 Mei 2027					
+1101	Fredella Alexa Maranggi Siregar	Active	Junior/Youth Program	Galileo (Wed 4-6)	Private	5 Mei 2027					
+1102	Adhyasta William Nugroho	Active	Junior/Youth Program	Whomville		7 September 2026					
+1103	Nicholas Tjin	Active	Junior/Youth Program	Doyle (Sat 1-3)	Private	8 November 2026					
+1104	Abbygael Mikaela Tangelyn	Active	Junior/Youth Program	Galileo (Wed 4-6)	Private	12 Juni 2026					
+1105	Keiko Aiby Lim	Active	Junior/Youth Program	Narnia		15 Agustus 2026					
+1106	Vierra Cleevany Ryu	Active	Junior/Youth Program	Whomville		7 Juni 2026					
+1111	Howie Leonard Wijaya	Active (Grace Period)	Junior/Youth Program	Wonderland		7 September 2026					
+1113	Joe Benedict Japto	Active	Junior/Youth Program	Sigmund	Private	5 Juni 2026					
+1114	James Tjoa	Active (Grace Period)	Junior/Youth Program	Wonderland		13 September 2026					
+1115	Reagan Oliver Zhuang	Active	Junior/Youth Program	Whomville		7 Juni 2026					
+1116	Kim Megumi	Active (Grace Period)	Junior/Youth Program	Whomville		7 September 2026					
+1117	Claire Gabrielle Oscar	Active	Junior/Youth Program	Marley	Private	30 Oktober 2026					
+1119	Andrea Dimitri Ashraafi Lazzaroni	Active (Grace Period)	Junior/Youth Program	Neverland		6 Januari 2027					
+1120	Reynand Wijaya	Active	Junior/Youth Program	Mandela	Private	10 Agustus 2026					
+1121	Liam John Rickson	Active	Junior/Youth Program	Canfield	Private	7 Oktober 2026					
+1122	Leeanne Jane Lim	Active	Junior/Youth Program	Grande (Thu 4-6 PM)	Private	5 September 2026					
+1123	Joequinn Felysse Warsono	Active	Junior/Youth Program	Sigmund	Private	23 Juli 2026					
+1124	Felicia Liangso	Active	Junior/Youth Program	Hogwarts		17 Juli 2026					
+1125	Grace Anastasia Zeng	Active	Junior/Youth Program	Gandhi	Private	4 September 2026					
+1127	Edric Luiz Ongka	Active	Junior/Youth Program	Grande (Thu 4-6 PM)	Private	29 Juli 2026					
+1128	Lashira Awbinsriee Pane	Active	Junior/Youth Program	Kiyosaki (Sat 4-6)	Private	7 Agustus 2026					
+1129	Stephanie Evelyn Luo	Active	Junior/Youth Program	Marley	Private	30 September 2026					
+1130	Ethan Ray Maxwell	Active	Junior/Youth Program	Kiyosaki (Sat 4-6)	Private	7 Agustus 2026					
+1131	Vinxiero Carrick Francoiz	Active	Junior/Youth Program	Grande (Thu 4-6 PM)	Private	5 Agustus 2026					
+1132	Nicole Lee	Active	Junior/Youth Program	Marley	Private	30 September 2026					
+1133	Natalie Willeen Zhang	Active	Junior/Youth Program	Grande (Thu 4-6 PM)	Private	26 September 2026					
+1134	Kent Nanda Daruma	Active	Junior/Youth Program	Doyle (Sat 1-3)	Private	4 Oktober 2026					
+1135	Cherysse Auryn Khobert	Active	Junior/Youth Program	Millman (Sat 1-3)	Private	4 Oktober 2026					
+1137	Celine Angeline Yiandri	Active	Junior/Youth Program	Wonderland		4 Desember 2026					
+1138	Mike Louis Wijaya	Active	Junior/Youth Program	Wonderland		7 Juni 2026					
+1139	Wilbert Wijaya	Active	Junior/Youth Program	Neverland		10 Juli 2026					
+1140	Keita Raelyn Deng	Active	Junior/Youth Program	Marley	Private	30 September 2026					
+1141	Joyce Nathania Shen	Active (Grace Period)	Junior/Youth Program	Millman (Sat 1-3)	Private	28 Oktober 2026					
+1142	Oscar Linwood	Active	Junior/Youth Program	Neverland		10 Juli 2026					
+1143	Rico Alvaro Chandra	Active	Junior/Youth Program	Maxwell	Private	30 September 2026					
+1144	Kayla Shilyn Gani	Active	Junior/Youth Program	Marley	Private	30 September 2026					
+1145	Gallen Yuman King	Active	Junior/Youth Program	Marley	Private	30 September 2026					
+1146	Charis Yafa Tobing	Active	Junior/Youth Program	Hogwarts		4 Juli 2026					
+1147	Calista Kasih Aprilia Harahap	Active	Junior/Youth Program	Canfield	Private	7 Oktober 2026					
+1148	Talysha Sri Nayla	Active	Junior/Youth Program	Sigmund	Private	17 Oktober 2026					
+1149	Arnold Alexander Hakim	Active	Junior/Youth Program	Sigmund	Private	17 Oktober 2026					
+1150	Kellyn Chandra	Active	Junior/Youth Program	Marley	Private	13 Oktober 2026					
+1151	Theona Zefanya Purba	Active	Junior/Youth Program	Gandhi	Private	13 November 2026					
+1152	Javerson Joshua Tobing	Active	Junior/Youth Program	Tracy (Sat 4-6)	Private	22 Oktober 2026					
+1153	Philippe Benedict Zhuang	Active	Junior/Youth Program	Ziglar (Sat 4-6)	Private	30 November 2026					
+1154	Aca Raymond Tjemerlang	Active	Junior/Youth Program	Ziglar (Sat 4-6)	Private	30 November 2026					
+1155	Howard Winston Louis	Active	Junior/Youth Program	Mandela		30 November 2026					
+1161	Randa Miracle Boasly Sihombing	Active	Junior/Youth Program	Galileo (Wed 4-6)	Private	3 Desember 2026					
+1164	Felicia Ivana Silalahi	Active	Junior/Youth Program	DaVinci	Private	26 November 2026					
+70100004	Maryam Shareen Anandifa	Active	Junior/Youth Program	Ziglar (Sat 4-6)	Private	30 November 2026					
+70100005	Lyvia Verlynn	Active	Junior/Youth Program	Denver	Lt. Colonel	18 Sep 2026					
+70100019	Andrea Tabitha Florencia Simatupang	Active	Junior/Youth Program	Atlanta	Lt. Colonel	8 Sep 2026					
+70100020	Diandra Ezra Nauli Simatupang	Active	Junior/Youth Program	Athens	Lt. Colonel	3 Jul 2026					
+70100023	Evonne Gwen Lim	Active	Junior/Youth Program	Athens	Lt. Colonel	3 Jul 2026					
+70100027	Daniel Goh	Active	Junior/Youth Program	Cairo	Sergeant	17 Sep 2026					
+70100028	Elaine Gwen Lim	Active	Junior/Youth Program	Auckland	Sergeant	20 Sep 2026					
+70100037	Abigail Rhea Lim	Active	Junior/Youth Program	Cairo	Sergeant	17 Sep 2026					
+70100041	Raisha Adila Gunawan	Active	Junior/Youth Program	Mandela	Private	20 Agu 2026					
+70100042	Jessica Sharon	Active	Junior/Youth Program	Denver	Lt. Colonel	13 Agu 2026					
+70100046	Kirania Inara Azalea	Active	Junior/Youth Program	Athens	Lt. Colonel	22 Okt 2026					
+70100047	Keyzia Faiana Daulay	Active	Junior/Youth Program	Atlanta	Lt. Colonel	18 Sep 2026					
+70100051	Enzo Howell	Active	Junior/Youth Program	Cairo	Lt. Colonel	18 Sep 2026					
+70100052	Darrel Hizkia Tambunan	Active	Junior/Youth Program	Amber	Sergeant	20 Jul 2026					
+70100059	Rebecca Florencia Siregar	Active	Junior/Youth Program	Athens	Sergeant	12 Agu 2026					
+70100060	Lincoln Blaine	Active	Junior/Youth Program	Eldorado	Colonel	13 Sep 2026					
+70100061	Colleen Blaine	Active	Junior/Youth Program	Amber	Sergeant	18 Nov 2026					
+70100062	Nichole Hasan	Active	Junior/Youth Program	Quartz	Private	2 Mar 2027					
+70100063	Calysta Celorine Bakara	Active	Junior/Youth Program	Cairo	Lt. Colonel	9 Jul 2026					
+70100064	Rachel Nathania Situmorang	Active	Junior/Youth Program	Eldorado	Sergeant	20 Jul 2026					
+70100068	Radinka Agra Sitepu	Active	Junior/Youth Program	Eldorado	Sergeant	20 Agu 2026					
+70100070	Keysha Kania Ramaditya	Active	Junior/Youth Program	Athens	Sergeant	19 Okt 2026					
+70100071	Muhammad Al Khawarizmi Fairel	Active	Junior/Youth Program	Atlanta	Lt. Colonel	10 Okt 2026					
+70100075	Maro Louis Dear Purba	Active	Junior/Youth Program	Eldorado	Private	1 Apr 2027					
+70100076	Marwa Alya Sakinah Rangkuti	Active	Junior/Youth Program	Cairo	Sergeant	15 Jul 2026					
+70100077	Aldiana Masha Lovelia Br Sembiring	Active	Junior/Youth Program	Atlanta	Lt. Colonel	17 Des 2026					
+70100078	Sakina Alima Regune Harahap	Active	Junior/Youth Program	Eldorado	Sergeant	17 Jul 2026					
+70100080	Dewi Syaahira Sabina Siregar	Active	Junior/Youth Program	Atlanta	Colonel	7 Sep 2026					
+70100086	Maria Graciana Chica Purba	Active	Junior/Youth Program	Athens	Sergeant	12 Okt 2026					
+70100090	Annisa Letizia Shanum	Active	Junior/Youth Program	Sherwood Forest		12 Jan 2027					
+70100098	Erland Sohilida Laia	Active	Junior/Youth Program	Eldorado	Sergeant	28 Apr 2027					
+70100102	Bryan Taslim	Active (Grace Period)	Junior/Youth Program	Cairo	Sergeant	13 Agu 2026					
+70100106	Dareen Davinci Ginting	Active	Junior/Youth Program	Athens	Sergeant	30 Nov 2026					
+70100112	Fathi Arkan Wiyatmika	Active	Junior/Youth Program	Denver	Sergeant	12 Jul 2026					
+70100113	Jiselle Hartanto	Active	Junior/Youth Program	Atlanta	Sergeant	18 Jul 2026					
+70100117	Akhdan Arief Athaya	Active	Junior/Youth Program	Tracy (Sat 4-6)	Private	6 Nov 2026					
+70100118	Cladys Nadine Frietania	Active (Grace Period)	Junior/Youth Program	Asheville	Private	18 Okt 2026					
+70100121	Shane Anthony Jawson	Active	Junior/Youth Program	Sherwood Forest		12 Des 2026					
+70100122	Shadrina Azheema Lubis	Active	Junior/Youth Program	Auckland	Sergeant	13 Sep 2026					
+70100123	Shafiqa Adeeva Lubis	Active	Junior/Youth Program	Eldorado	Sergeant	19 Sep 2026					
+70100126	Berliando Lovely Sihombing	Active (Grace Period)	Junior/Youth Program	Eldorado	Private	19 Sep 2026					
+70100127	Gabriel Ihut Martuaro Sihombing	Active	Junior/Youth Program	Sherwood Forest		12 Des 2026					
+70100128	Syia Kim	Active (Grace Period)	Junior/Youth Program	Atlanta	Private	12 Sep 2026					
+70100130	Muhammad Rafa Al Siena	Active	Junior/Youth Program	Sherwood Forest		12 Jun 2026					
+70100131	Clairine Bellvania Gavrila Ginting	Active (Grace Period)	Junior/Youth Program	Auckland	Private	20 Sep 2026					
+70100133	Lionel Maverick	Active	Junior/Youth Program	Sherwood Forest		19 Des 2026					
+70100134	Diandra Santika	Active	Junior/Youth Program	Asheville	Private	18 Apr 2027					
+70100135	Adib Nufal Wibowo	Active	Junior/Youth Program	Athens	Private	11 Okt 2026					
+70100136	Syakirah Khairani Jamilah	Active	Junior/Youth Program	Cairo	Private	1 Okt 2026					
+70100139	Daniella Demeintieva	Active	Junior/Youth Program	Asheville	Private	11 Okt 2026					
+70100140	Gabriella Theofanny Putri Meliala	Active	Junior/Youth Program	Auckland	Sergeant	11 Apr 2027					
+70100143	Kaleb Edgar Goel Hasugian	Active	Junior/Youth Program	Asheville	Private	18 Okt 2026					
+70100144	Faqih Fadhilah Wijaya	Active	Junior/Youth Program	Athens	Private	10 Jan 2027					
+70100145	Hafiqa Raikhsa Karo Karo	Active	Junior/Youth Program	Asheville	Private	10 Mar 2027					
+70100146	Alexa Brianna Tambunan	Active	Junior/Youth Program	Asheville	Private	10 Agu 2026					
+70100147	Faza Kiyana Azdah	Active	Junior/Youth Program	Eldorado	Private	14 Jul 2026					
+70100148	Davina Elisha Ginting	Active	Junior/Youth Program	Athens	Private	24 Jul 2026					
+70100149	Jaeson Nathan Yap	Active	Junior/Youth Program	Atlanta	Private	30 Jul 2026					
+70100150	Nadhira Calista Purba	Active	Junior/Youth Program	Auckland	Private	4 Okt 2026					
+70100151	Fakhira Idris Harahap	Active	Junior/Youth Program	Eldorado	Private	10 Okt 2026					
+70100152	Abigail Carissa	Active	Junior/Youth Program	Atlanta	Private	6 Agu 2026					
+70100153	Dareen Azel Matthew Sembiring	Active	Junior/Youth Program	Atlanta	Private	30 Jul 2026					
+70100154	Ashera Natama Sitorus	Active	Junior/Youth Program	Eldorado	Private	6 Agu 2026					
+70100155	Stella Aprilia Sianipar	Active	Junior/Youth Program	Sherwood Forest		24 Jul 2026					
+70100156	Tengku Muhammad Malik Al Fatih	Active	Junior/Youth Program	Athens	Private	14 Agu 2026					
+70100157	Faqhan Asshadiq Winata	Active	Junior/Youth Program	Eldorado	Private	27 Agu 2026					
+70100158	Gracelyn Patricia	Active	Junior/Youth Program	Athens	Private	28 Jul 2026					
+70100159	Nadia Fathaniah Chandra	Active	Junior/Youth Program	Atlanta	Private	6 Sep 2026					
+70100160	Jordan Noel Yap	Active	Junior/Youth Program	Eldorado	Private	10 Okt 2026					
+70100161	Khezya Queen Zareen Br Panggabean	Active	Junior/Youth Program	Denver	Private	4 Okt 2026					
+70100162	Arya Satya	Active	Junior/Youth Program	Auckland	Private	11 Okt 2026					
+90100001	Rowan Maverick Ang	Active	Junior/Youth Program	Asheville	Private	4 Okt 2026					
+90100002	Giselle Liandy	Active	Junior/Youth Program	Quartz	Private	25 Jan 2027					
+90100004	Jeovenna Cangie	Active	Junior/Youth Program	Topaz	Sergeant	8 Sep 2026					
+90100005	Felynn Holy Richson	Active	Junior/Youth Program	Diamond	Sergeant	25 Jul 2026					
+90100007	Carrick Classico	Active	Junior/Youth Program	Pearl	Sergeant	25 Jul 2026					
+90100010	Chloe Marjorie Wen	Active	Junior/Youth Program	Ruby	Sergeant	10 Agu 2026					
+90100011	Chloe Quisha Anggara	Active	Junior/Youth Program	Diamond	Sergeant	25 Jul 2026					
+90100013	Candice Julian Sakiwa	Active	Junior/Youth Program	Diamond	Sergeant	25 Jul 2026					
+90100020	Winston Hubert	Active	Junior/Youth Program	Ruby	Sergeant	9 Okt 2026					
+90100021	Aidan	Active	Junior/Youth Program	Ruby	Lt. Colonel	10 Feb 2027					
+90100022	Jeanice Wu	Active	Junior/Youth Program	Emerald	Private	1 Agu 2026					
+90100024	Welceline Charissa Tsjin	Active	Junior/Youth Program	Ruby	Sergeant	10 Jul 2026					
+90100035	Carlen Edeline Br. Keliat	Active	Junior/Youth Program	Diamond	Sergeant	25 Agu 2026					
+90100036	Carlos Ferdinand Putra	Active	Junior/Youth Program	Obsidian	Private	25 Agu 2026					
+90100039	Reynard Alderich Guntur	Active	Junior/Youth Program	Jade	Sergeant	25 Jul 2026					
+90100042	Justin Nawi	Active	Junior/Youth Program	Avalon		1 Agu 2026					
+90100043	Valentino Owen Liu	Active	Junior/Youth Program	Ruby	Private	10 Jul 2026					
+90100044	Velove Alexa Winstan	Active	Junior/Youth Program	Jade	Private	22 Feb 2027					
+90100045	David Howard	Active	Junior/Youth Program	Amethyst	Sergeant	7 Mei 2027					
+90100046	Hugo Maximus Ling	Active	Junior/Youth Program	Amethyst	Sergeant	7 Mar 2027					
+90100047	Bryant Maximus Ling	Active	Junior/Youth Program	Avalon		1 Okt 2026					
+90100049	Harvey Susanto	Active	Junior/Youth Program	Amber	Sergeant	1 Sep 2026					
+90100055	Felicia Tham	Active	Junior/Youth Program	Alexandrite	Sergeant	7 Sep 2026					
+90100056	Thalissha Yeonan	Active	Junior/Youth Program	Quartz	Private	1 Mar 2027					
+90100060	Alfred Smaver Tanasal	Active	Junior/Youth Program	Ruby	Sergeant	7 Feb 2027					
+90100061	Elaine Gabriella Chandella	Active	Junior/Youth Program	Amber	Sergeant	8 Sep 2026					
+90100064	Olson Arfayo	Active	Junior/Youth Program	Obsidian	Private	1 Okt 2026					
+90100066	Celine Oubre	Active	Junior/Youth Program	Obsidian	Sergeant	9 Mar 2027					
+90100067	Victor Alexander Winstan	Active	Junior/Youth Program	Quartz	Private	8 Des 2026					
+90100068	Ixchel Lowell Tankiono	Active	Junior/Youth Program	Topaz	Sergeant	9 Sep 2027					
+90100070	Jack Austin Sia	Active	Junior/Youth Program	Jade	Sergeant	15 Sep 2026					
+90100074	Faulina Theresia Pangaribuan	Active	Junior/Youth Program	Quartz	Private	15 Sep 2026					
+90100075	Kingsley Alisson Tenang	Active	Junior/Youth Program	Obsidian	Private	29 Sep 2026					
+90100079	Gracella Cangie	Active	Junior/Youth Program	Avalon		29 Jul 2026					
+90100080	Vanessa Cangie	Active	Junior/Youth Program	Topaz	Sergeant	9 Okt 2026					
+90100081	Hayden Fredderick Halim	Active	Junior/Youth Program	Topaz	Sergeant	9 Okt 2026					
+90100082	Tang En Xin	Active	Junior/Youth Program	Diamond	Lt. Colonel	26 Okt 2026					
+90100083	Filbert Laithen	Active	Junior/Youth Program	Ruby	Sergeant	25 Okt 2026					
+90100086	Eric Williarn	Active	Junior/Youth Program	Ruby	Sergeant	2 Nov 2026					
+90100087	Finn Maxwell	Active	Junior/Youth Program	Emerald	Private	19 Mar 2027					
+90100088	Khairiy Raka Azizi Hermansyah	Active	Junior/Youth Program	Alexandrite	Sergeant	9 Des 2026					
+90100089	Alvyn Zhu	Active	Junior/Youth Program	Obsidian	Private	26 Jan 2027					
+90100090	Alfarizy Raqila Hermansyah	Active	Junior/Youth Program	Obsidian	Private	14 Jun 2027					
+90100093	Jesslyn Lee	Active	Junior/Youth Program	Camelot		2 Jan 2027					
+90100094	Feliks Ananda Lee	Active	Junior/Youth Program	Ruby	Private	11 Jul 2026					
+90100097	Annabel Audriana	Active	Junior/Youth Program	Alexandrite	Private	11 Jul 2026					
+90100099	Rowan Tirta Lee	Active	Junior/Youth Program	Topaz	Sergeant	2 Jul 2026					
+90100100	Jasmine Zhang	Active	Junior/Youth Program	Ruby	Private	11 Jul 2026					
+90100101	Jayden Zhang	Active	Junior/Youth Program	Pearl	Private	4 Jan 2027					
+90100102	Chloe Marche Khu	Active	Junior/Youth Program	Sapphire	Private	4 Jan 2027					
+90100103	Claire Eugenia Khu	Active	Junior/Youth Program	Emerald	Private	7 Sep 2026					
+90100104	Hannah Sophia Salim	Active	Junior/Youth Program	Camelot		7 Sep 2026					
+90100107	Stoffel Swandeez Angkasa	Active	Junior/Youth Program	Diamond	Sergeant	28 Des 2026					
+90100108	Vergio Gavino Chaikoff	Active	Junior/Youth Program	Camelot		2 Jan 2027					
+90100109	Jolin Thianda	Active	Junior/Youth Program	Amethyst	Private	5 Feb 2027					
+90100112	Richie Alvaro Tandinata	Active	Junior/Youth Program	Amethyst	Private	5 Sep 2026					
+90100113	Reynard Shendior	Active	Junior/Youth Program	Azurite	Private	7 Feb 2027					
+90100114	Kate Elizabeth Huang	Active	Junior/Youth Program	Camelot		26 Jul 2026					
+90100115	William Lauda	Active	Junior/Youth Program	Amethyst	Sergeant	5 Agu 2026					
+90100116	Janessa Hofang	Active	Junior/Youth Program	Amethyst	Private	5 Sep 2026					
+90100117	Jarell Hofang	Active	Junior/Youth Program	Emerald	Private	26 Jan 2027					
+90100118	Jesslyn Hofang	Active	Junior/Youth Program	Emerald	Private	26 Jan 2027					
+90100120	Jocelyn Sydney	Active	Junior/Youth Program	Camelot		26 Jul 2026					
+90100122	Tiffany Toh	Active	Junior/Youth Program	Topaz	Sergeant	7 Agu 2026					
+90100123	Trevor Toh	Active	Junior/Youth Program	Obsidian	Private	16 Agu 2026					
+90100127	Davin Bradford	Active	Junior/Youth Program	Amber	Private	16 Agu 2026					
+90100128	Dustin Bradley	Active	Junior/Youth Program	Azurite	Private	7 Sep 2026					
+90100129	Jasmine Ryana Ngadimin	Active	Junior/Youth Program	Amethyst	Sergeant	5 Sep 2026					
+90100130	Maurice Claire Genevieve	Active	Junior/Youth Program	Avalon		26 Des 2026					
+90100131	Gillian Natalie Wilfred	Active	Junior/Youth Program	Azurite	Private	7 Agu 2026					
+90100132	Louis Adrian	Active	Junior/Youth Program	Sapphire	Private	13 Sep 2026					
+90100133	Josh Andrew	Active	Junior/Youth Program	Obsidian	Private	26 Jul 2026					
+90100134	Rodrick Stefano Halim	Active	Junior/Youth Program	Amber	Private	26 Jul 2026					
+90100135	Rainie Lynn	Active	Junior/Youth Program	Sapphire	Private	13 Sep 2026					
+90100136	Miho Qanitah Sihombing	Active	Junior/Youth Program	Sapphire	Private	13 Sep 2026					
+90100137	Keiko Hanara Sihombing	Active (Grace Period)	Junior/Youth Program	Amethyst	Private	5 Feb 2027					
+90100138	Vyon Wynter Huang	Active	Junior/Youth Program	Duloc		19 Jun 2026					
+90100139	Mikayla Seline Wu	Active (Grace Period)	Junior/Youth Program	Pearl	Private	16 Okt 2026					
+90100140	Jadellyne Gretchenagatha Zhuotio	Active	Junior/Youth Program	Duloc		19 Jun 2026					
+90100143	Jason Lewis Theo	Active	Junior/Youth Program	Amethyst	Sergeant	5 Feb 2027					
+90100144	Vincenzo	Active	Junior/Youth Program	Azurite	Private	7 Feb 2027					
+90100148	Kei Evander Buhari	Active	Junior/Youth Program	Quartz	Private	9 Agu 2026					
+90100153	Ethan Putra Gotama	Active	Junior/Youth Program	Diamond	Private	9 Agu 2026					
+90100154	Emmeline Aurelia Lie	Active	Junior/Youth Program	Ruby	Sergeant	1 Agu 2026					
+90100155	Nathan Archie Gunawan	Active	Junior/Youth Program	Sapphire	Private	13 Sep 2026					
+90100156	Nicole Anastasia	Active	Junior/Youth Program	Sapphire	Private	13 Sep 2026					
+90100160	Klarissa Evania Buhari	Active	Junior/Youth Program	Pearl	Private	13 Sep 2026					
+90100161	Harvey Taufik	Active (Grace Period)	Junior/Youth Program	Pearl	Private	20 Sep 2026					
+90100163	Videline Gillian Chaikoff	Active (Grace Period)	Junior/Youth Program	Duloc		19 Jun 2026					
+90100164	Jarred Eldridge Tantama	Active	Junior/Youth Program	Duloc		19 Jun 2026					
+90100166	Reinz Stythan	Active	Junior/Youth Program	Narnia		18 Jul 2026					
+90100167	Alicia Quinn chandranata	Active (Grace Period)	Junior/Youth Program	Narnia		11 Jul 2026					
+90100168	Madelyn Henryetta Fang	Active	Junior/Youth Program	Narnia		18 Jun 2026					
+90100169	Eleora Iskandar Liunardi	Active	Junior/Youth Program	Pearl	Private	1 Mei 2027					
+90100170	Viyona Gavriela Muis	Active	Junior/Youth Program	Narnia		11 Jul 2026					
+90100171	Eileen Yui Chen	Active	Junior/Youth Program	Avalon		25 Jul 2026					
+90100173	Jeneiro	Active	Junior/Youth Program	Avalon		1 Agu 2026					
+90100174	Otto Valerino Lim	Active	Junior/Youth Program	Emerald	Private	22 Mei 2027					
+90100175	Jovan Leonard Lui	Active	Junior/Youth Program	Sapphire	Private	31 Jul 2026					
+90100176	Rahma Nakita Afifah	Active	Junior/Youth Program	Sapphire	Private	24 Jul 2026					
+90100177	Dominica Cherish Sheiramoth	Active	Junior/Youth Program	Atlanta	Private	9 Jul 2026					
+90100178	MIRACLE HUANG	Active	Junior/Youth Program	Duloc		9 Jul 2026					
+90100179	Emily moraine hakim	Active	Junior/Youth Program	Avalon		24 Des 2026					
+90100180	Jayden jiefferson	Active	Junior/Youth Program	Diamond	Private	24 Agu 2026					
+90100182	MAXWELL TENAR	Active	Junior/Youth Program	Emerald	Private	24 Jul 2026					
+90100183	Heinz victorio zhou	Active	Junior/Youth Program	Quartz	Private	7 Agu 2026					
+90100185	Natasha Clairine Wu	Active	Junior/Youth Program	Emerald	Private	31 Jul 2026					
+90100186	Samantha Clairine Wu	Active	Junior/Youth Program	Amber	Private	31 Jul 2026					
+90100188	Rebecca kelly ashari	Active	Junior/Youth Program	Quartz	Private	31 Jul 2026					
+90100189	Abigail avery ashari	Active	Junior/Youth Program	Alexandrite	Private	30 Jul 2026					
+90100190	Daphne Nathania Ang	Active	Junior/Youth Program	Duloc		30 Des 2026					
+90100191	Bosco Lim	Active	Junior/Youth Program	Alexandrite	Private	6 Agu 2026					
+90100192	Jayden Jingga	Active	Junior/Youth Program	Topaz	Private	4 Agu 2026					
+90100193	Tyra Louise Tohnika	Active	Junior/Youth Program	Ruby	Private	6 Sep 2026					
+90100194	Tyler Howard Tohnika	Active (Grace Period)	Junior/Youth Program	Alexandrite	Private	27 Agu 2026					
+90100195	Sarah Oktorela Sitorus	Active	Junior/Youth Program	Duloc		27 Des 2026					
+90100196	Jordan Philip Wihono	Active	Junior/Youth Program	Jade	Private	21 Sep 2026					
+90100197	Jeffrey Yap	Active	Junior/Youth Program	Ruby	Private	15 Nov 2026					
+90100198	Jordan Swiss Cliftan	Active	Junior/Youth Program	Duloc		10 Jul 2026					
+90100200	Galent hansen wuner	Active	Junior/Youth Program	Topaz	Private	1 Okt 2026					
+90100206	Metta Louise ellen	Active	Junior/Youth Program	Azurite	Private	23 Okt 2026					
+90100208	Patricia	Active	Junior/Youth Program	Azurite	Private	7 Nov 2026					
+90100209	George	Active	Junior/Youth Program	Amber	Private	9 Nov 2026					
+90100211	Callista Aurelia alven	Active	Junior/Youth Program	Quartz	Private	9 Nov 2026					
+90100214	Louis kendrick	Active	Junior/Youth Program	Jade	Private	16 Nov 2026					
+			Junior/Youth Program	Obsidian	Private	23 Nov 2026					
