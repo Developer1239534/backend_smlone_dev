@@ -93,6 +93,7 @@ const handleStudentUpdate = async (req, res) => {
   });
 
   const { password, newPassword, phone, profile_picture, image, imageUrl, profile_photo, trainee_name } = req.body;
+  const tanggal_lahir = req.body.tanggal_lahir !== undefined ? req.body.tanggal_lahir : req.body.tanggalLahir;
 
   // If password/newPassword is provided in request body, delegate to handlePasswordReset
   if (password || newPassword) {
@@ -178,6 +179,11 @@ const handleStudentUpdate = async (req, res) => {
     if (phone !== undefined) {
       updates.push(`phone = $${paramIndex++}`);
       values.push(phone);
+    }
+
+    if (tanggal_lahir !== undefined) {
+      updates.push(`tanggal_lahir = $${paramIndex++}`);
+      values.push(tanggal_lahir);
     }
 
     if (updates.length === 0) {

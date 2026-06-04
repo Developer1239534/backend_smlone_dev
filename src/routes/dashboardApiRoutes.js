@@ -51,6 +51,11 @@ router.patch('/profile/:id', async (req, res) => {
   delete updates.id;
   delete updates.trainee_name;
 
+  // Handle frontend camelCase aliases
+  if (updates.tanggalLahir !== undefined) updates.tanggal_lahir = updates.tanggalLahir;
+  if (updates.profilePicture !== undefined) updates.profile_picture = updates.profilePicture;
+  if (updates.oldPassword !== undefined) updates.old_password = updates.oldPassword;
+
   // List of fields that a USER is allowed to update
   const allowedFields = ['profile_picture', 'phone', 'tanggal_lahir', 'password', 'old_password'];
   
