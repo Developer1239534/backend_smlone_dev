@@ -39,8 +39,8 @@ router.post('/register', async (req, res) => {
       // If student ID is not pre-seeded, we can register them as a new trainee
       const name = trainee_name || `Trainee ${id}`;
       await db.query(
-        'INSERT INTO dashboard_trainne (id, trainee_name, password, status) VALUES ($1, $2, $3, $4)',
-        [id, name, hashedPassword, 'Active']
+        'INSERT INTO dashboard_trainne (id, trainee_name, password, plain_password, status) VALUES ($1, $2, $3, $4, $5)',
+        [id, name, hashedPassword, password, 'Active']
       );
       return res.status(201).json({
         success: true,
@@ -55,8 +55,8 @@ router.post('/register', async (req, res) => {
 
       // Update pre-seeded trainee with password
       await db.query(
-        'UPDATE dashboard_trainne SET password = $1 WHERE id = $2',
-        [hashedPassword, id]
+        'UPDATE dashboard_trainne SET password = $1, plain_password = $2 WHERE id = $3',
+        [hashedPassword, password, id]
       );
 
       return res.status(200).json({

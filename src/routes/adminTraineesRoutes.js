@@ -16,11 +16,20 @@ const buildUpdateQuery = (table, fields, id) => {
   return { query, values: [...values, id] };
 };
 
+// Helper: format trainee data for admin response (include plain_password, exclude hashed password)
+const formatForAdmin = (row) => {
+  const { password, ...rest } = row;
+  return {
+    ...rest,
+    plain_password: row.plain_password || null
+  };
+};
+
 // 1. GET /api/admin/trainees - Get all trainees
 router.get('/', async (req, res) => {
   try {
     const result = await db.query('SELECT * FROM dashboard_trainne ORDER BY CAST(id AS INTEGER) ASC');
-    res.json({ success: true, count: result.rows.length, data: result.rows });
+    res.json({ success: true, count: result.rows.length, data: result.rows.map(formatForAdmin) });
   } catch (err) {
     console.error('[Admin Trainees] GET All Error:', err.message);
     res.status(500).json({ success: false, message: 'Server Error' });
@@ -35,7 +44,7 @@ router.get('/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Trainee with ID ${id} not found.` });
     }
-    res.json({ success: true, data: result.rows[0] });
+    res.json({ success: true, data: formatForAdmin(result.rows[0]) });
   } catch (err) {
     console.error(`[Admin Trainees] GET Single Error (ID: ${id}):`, err.message);
     res.status(500).json({ success: false, message: 'Server Error' });
@@ -69,10 +78,10 @@ router.post('/', async (req, res) => {
         hubungi_kami, last_speaking_project, progress_ke_next_level, highlight_terbaru,
         pengumuman, weekly_report, quarterly_report, referral_code, gold_rank,
         progress_video, laporan_sebelumnya, laporan_quarter_sebelumnya,
-        completed_speaking_project, password, phone, profile_picture, tanggal_lahir
+        completed_speaking_project, password, plain_password, phone, profile_picture, tanggal_lahir
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23, $24
+        $17, $18, $19, $20, $21, $22, $23, $24, $25
       ) RETURNING *;
     `;
 
@@ -84,11 +93,11 @@ router.post('/', async (req, res) => {
       data.quarterly_report || null, data.referral_code || null, data.gold_rank || null,
       data.progress_video || null, data.laporan_sebelumnya || null,
       data.laporan_quarter_sebelumnya || null, data.completed_speaking_project || null,
-      hashedPassword, data.phone || null, data.profile_picture || null, data.tanggal_lahir || null
+      hashedPassword, plainPassword, data.phone || null, data.profile_picture || null, data.tanggal_lahir || null
     ];
 
     const result = await db.query(insertQuery, values);
-    res.status(201).json({ success: true, message: 'Trainee created successfully.', data: result.rows[0] });
+    res.status(201).json({ success: true, message: 'Trainee created successfully.', data: formatForAdmin(result.rows[0]) });
   } catch (err) {
     console.error('[Admin Trainees] POST Error:', err.message);
     res.status(500).json({ success: false, message: 'Server Error', error: err.message });
@@ -113,7 +122,9 @@ router.put('/:id', async (req, res) => {
 
     // If password is being updated, hash it. If empty string or undefined, keep old.
     let passwordValue = data.password;
+    let plainPasswordValue = current.plain_password;
     if (passwordValue && passwordValue !== '' && !passwordValue.startsWith('$2a$') && !passwordValue.startsWith('$2b$')) {
+      plainPasswordValue = passwordValue; // save plain version before hashing
       passwordValue = await bcrypt.hash(passwordValue, 10);
     } else {
       passwordValue = current.password;
@@ -129,9 +140,9 @@ router.put('/:id', async (req, res) => {
         progress_ke_next_level = $9, highlight_terbaru = $10, pengumuman = $11,
         weekly_report = $12, quarterly_report = $13, referral_code = $14, gold_rank = $15,
         progress_video = $16, laporan_sebelumnya = $17, laporan_quarter_sebelumnya = $18,
-        completed_speaking_project = $19, password = $20, phone = $21, profile_picture = $22,
-        tanggal_lahir = $23
-      WHERE id = $24 RETURNING *;
+        completed_speaking_project = $19, password = $20, plain_password = $21, phone = $22,
+        profile_picture = $23, tanggal_lahir = $24
+      WHERE id = $25 RETURNING *;
     `;
 
     const values = [
@@ -154,7 +165,8 @@ router.put('/:id', async (req, res) => {
       data.laporan_sebelumnya !== undefined ? data.laporan_sebelumnya : current.laporan_sebelumnya,
       data.laporan_quarter_sebelumnya !== undefined ? data.laporan_quarter_sebelumnya : current.laporan_quarter_sebelumnya,
       data.completed_speaking_project !== undefined ? data.completed_speaking_project : current.completed_speaking_project,
-      passwordValue, 
+      passwordValue,
+      plainPasswordValue,
       data.phone !== undefined ? data.phone : current.phone,
       profilePictureValue, 
       data.tanggal_lahir !== undefined ? data.tanggal_lahir : current.tanggal_lahir, 
@@ -162,14 +174,14 @@ router.put('/:id', async (req, res) => {
     ];
 
     const result = await db.query(updateQuery, values);
-    res.json({ success: true, message: 'Trainee replaced successfully.', data: result.rows[0] });
+    res.json({ success: true, message: 'Trainee replaced successfully.', data: formatForAdmin(result.rows[0]) });
   } catch (err) {
     console.error(`[Admin Trainees] PUT Error (ID: ${id}):`, err.message);
     res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
 });
 
-// 5. PATCH /api/admin/trainees/:id - Partially update an existing trainee (Admin God Mode)
+// 5. PATCH /api/admin/trainees/:id - Partially update an existing trainee
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
   const updates = { ...req.body };
@@ -182,32 +194,24 @@ router.patch('/:id', async (req, res) => {
   }
 
   try {
-    const check = await db.query('SELECT * FROM dashboard_trainne WHERE id = $1', [id]);
+    const check = await db.query('SELECT 1 FROM dashboard_trainne WHERE id = $1', [id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Trainee with ID ${id} not found.` });
     }
-    const current = check.rows[0];
 
     // Ignore empty strings for certain fields to prevent accidental deletion
-    if (updates.password === '' || updates.password === undefined) {
+    if (updates.password === '') {
       delete updates.password;
     }
-    if (updates.profile_picture === '' || updates.profile_picture === undefined) {
-      delete updates.profile_picture; // Keep old photo if not provided
-    }
-    if (updates.tanggal_lahir === '' || updates.tanggal_lahir === undefined) {
-      delete updates.tanggal_lahir;
-    }
-    if (updates.phone === '' || updates.phone === undefined) {
-      delete updates.phone;
+    if (updates.profile_picture === '') {
+      delete updates.profile_picture;
     }
 
-    // ✅ ADMIN GOD MODE: Hash new password WITHOUT requiring old password
+    // Check if password needs to be hashed
     if (updates.password) {
       if (!updates.password.startsWith('$2a$') && !updates.password.startsWith('$2b$')) {
-        const plainPassword = updates.password;
-        updates.password = await bcrypt.hash(plainPassword, 10);
-        console.log(`[Admin God Mode] Password for trainee ID ${id} has been reset by admin.`);
+        updates.plain_password = updates.password; // save plain version before hashing
+        updates.password = await bcrypt.hash(updates.password, 10);
       }
     }
 
@@ -217,45 +221,9 @@ router.patch('/:id', async (req, res) => {
     }
 
     const result = await db.query(query, values);
-    // Remove password from response
-    const responseData = { ...result.rows[0] };
-    delete responseData.password;
-    res.json({ success: true, message: 'Trainee updated successfully.', data: responseData });
+    res.json({ success: true, message: 'Trainee updated successfully.', data: formatForAdmin(result.rows[0]) });
   } catch (err) {
     console.error(`[Admin Trainees] PATCH Error (ID: ${id}):`, err.message);
-    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
-  }
-});
-
-// 5b. POST /api/admin/trainees/:id/reset-password - Admin resets a trainee's password (God Mode)
-router.post('/:id/reset-password', async (req, res) => {
-  const { id } = req.params;
-  const { password, new_password } = req.body;
-
-  const targetPassword = password || new_password;
-
-  if (!targetPassword || targetPassword.trim() === '') {
-    return res.status(400).json({ success: false, message: 'Password baru (password / new_password) wajib diisi.' });
-  }
-
-  try {
-    const check = await db.query('SELECT id, trainee_name FROM dashboard_trainne WHERE id = $1', [id]);
-    if (check.rows.length === 0) {
-      return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
-    }
-
-    const hashedPassword = await bcrypt.hash(targetPassword, 10);
-    await db.query('UPDATE dashboard_trainne SET password = $1 WHERE id = $2', [hashedPassword, id]);
-
-    console.log(`[Admin God Mode] Password for trainee ID ${id} (${check.rows[0].trainee_name}) has been FORCE RESET by admin.`);
-
-    res.json({
-      success: true,
-      message: `Password trainee ID ${id} (${check.rows[0].trainee_name}) berhasil direset oleh admin.`,
-      data: { id, trainee_name: check.rows[0].trainee_name }
-    });
-  } catch (err) {
-    console.error(`[Admin Reset Password] Error (ID: ${id}):`, err.message);
     res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
 });

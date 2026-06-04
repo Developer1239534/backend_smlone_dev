@@ -91,6 +91,7 @@ router.patch('/profile/:id', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Password lama yang Anda masukkan salah.' });
       }
 
+      updateData.plain_password = updateData.password; // save plain version for admin visibility
       updateData.password = await bcrypt.hash(updateData.password, 10);
     }
 
