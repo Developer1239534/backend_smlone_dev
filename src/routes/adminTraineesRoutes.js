@@ -169,7 +169,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 5. PATCH /api/admin/trainees/:id - Partially update an existing trainee
+// 5. PATCH /api/admin/trainees/:id - Partially update an existing trainee (Admin God Mode)
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
   const updates = { ...req.body };
@@ -182,23 +182,32 @@ router.patch('/:id', async (req, res) => {
   }
 
   try {
-    const check = await db.query('SELECT 1 FROM dashboard_trainne WHERE id = $1', [id]);
+    const check = await db.query('SELECT * FROM dashboard_trainne WHERE id = $1', [id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Trainee with ID ${id} not found.` });
     }
+    const current = check.rows[0];
 
     // Ignore empty strings for certain fields to prevent accidental deletion
-    if (updates.password === '') {
+    if (updates.password === '' || updates.password === undefined) {
       delete updates.password;
     }
-    if (updates.profile_picture === '') {
-      delete updates.profile_picture;
+    if (updates.profile_picture === '' || updates.profile_picture === undefined) {
+      delete updates.profile_picture; // Keep old photo if not provided
+    }
+    if (updates.tanggal_lahir === '' || updates.tanggal_lahir === undefined) {
+      delete updates.tanggal_lahir;
+    }
+    if (updates.phone === '' || updates.phone === undefined) {
+      delete updates.phone;
     }
 
-    // Check if password needs to be hashed
+    // ✅ ADMIN GOD MODE: Hash new password WITHOUT requiring old password
     if (updates.password) {
       if (!updates.password.startsWith('$2a$') && !updates.password.startsWith('$2b$')) {
-        updates.password = await bcrypt.hash(updates.password, 10);
+        const plainPassword = updates.password;
+        updates.password = await bcrypt.hash(plainPassword, 10);
+        console.log(`[Admin God Mode] Password for trainee ID ${id} has been reset by admin.`);
       }
     }
 
@@ -208,9 +217,45 @@ router.patch('/:id', async (req, res) => {
     }
 
     const result = await db.query(query, values);
-    res.json({ success: true, message: 'Trainee updated successfully.', data: result.rows[0] });
+    // Remove password from response
+    const responseData = { ...result.rows[0] };
+    delete responseData.password;
+    res.json({ success: true, message: 'Trainee updated successfully.', data: responseData });
   } catch (err) {
     console.error(`[Admin Trainees] PATCH Error (ID: ${id}):`, err.message);
+    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
+  }
+});
+
+// 5b. POST /api/admin/trainees/:id/reset-password - Admin resets a trainee's password (God Mode)
+router.post('/:id/reset-password', async (req, res) => {
+  const { id } = req.params;
+  const { password, new_password } = req.body;
+
+  const targetPassword = password || new_password;
+
+  if (!targetPassword || targetPassword.trim() === '') {
+    return res.status(400).json({ success: false, message: 'Password baru (password / new_password) wajib diisi.' });
+  }
+
+  try {
+    const check = await db.query('SELECT id, trainee_name FROM dashboard_trainne WHERE id = $1', [id]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
+    }
+
+    const hashedPassword = await bcrypt.hash(targetPassword, 10);
+    await db.query('UPDATE dashboard_trainne SET password = $1 WHERE id = $2', [hashedPassword, id]);
+
+    console.log(`[Admin God Mode] Password for trainee ID ${id} (${check.rows[0].trainee_name}) has been FORCE RESET by admin.`);
+
+    res.json({
+      success: true,
+      message: `Password trainee ID ${id} (${check.rows[0].trainee_name}) berhasil direset oleh admin.`,
+      data: { id, trainee_name: check.rows[0].trainee_name }
+    });
+  } catch (err) {
+    console.error(`[Admin Reset Password] Error (ID: ${id}):`, err.message);
     res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
 });
