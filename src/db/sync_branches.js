@@ -5,10 +5,10 @@ const db = require('./neonClient');
 
 async function main() {
   try {
-    const dataPath = path.join(__dirname, 'data_cabang.txt');
+    const dataPath = path.join(__dirname, '..', '..', 'data cabang dan yt.txt');
     if (!fs.existsSync(dataPath)) {
-      console.error(`⚠️ ERROR: data_cabang.txt not found at: ${dataPath}`);
-      console.log('Please create data_cabang.txt in the root of the project and paste the data.');
+      console.error(`⚠️ ERROR: data cabang dan yt.txt not found at: ${dataPath}`);
+      console.log('Please make sure "data cabang dan yt.txt" is saved in the root of the project.');
       process.exit(1);
     }
 

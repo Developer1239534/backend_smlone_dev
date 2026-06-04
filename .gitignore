@@ -2,4 +2,6 @@ node_modules/
 .env
 .DS_Store
 trainee_passwords.txt
-
+*.txt
+src/db/last_msg.txt
+src/db/untruncated_user_request.txt
