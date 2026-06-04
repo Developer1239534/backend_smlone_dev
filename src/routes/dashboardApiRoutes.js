@@ -52,7 +52,7 @@ router.patch('/profile/:id', async (req, res) => {
   delete updates.trainee_name;
 
   // List of fields that a USER is allowed to update
-  const allowedFields = ['profile_picture', 'phone', 'tanggal_lahir', 'password'];
+  const allowedFields = ['profile_picture', 'phone', 'tanggal_lahir', 'password', 'old_password'];
   
   const updateData = {};
   for (const field of allowedFields) {
@@ -67,15 +67,39 @@ router.patch('/profile/:id', async (req, res) => {
   }
 
   try {
-    const check = await db.query('SELECT 1 FROM dashboard_trainne WHERE id = $1', [id]);
+    const check = await db.query('SELECT password FROM dashboard_trainne WHERE id = $1', [id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Trainee tidak ditemukan.' });
     }
 
-    // Hash password if updated
+    const currentTrainee = check.rows[0];
+
+    // Password Update Logic with Old Password Verification
     if (updateData.password) {
+      if (!updateData.old_password) {
+        return res.status(400).json({ success: false, message: 'Password lama (old_password) wajib diisi untuk mengubah password.' });
+      }
+
       const bcrypt = require('bcryptjs');
+      
+      let isMatch = false;
+      if (currentTrainee.password) {
+        isMatch = await bcrypt.compare(updateData.old_password, currentTrainee.password);
+      }
+      
+      if (!isMatch) {
+        return res.status(400).json({ success: false, message: 'Password lama yang Anda masukkan salah.' });
+      }
+
       updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
+
+    // Remove old_password from updateData so it doesn't try to save it to DB
+    delete updateData.old_password;
+
+    // If only old_password was sent but no new password, we have nothing to update
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ success: false, message: 'Tidak ada data valid yang diubah.' });
     }
 
     const keys = Object.keys(updateData);
