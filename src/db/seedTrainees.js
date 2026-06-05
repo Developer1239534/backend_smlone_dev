@@ -503,7 +503,6 @@ async function seed() {
         class VARCHAR(255) DEFAULT NULL,
         level VARCHAR(255) DEFAULT NULL,
         membership_expiry VARCHAR(255) DEFAULT NULL,
-        hubungi_kami VARCHAR(255) DEFAULT NULL,
         last_speaking_project VARCHAR(255) DEFAULT NULL,
         progress_ke_next_level VARCHAR(255) DEFAULT NULL,
         highlight_terbaru TEXT DEFAULT NULL,

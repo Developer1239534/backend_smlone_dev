@@ -75,19 +75,19 @@ router.post('/', async (req, res) => {
     const insertQuery = `
       INSERT INTO dashboard_trainne (
         id, trainee_name, status, program, class, level, membership_expiry,
-        hubungi_kami, last_speaking_project, progress_ke_next_level, highlight_terbaru,
+        last_speaking_project, progress_ke_next_level, highlight_terbaru,
         pengumuman, weekly_report, quarterly_report, referral_code, gold_rank,
         progress_video, laporan_sebelumnya, laporan_quarter_sebelumnya,
         completed_speaking_project, password, plain_password, phone, profile_picture, tanggal_lahir
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23, $24, $25
+        $17, $18, $19, $20, $21, $22, $23, $24
       ) RETURNING *;
     `;
 
     const values = [
       data.id, data.trainee_name, data.status || 'Active', data.program || null, data.class || null,
-      data.level || null, data.membership_expiry || null, data.hubungi_kami || null,
+      data.level || null, data.membership_expiry || null,
       data.last_speaking_project || null, data.progress_ke_next_level || null,
       data.highlight_terbaru || null, data.pengumuman || null, data.weekly_report || null,
       data.quarterly_report || null, data.referral_code || null, data.gold_rank || null,
@@ -136,13 +136,13 @@ router.put('/:id', async (req, res) => {
     const updateQuery = `
       UPDATE dashboard_trainne SET
         trainee_name = $1, status = $2, program = $3, class = $4, level = $5,
-        membership_expiry = $6, hubungi_kami = $7, last_speaking_project = $8,
-        progress_ke_next_level = $9, highlight_terbaru = $10, pengumuman = $11,
-        weekly_report = $12, quarterly_report = $13, referral_code = $14, gold_rank = $15,
-        progress_video = $16, laporan_sebelumnya = $17, laporan_quarter_sebelumnya = $18,
-        completed_speaking_project = $19, password = $20, plain_password = $21, phone = $22,
-        profile_picture = $23, tanggal_lahir = $24
-      WHERE id = $25 RETURNING *;
+        membership_expiry = $6, last_speaking_project = $7,
+        progress_ke_next_level = $8, highlight_terbaru = $9, pengumuman = $10,
+        weekly_report = $11, quarterly_report = $12, referral_code = $13, gold_rank = $14,
+        progress_video = $15, laporan_sebelumnya = $16, laporan_quarter_sebelumnya = $17,
+        completed_speaking_project = $18, password = $19, plain_password = $20, phone = $21,
+        profile_picture = $22, tanggal_lahir = $23
+      WHERE id = $24 RETURNING *;
     `;
 
     const values = [
@@ -152,7 +152,6 @@ router.put('/:id', async (req, res) => {
       data.class !== undefined ? data.class : current.class,
       data.level !== undefined ? data.level : current.level,
       data.membership_expiry !== undefined ? data.membership_expiry : current.membership_expiry,
-      data.hubungi_kami !== undefined ? data.hubungi_kami : current.hubungi_kami,
       data.last_speaking_project !== undefined ? data.last_speaking_project : current.last_speaking_project,
       data.progress_ke_next_level !== undefined ? data.progress_ke_next_level : current.progress_ke_next_level,
       data.highlight_terbaru !== undefined ? data.highlight_terbaru : current.highlight_terbaru,
@@ -188,6 +187,7 @@ router.patch('/:id', async (req, res) => {
   
   // Prevent changing ID through PATCH
   delete updates.id;
+  delete updates.hubungi_kami;
 
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({ success: false, message: 'No fields provided to update.' });

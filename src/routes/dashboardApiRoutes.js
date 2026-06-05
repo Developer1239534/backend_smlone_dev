@@ -227,8 +227,7 @@ router.get('/contact/:id', async (req, res) => {
     success: true,
     data: {
       id_trainee: trainee.id,
-      nama_trainee: trainee.trainee_name,
-      hubungi_kami: trainee.hubungi_kami
+      nama_trainee: trainee.trainee_name
     }
   });
 });
