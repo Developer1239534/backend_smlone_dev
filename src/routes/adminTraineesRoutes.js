@@ -78,10 +78,16 @@ router.post('/', async (req, res) => {
         last_speaking_project, progress_ke_next_level, highlight_terbaru,
         pengumuman, weekly_report, quarterly_report, referral_code, gold_rank,
         progress_video, laporan_sebelumnya, laporan_quarter_sebelumnya,
-        completed_speaking_project, password, plain_password, phone, profile_picture, tanggal_lahir
+        completed_speaking_project, password, plain_password, phone, profile_picture, tanggal_lahir,
+        cabang, house_sml, total_gold_periode, junior_youth,
+        rank_id_junior, rank_id_youth,
+        rank_id_junior_timor, rank_id_youth_timor,
+        rank_id_junior_tritura, rank_id_youth_tritura,
+        rank_id_junior_cemara, rank_id_youth_cemara
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23, $24
+        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+        $31, $32, $33, $34, $35, $36
       ) RETURNING *;
     `;
 
@@ -93,7 +99,12 @@ router.post('/', async (req, res) => {
       data.quarterly_report || null, data.referral_code || null, data.gold_rank || null,
       data.progress_video || null, data.laporan_sebelumnya || null,
       data.laporan_quarter_sebelumnya || null, data.completed_speaking_project || null,
-      hashedPassword, plainPassword, data.phone || null, data.profile_picture || null, data.tanggal_lahir || null
+      hashedPassword, plainPassword, data.phone || null, data.profile_picture || null, data.tanggal_lahir || null,
+      data.cabang || null, data.house_sml || null, data.total_gold_periode || null, data.junior_youth || null,
+      data.rank_id_junior || null, data.rank_id_youth || null,
+      data.rank_id_junior_timor || null, data.rank_id_youth_timor || null,
+      data.rank_id_junior_tritura || null, data.rank_id_youth_tritura || null,
+      data.rank_id_junior_cemara || null, data.rank_id_youth_cemara || null
     ];
 
     const result = await db.query(insertQuery, values);
@@ -141,8 +152,13 @@ router.put('/:id', async (req, res) => {
         weekly_report = $11, quarterly_report = $12, referral_code = $13, gold_rank = $14,
         progress_video = $15, laporan_sebelumnya = $16, laporan_quarter_sebelumnya = $17,
         completed_speaking_project = $18, password = $19, plain_password = $20, phone = $21,
-        profile_picture = $22, tanggal_lahir = $23
-      WHERE id = $24 RETURNING *;
+        profile_picture = $22, tanggal_lahir = $23,
+        cabang = $24, house_sml = $25, total_gold_periode = $26, junior_youth = $27,
+        rank_id_junior = $28, rank_id_youth = $29,
+        rank_id_junior_timor = $30, rank_id_youth_timor = $31,
+        rank_id_junior_tritura = $32, rank_id_youth_tritura = $33,
+        rank_id_junior_cemara = $34, rank_id_youth_cemara = $35
+      WHERE id = $36 RETURNING *;
     `;
 
     const values = [
@@ -169,6 +185,18 @@ router.put('/:id', async (req, res) => {
       data.phone !== undefined ? data.phone : current.phone,
       profilePictureValue, 
       data.tanggal_lahir !== undefined ? data.tanggal_lahir : current.tanggal_lahir, 
+      data.cabang !== undefined ? data.cabang : current.cabang,
+      data.house_sml !== undefined ? data.house_sml : current.house_sml,
+      data.total_gold_periode !== undefined ? data.total_gold_periode : current.total_gold_periode,
+      data.junior_youth !== undefined ? data.junior_youth : current.junior_youth,
+      data.rank_id_junior !== undefined ? data.rank_id_junior : current.rank_id_junior,
+      data.rank_id_youth !== undefined ? data.rank_id_youth : current.rank_id_youth,
+      data.rank_id_junior_timor !== undefined ? data.rank_id_junior_timor : current.rank_id_junior_timor,
+      data.rank_id_youth_timor !== undefined ? data.rank_id_youth_timor : current.rank_id_youth_timor,
+      data.rank_id_junior_tritura !== undefined ? data.rank_id_junior_tritura : current.rank_id_junior_tritura,
+      data.rank_id_youth_tritura !== undefined ? data.rank_id_youth_tritura : current.rank_id_youth_tritura,
+      data.rank_id_junior_cemara !== undefined ? data.rank_id_junior_cemara : current.rank_id_junior_cemara,
+      data.rank_id_youth_cemara !== undefined ? data.rank_id_youth_cemara : current.rank_id_youth_cemara,
       id
     ];
 

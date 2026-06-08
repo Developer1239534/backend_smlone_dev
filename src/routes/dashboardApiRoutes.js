@@ -37,7 +37,19 @@ router.get('/profile/:id', async (req, res) => {
       membership_expiry: trainee.membership_expiry,
       profile_picture: trainee.profile_picture,
       phone: trainee.phone,
-      tanggal_lahir: trainee.tanggal_lahir
+      tanggal_lahir: trainee.tanggal_lahir,
+      cabang: trainee.cabang,
+      house_sml: trainee.house_sml,
+      total_gold_periode: trainee.total_gold_periode,
+      junior_youth: trainee.junior_youth,
+      rank_id_junior: trainee.rank_id_junior,
+      rank_id_youth: trainee.rank_id_youth,
+      rank_id_junior_timor: trainee.rank_id_junior_timor,
+      rank_id_youth_timor: trainee.rank_id_youth_timor,
+      rank_id_junior_tritura: trainee.rank_id_junior_tritura,
+      rank_id_youth_tritura: trainee.rank_id_youth_tritura,
+      rank_id_junior_cemara: trainee.rank_id_junior_cemara,
+      rank_id_youth_cemara: trainee.rank_id_youth_cemara
     }
   });
 });
@@ -181,7 +193,17 @@ router.get('/rankings/:id', async (req, res) => {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
       gold_rank: trainee.gold_rank,
-      referral_code: trainee.referral_code
+      referral_code: trainee.referral_code,
+      total_gold_periode: trainee.total_gold_periode,
+      junior_youth: trainee.junior_youth,
+      rank_id_junior: trainee.rank_id_junior,
+      rank_id_youth: trainee.rank_id_youth,
+      rank_id_junior_timor: trainee.rank_id_junior_timor,
+      rank_id_youth_timor: trainee.rank_id_youth_timor,
+      rank_id_junior_tritura: trainee.rank_id_junior_tritura,
+      rank_id_youth_tritura: trainee.rank_id_youth_tritura,
+      rank_id_junior_cemara: trainee.rank_id_junior_cemara,
+      rank_id_youth_cemara: trainee.rank_id_youth_cemara
     }
   });
 });
