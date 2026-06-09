@@ -10,6 +10,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const adminTraineesRoutes = require('./routes/adminTraineesRoutes');
+const adminAwardsRoutes = require('./routes/adminAwardsRoutes');
 
 // Auto DB migration for new columns
 (async () => {
@@ -41,6 +42,24 @@ const adminTraineesRoutes = require('./routes/adminTraineesRoutes');
         assigned_house VARCHAR(50) NOT NULL,
         scores JSONB NOT NULL,
         submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create awards table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS awards (
+        id SERIAL PRIMARY KEY,
+        award_type VARCHAR(20) NOT NULL,
+        award_name VARCHAR(100) NOT NULL,
+        category VARCHAR(20) NOT NULL,
+        medal VARCHAR(10) NOT NULL,
+        trainee_id VARCHAR(50) NOT NULL DEFAULT '',
+        trainee_name VARCHAR(255) NOT NULL,
+        score INTEGER DEFAULT 0,
+        threshold INTEGER DEFAULT 0,
+        period VARCHAR(20) DEFAULT 'jun-2026',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(award_name, category, trainee_id, period)
       );
     `);
     console.log('✅ Database schema verified!');
@@ -76,6 +95,8 @@ app.use('/contact', dashboardApiRoutes);
 // Admin Management Endpoints
 app.use('/api/admin/trainees', adminTraineesRoutes);
 app.use('/admin/trainees', adminTraineesRoutes);
+app.use('/api/admin/awards', adminAwardsRoutes);
+app.use('/admin/awards', adminAwardsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);
 

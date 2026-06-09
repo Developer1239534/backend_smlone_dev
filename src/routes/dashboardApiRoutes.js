@@ -254,4 +254,79 @@ router.get('/contact/:id', async (req, res) => {
   });
 });
 
+// ============================================================
+// AWARDS ENDPOINTS (User-facing)
+// ============================================================
+
+// 9. GET /dashboard/awards/all — Public leaderboard: all awards with filters
+router.get('/awards/all', async (req, res) => {
+  const { award_type, award_name, category, medal, period } = req.query;
+  try {
+    let where = [];
+    let params = [];
+    let idx = 1;
+
+    if (award_type) { where.push(`award_type = $${idx++}`); params.push(award_type); }
+    if (award_name) { where.push(`award_name ILIKE $${idx++}`); params.push(`%${award_name}%`); }
+    if (category) { where.push(`category = $${idx++}`); params.push(category); }
+    if (medal) { where.push(`medal = $${idx++}`); params.push(medal); }
+    if (period) { where.push(`period = $${idx++}`); params.push(period); }
+
+    const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+
+    const result = await db.query(
+      `SELECT id, award_type, award_name, category, medal, trainee_id, trainee_name, score, threshold, period
+       FROM awards ${whereClause}
+       ORDER BY award_name, category, 
+         CASE medal WHEN 'gold' THEN 1 WHEN 'silver' THEN 2 WHEN 'bronze' THEN 3 END,
+         score DESC`,
+      params
+    );
+
+    res.json({ success: true, count: result.rows.length, data: result.rows });
+  } catch (err) {
+    console.error('[Dashboard API] GET Awards All Error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+// 10. GET /dashboard/awards/:trainee_id — Get all awards for a specific trainee
+router.get('/awards/:trainee_id', async (req, res) => {
+  const { trainee_id } = req.params;
+  const { period } = req.query;
+  try {
+    let query = `SELECT id, award_type, award_name, category, medal, trainee_id, trainee_name, score, threshold, period
+                 FROM awards WHERE trainee_id = $1`;
+    let params = [trainee_id];
+
+    if (period) {
+      query += ` AND period = $2`;
+      params.push(period);
+    }
+
+    query += ` ORDER BY award_type, award_name, 
+      CASE medal WHEN 'gold' THEN 1 WHEN 'silver' THEN 2 WHEN 'bronze' THEN 3 END`;
+
+    const result = await db.query(query, params);
+
+    // Also get trainee info
+    const traineeResult = await db.query(
+      'SELECT id, trainee_name, junior_youth, class, level, cabang FROM dashboard_trainne WHERE id = $1',
+      [trainee_id]
+    );
+
+    const traineeInfo = traineeResult.rows.length > 0 ? traineeResult.rows[0] : null;
+
+    res.json({
+      success: true,
+      trainee: traineeInfo,
+      count: result.rows.length,
+      awards: result.rows
+    });
+  } catch (err) {
+    console.error(`[Dashboard API] GET Awards Error (Trainee: ${trainee_id}):`, err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;
