@@ -290,7 +290,70 @@ router.get('/awards/all', async (req, res) => {
   }
 });
 
-// 10. GET /dashboard/awards/:trainee_id — Get all awards for a specific trainee
+// 10. GET /dashboard/awards/grouped — Grouped awards by name, category, and medal for UI layout
+router.get('/awards/grouped', async (req, res) => {
+  const period = req.query.period || 'jun-2026';
+  try {
+    const result = await db.query(
+      `SELECT id, award_type, award_name, category, medal, trainee_id, trainee_name, score, threshold, period
+       FROM awards
+       WHERE period = $1
+       ORDER BY award_name, category, 
+         CASE medal WHEN 'gold' THEN 1 WHEN 'silver' THEN 2 WHEN 'bronze' THEN 3 END,
+         score DESC`,
+      [period]
+    );
+
+    const grouped = {};
+
+    for (const row of result.rows) {
+      const { award_name, award_type, category, medal, trainee_id, trainee_name, score, threshold } = row;
+
+      if (!grouped[award_name]) {
+        grouped[award_name] = {
+          award_name,
+          award_type,
+          categories: {}
+        };
+      }
+
+      if (!grouped[award_name].categories[category]) {
+        grouped[award_name].categories[category] = {
+          bronze: { threshold: 0, count: 0, winners: [] },
+          silver: { threshold: 0, count: 0, winners: [] },
+          gold: { threshold: 0, count: 0, winners: [] }
+        };
+      }
+
+      const categoryGroup = grouped[award_name].categories[category];
+      if (categoryGroup[medal]) {
+        if (threshold) {
+          categoryGroup[medal].threshold = threshold;
+        }
+        categoryGroup[medal].winners.push({
+          trainee_id,
+          trainee_name,
+          score
+        });
+        categoryGroup[medal].count += 1;
+      }
+    }
+
+    const dataArray = Object.values(grouped);
+
+    res.json({
+      success: true,
+      period,
+      count: dataArray.length,
+      data: dataArray
+    });
+  } catch (err) {
+    console.error('[Dashboard API] GET Grouped Awards Error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+// 11. GET /dashboard/awards/:trainee_id — Get all awards for a specific trainee
 router.get('/awards/:trainee_id', async (req, res) => {
   const { trainee_id } = req.params;
   const { period } = req.query;
