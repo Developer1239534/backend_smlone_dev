@@ -12,7 +12,6 @@ const studentRoutes = require('./routes/studentRoutes');
 const adminTraineesRoutes = require('./routes/adminTraineesRoutes');
 const adminAwardsRoutes = require('./routes/adminAwardsRoutes');
 const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
-const userMyByRoutes = require('./routes/userMyByRoutes');
 
 // Auto DB migration for new columns
 (async () => {
@@ -64,6 +63,18 @@ const userMyByRoutes = require('./routes/userMyByRoutes');
         UNIQUE(award_name, category, trainee_id, period)
       );
     `);
+
+    // Create myby_coin table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS myby_coin (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        trainee_id VARCHAR(50) UNIQUE NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
+        myby_balance INTEGER DEFAULT 0,
+        gp_balance INTEGER DEFAULT 50,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     console.log('✅ Database schema verified!');
   } catch (err) {
     console.error('❌ Database migration error:', err.message);
@@ -87,7 +98,6 @@ app.use('/api/quiz', quizRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
-app.use('/api/user', userMyByRoutes);
 
 // Custom Dashboard & Contact Endpoints
 app.use('/api/dashboard', dashboardApiRoutes);

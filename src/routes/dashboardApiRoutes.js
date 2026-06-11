@@ -392,4 +392,64 @@ router.get('/awards/:trainee_id', async (req, res) => {
   }
 });
 
+// 12. GET /dashboard/myby-coin/:trainee_id — Get trainee's MYBY Coin balance (autocreate wallet if it doesn't exist)
+router.get('/myby-coin/:trainee_id', async (req, res) => {
+  const { trainee_id } = req.params;
+  try {
+    // 1. Verify that the trainee exists in the database
+    const traineeResult = await db.query(
+      'SELECT id, trainee_name FROM dashboard_trainne WHERE id = $1',
+      [trainee_id]
+    );
+
+    if (traineeResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Trainee dengan ID ${trainee_id} tidak ditemukan.`
+      });
+    }
+
+    const traineeInfo = traineeResult.rows[0];
+
+    // 2. Fetch the wallet from myby_coin
+    const coinResult = await db.query(
+      'SELECT id, trainee_id, myby_balance, gp_balance, created_at, updated_at FROM myby_coin WHERE trainee_id = $1',
+      [trainee_id]
+    );
+
+    let walletData;
+
+    if (coinResult.rows.length === 0) {
+      // 3. Wallet doesn't exist, create it (Welcome Bonus: 50 GP, 0 MYBY)
+      const insertResult = await db.query(
+        `INSERT INTO myby_coin (trainee_id, myby_balance, gp_balance)
+         VALUES ($1, 0, 50)
+         RETURNING id, trainee_id, myby_balance, gp_balance, created_at, updated_at`,
+        [trainee_id]
+      );
+      walletData = insertResult.rows[0];
+      console.log(`[MYBY Coin] Created wallet for trainee ${trainee_id} (${traineeInfo.trainee_name}) with 50 GP.`);
+    } else {
+      walletData = coinResult.rows[0];
+    }
+
+    // Combine wallet data with trainee info
+    res.json({
+      success: true,
+      data: {
+        id: walletData.id,
+        trainee_id: walletData.trainee_id,
+        trainee_name: traineeInfo.trainee_name,
+        myby_balance: walletData.myby_balance,
+        gp_balance: walletData.gp_balance,
+        created_at: walletData.created_at,
+        updated_at: walletData.updated_at
+      }
+    });
+  } catch (err) {
+    console.error(`[Dashboard API] GET MYBY Coin Error (Trainee: ${trainee_id}):`, err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;
