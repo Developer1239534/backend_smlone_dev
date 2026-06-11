@@ -52,7 +52,7 @@ const request = (method, path, body) => {
 
     // 2. Clean up any existing test wallet for student 858
     console.log('\n2. Cleaning up existing test wallet for trainee 858...');
-    await db.query("DELETE FROM myby_coin WHERE trainee_id = '858'");
+    await db.query("DELETE FROM myby_coin WHERE id = '858'");
     console.log('Test wallet cleaned.');
 
     // 3. Test GET wallet (first time, should auto-create with welcome bonus)

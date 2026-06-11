@@ -413,7 +413,7 @@ router.get('/myby-coin/:trainee_id', async (req, res) => {
 
     // 2. Fetch the wallet from myby_coin
     const coinResult = await db.query(
-      'SELECT id, trainee_id, myby_balance, gp_balance, created_at, updated_at FROM myby_coin WHERE trainee_id = $1',
+      'SELECT id, trainee_name, myby_balance, gp_balance, created_at, updated_at FROM myby_coin WHERE id = $1',
       [trainee_id]
     );
 
@@ -422,10 +422,10 @@ router.get('/myby-coin/:trainee_id', async (req, res) => {
     if (coinResult.rows.length === 0) {
       // 3. Wallet doesn't exist, create it (Welcome Bonus: 50 GP, 0 MYBY)
       const insertResult = await db.query(
-        `INSERT INTO myby_coin (trainee_id, myby_balance, gp_balance)
-         VALUES ($1, 0, 50)
-         RETURNING id, trainee_id, myby_balance, gp_balance, created_at, updated_at`,
-        [trainee_id]
+        `INSERT INTO myby_coin (id, trainee_name, myby_balance, gp_balance)
+         VALUES ($1, $2, 0, 50)
+         RETURNING id, trainee_name, myby_balance, gp_balance, created_at, updated_at`,
+        [trainee_id, traineeInfo.trainee_name]
       );
       walletData = insertResult.rows[0];
       console.log(`[MYBY Coin] Created wallet for trainee ${trainee_id} (${traineeInfo.trainee_name}) with 50 GP.`);
@@ -433,13 +433,11 @@ router.get('/myby-coin/:trainee_id', async (req, res) => {
       walletData = coinResult.rows[0];
     }
 
-    // Combine wallet data with trainee info
     res.json({
       success: true,
       data: {
         id: walletData.id,
-        trainee_id: walletData.trainee_id,
-        trainee_name: traineeInfo.trainee_name,
+        trainee_name: walletData.trainee_name,
         myby_balance: walletData.myby_balance,
         gp_balance: walletData.gp_balance,
         created_at: walletData.created_at,

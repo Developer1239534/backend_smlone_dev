@@ -67,8 +67,8 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
     // Create myby_coin table
     await db.query(`
       CREATE TABLE IF NOT EXISTS myby_coin (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        trainee_id VARCHAR(50) UNIQUE NOT NULL,
+        id VARCHAR(50) PRIMARY KEY,
+        trainee_name VARCHAR(255) NOT NULL,
         myby_balance INTEGER DEFAULT 0,
         gp_balance INTEGER DEFAULT 50,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
