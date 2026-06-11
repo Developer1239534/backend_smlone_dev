@@ -75,6 +75,61 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Create myby_coin_ledger table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS myby_coin_ledger (
+        id SERIAL PRIMARY KEY,
+        trainee_id VARCHAR(50) NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
+        transaction_type VARCHAR(20) NOT NULL,
+        action VARCHAR(50) NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        currency VARCHAR(10) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create rewards_shop table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS rewards_shop (
+        id SERIAL PRIMARY KEY,
+        reward_name VARCHAR(255) NOT NULL,
+        description TEXT,
+        cost INTEGER NOT NULL CHECK (cost >= 0),
+        currency VARCHAR(10) DEFAULT 'MYBY',
+        stock INTEGER DEFAULT 99 CHECK (stock >= 0),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create myby_coin_transfer table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS myby_coin_transfer (
+        transfer_id VARCHAR(50) PRIMARY KEY,
+        trainer_id VARCHAR(50) NOT NULL,
+        trainer_name VARCHAR(255) NOT NULL,
+        amount_gold_point INTEGER NOT NULL CHECK (amount_gold_point > 0),
+        status VARCHAR(20) NOT NULL,
+        transfer_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_by VARCHAR(50) NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed data for rewards_shop
+    const shopCheck = await db.query('SELECT COUNT(*) FROM rewards_shop');
+    if (parseInt(shopCheck.rows[0].count, 10) === 0) {
+      console.log('🌱 Seeding rewards_shop table...');
+      await db.query(`
+        INSERT INTO rewards_shop (reward_name, description, cost, currency, stock) VALUES
+        ('Premium Academy E-Book', 'E-Book pembelajaran akademi premium untuk tingkat lanjut.', 100, 'MYBY', 99),
+        ('1-on-1 Mentoring Session (30 mins)', 'Sesi konsultasi & mentoring privat dengan pengajar (30 menit).', 500, 'MYBY', 10),
+        ('Exclusive SMLONE T-Shirt', 'Kaos eksklusif edisi terbatas dari SMLONE Academy.', 10, 'GP', 25)
+      `);
+      console.log('🌱 Seeding completed!');
+    }
+
     console.log('✅ Database schema verified!');
   } catch (err) {
     console.error('❌ Database migration error:', err.message);

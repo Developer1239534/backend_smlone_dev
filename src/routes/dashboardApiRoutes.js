@@ -392,6 +392,360 @@ router.get('/awards/:trainee_id', async (req, res) => {
   }
 });
 
+// 13. POST /dashboard/myby-coin/convert — Convert MYBY to GP (50 MYBY = 1 GP)
+router.post('/myby-coin/convert', async (req, res) => {
+  const { trainee_id, amount } = req.body;
+
+  if (!trainee_id || amount === undefined) {
+    return res.status(400).json({ success: false, message: 'ID trainee dan jumlah koin (amount) diperlukan.' });
+  }
+
+  const convertAmount = parseInt(amount, 10);
+  if (isNaN(convertAmount) || convertAmount <= 0) {
+    return res.status(400).json({ success: false, message: 'Jumlah koin yang dikonversi harus berupa angka positif.' });
+  }
+
+  if (convertAmount % 50 !== 0) {
+    return res.status(400).json({ success: false, message: 'Jumlah koin yang dikonversi harus kelipatan 50.' });
+  }
+
+  const gpEarned = convertAmount / 50;
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // 1. Check current balance
+    const walletRes = await client.query('SELECT myby_balance, gp_balance FROM myby_coin WHERE id = $1', [trainee_id]);
+    if (walletRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Dompet trainee tidak ditemukan.' });
+    }
+
+    const currentMyby = walletRes.rows[0].myby_balance;
+    if (currentMyby < convertAmount) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'Saldo MYBY Coin tidak mencukupi.' });
+    }
+
+    // 2. Update balances
+    await client.query(
+      'UPDATE myby_coin SET myby_balance = myby_balance - $1, gp_balance = gp_balance + $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+      [convertAmount, gpEarned, trainee_id]
+    );
+
+    // 3. Insert ledger entries
+    // - Redeemed MYBY
+    await client.query(
+      `INSERT INTO myby_coin_ledger (trainee_id, transaction_type, action, amount, currency, description)
+       VALUES ($1, 'redeemed', 'conversion', $2, 'MYBY', 'Konversi koin ke GP')`,
+      [trainee_id, convertAmount]
+    );
+    // - Earned GP
+    await client.query(
+      `INSERT INTO myby_coin_ledger (trainee_id, transaction_type, action, amount, currency, description)
+       VALUES ($1, 'earned', 'conversion', $2, 'GP', 'Penerimaan GP dari konversi koin')`,
+      [trainee_id, gpEarned]
+    );
+
+    await client.query('COMMIT');
+    res.json({
+      success: true,
+      message: `Berhasil mengonversi ${convertAmount} MYBY menjadi ${gpEarned} GP.`,
+      converted_myby: convertAmount,
+      received_gp: gpEarned
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[Dashboard API] POST MYBY Coin Convert Error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  } finally {
+    client.release();
+  }
+});
+
+// 14. POST /dashboard/myby-coin/vault-action — Deposit or Withdrawal
+router.post('/myby-coin/vault-action', async (req, res) => {
+  const { trainee_id, action_type, currency, amount } = req.body;
+
+  if (!trainee_id || !action_type || !currency || amount === undefined) {
+    return res.status(400).json({ success: false, message: 'Parameter trainee_id, action_type, currency, dan amount diperlukan.' });
+  }
+
+  const valAmount = parseInt(amount, 10);
+  if (isNaN(valAmount) || valAmount <= 0) {
+    return res.status(400).json({ success: false, message: 'Jumlah transaksi harus berupa angka positif.' });
+  }
+
+  if (action_type !== 'deposit' && action_type !== 'withdrawal') {
+    return res.status(400).json({ success: false, message: 'Tipe aksi harus deposit atau withdrawal.' });
+  }
+
+  if (currency !== 'MYBY' && currency !== 'GP') {
+    return res.status(400).json({ success: false, message: 'Mata uang harus MYBY atau GP.' });
+  }
+
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // 1. Verify wallet exists
+    const walletRes = await client.query('SELECT myby_balance, gp_balance FROM myby_coin WHERE id = $1', [trainee_id]);
+    if (walletRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Dompet trainee tidak ditemukan.' });
+    }
+
+    const wallet = walletRes.rows[0];
+
+    if (action_type === 'withdrawal') {
+      const currentBalance = currency === 'MYBY' ? wallet.myby_balance : wallet.gp_balance;
+      if (currentBalance < valAmount) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ success: false, message: `Saldo ${currency} tidak mencukupi untuk melakukan penarikan.` });
+      }
+
+      // Update balance (deduct)
+      if (currency === 'MYBY') {
+        await client.query('UPDATE myby_coin SET myby_balance = myby_balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [valAmount, trainee_id]);
+      } else {
+        await client.query('UPDATE myby_coin SET gp_balance = gp_balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [valAmount, trainee_id]);
+      }
+
+      // Insert ledger
+      await client.query(
+        `INSERT INTO myby_coin_ledger (trainee_id, transaction_type, action, amount, currency, description)
+         VALUES ($1, 'redeemed', 'withdrawal', $2, $3, 'Vault Withdrawal')`,
+        [trainee_id, valAmount, currency]
+      );
+    } else {
+      // Action: deposit (add)
+      if (currency === 'MYBY') {
+        await client.query('UPDATE myby_coin SET myby_balance = myby_balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [valAmount, trainee_id]);
+      } else {
+        await client.query('UPDATE myby_coin SET gp_balance = gp_balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [valAmount, trainee_id]);
+      }
+
+      // Insert ledger
+      await client.query(
+        `INSERT INTO myby_coin_ledger (trainee_id, transaction_type, action, amount, currency, description)
+         VALUES ($1, 'earned', 'deposit', $2, $3, 'Vault Deposit')`,
+        [trainee_id, valAmount, currency]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({
+      success: true,
+      message: `Berhasil melakukan ${action_type} sebesar ${valAmount} ${currency}.`
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[Dashboard API] POST Vault Action Error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  } finally {
+    client.release();
+  }
+});
+
+// 15. GET /dashboard/myby-coin/rewards — Get Rewards Shop list
+router.get('/myby-coin/rewards', async (req, res) => {
+  try {
+    const result = await db.query('SELECT id, reward_name, description, cost, currency, stock FROM rewards_shop ORDER BY id ASC');
+    res.json({
+      success: true,
+      rewards: result.rows
+    });
+  } catch (err) {
+    console.error('[Dashboard API] GET Rewards Shop Error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+// 16. POST /dashboard/myby-coin/rewards/claim — Claim reward
+router.post('/myby-coin/rewards/claim', async (req, res) => {
+  const { trainee_id, reward_id } = req.body;
+
+  if (!trainee_id || !reward_id) {
+    return res.status(400).json({ success: false, message: 'Parameter trainee_id dan reward_id diperlukan.' });
+  }
+
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // 1. Verify reward exists and has stock
+    const rewardRes = await client.query('SELECT id, reward_name, cost, currency, stock FROM rewards_shop WHERE id = $1', [reward_id]);
+    if (rewardRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Item hadiah tidak ditemukan.' });
+    }
+
+    const reward = rewardRes.rows[0];
+    if (reward.stock <= 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'Stok item hadiah ini sudah habis.' });
+    }
+
+    // 2. Verify wallet exists and has sufficient balance
+    const walletRes = await client.query('SELECT myby_balance, gp_balance FROM myby_coin WHERE id = $1', [trainee_id]);
+    if (walletRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Dompet trainee tidak ditemukan.' });
+    }
+
+    const wallet = walletRes.rows[0];
+    const userBalance = reward.currency === 'MYBY' ? wallet.myby_balance : wallet.gp_balance;
+
+    if (userBalance < reward.cost) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: `Saldo ${reward.currency} tidak mencukupi untuk mengklaim hadiah ini.` });
+    }
+
+    // 3. Deduct balance
+    if (reward.currency === 'MYBY') {
+      await client.query('UPDATE myby_coin SET myby_balance = myby_balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [reward.cost, trainee_id]);
+    } else {
+      await client.query('UPDATE myby_coin SET gp_balance = gp_balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [reward.cost, trainee_id]);
+    }
+
+    // 4. Deduct reward stock
+    await client.query('UPDATE rewards_shop SET stock = stock - 1 WHERE id = $1', [reward_id]);
+
+    // 5. Insert ledger
+    await client.query(
+      `INSERT INTO myby_coin_ledger (trainee_id, transaction_type, action, amount, currency, description)
+       VALUES ($1, 'redeemed', 'reward_claim', $2, $3, $4)`,
+      [trainee_id, reward.cost, reward.currency, `Klaim hadiah: ${reward.reward_name}`]
+    );
+
+    await client.query('COMMIT');
+    res.json({
+      success: true,
+      message: `Berhasil mengklaim hadiah "${reward.reward_name}".`,
+      claimed_item: reward.reward_name,
+      cost: reward.cost,
+      currency: reward.currency
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[Dashboard API] POST Claim Reward Error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  } finally {
+    client.release();
+  }
+});
+
+// 17. GET /dashboard/myby-coin/ledger/:trainee_id — View Transaction Ledger
+router.get('/myby-coin/ledger/:trainee_id', async (req, res) => {
+  const { trainee_id } = req.params;
+  const { type } = req.query; // 'all', 'earned', 'redeemed'
+
+  try {
+    let query = 'SELECT id, transaction_type, action, amount, currency, description, created_at FROM myby_coin_ledger WHERE trainee_id = $1';
+    const params = [trainee_id];
+
+    if (type === 'earned' || type === 'redeemed') {
+      query += ' AND transaction_type = $2';
+      params.push(type);
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const result = await db.query(query, params);
+
+    res.json({
+      success: true,
+      ledger: result.rows
+    });
+  } catch (err) {
+    console.error('[Dashboard API] GET Ledger Error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+// 18. POST /dashboard/myby-coin/transfer — Transfer Gold Point to Trainer
+router.post('/myby-coin/transfer', async (req, res) => {
+  const { created_by, trainer_id, trainer_name, amount_gold_point } = req.body;
+
+  if (!created_by || !trainer_id || !trainer_name || amount_gold_point === undefined) {
+    return res.status(400).json({ success: false, message: 'Parameter created_by, trainer_id, trainer_name, dan amount_gold_point diperlukan.' });
+  }
+
+  const gpAmount = parseInt(amount_gold_point, 10);
+  if (isNaN(gpAmount) || gpAmount <= 0) {
+    return res.status(400).json({ success: false, message: 'Jumlah Gold Point harus berupa angka positif.' });
+  }
+
+  const transferId = require('crypto').randomUUID();
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // 1. Verify sender wallet exists and check balance
+    const walletRes = await client.query('SELECT gp_balance FROM myby_coin WHERE id = $1', [created_by]);
+    if (walletRes.rows.length === 0) {
+      // Insert failed transaction into ledger & transfer log
+      await client.query(
+        `INSERT INTO myby_coin_transfer (transfer_id, trainer_id, trainer_name, amount_gold_point, status, created_by)
+         VALUES ($1, $2, $3, $4, 'Failed', $5)`,
+        [transferId, trainer_id, trainer_name, gpAmount, created_by]
+      );
+      await client.query('COMMIT');
+      return res.status(404).json({ success: false, message: 'Dompet pengirim tidak ditemukan.' });
+    }
+
+    const currentGp = walletRes.rows[0].gp_balance;
+    if (currentGp < gpAmount) {
+      // Insert failed transaction
+      await client.query(
+        `INSERT INTO myby_coin_transfer (transfer_id, trainer_id, trainer_name, amount_gold_point, status, created_by)
+         VALUES ($1, $2, $3, $4, 'Failed', $5)`,
+        [transferId, trainer_id, trainer_name, gpAmount, created_by]
+      );
+      await client.query('COMMIT');
+      return res.status(400).json({ success: false, message: 'Saldo Gold Point (GP) tidak mencukupi untuk transfer.' });
+    }
+
+    // 2. Deduct sender balance
+    await client.query(
+      'UPDATE myby_coin SET gp_balance = gp_balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [gpAmount, created_by]
+    );
+
+    // 3. Save transfer transaction as Success
+    await client.query(
+      `INSERT INTO myby_coin_transfer (transfer_id, trainer_id, trainer_name, amount_gold_point, status, created_by)
+       VALUES ($1, $2, $3, $4, 'Success', $5)`,
+      [transferId, trainer_id, trainer_name, gpAmount, created_by]
+    );
+
+    // 4. Record to ledger
+    await client.query(
+      `INSERT INTO myby_coin_ledger (trainee_id, transaction_type, action, amount, currency, description)
+       VALUES ($1, 'redeemed', 'transfer', $2, 'GP', $3)`,
+      [created_by, gpAmount, `Transfer GP ke trainer ${trainer_name}`]
+    );
+
+    await client.query('COMMIT');
+    res.json({
+      success: true,
+      message: `Berhasil mentransfer ${gpAmount} GP ke trainer ${trainer_name}.`,
+      transfer_id: transferId,
+      status: 'Success'
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[Dashboard API] POST Transfer GP Error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  } finally {
+    client.release();
+  }
+});
+
 // 12. GET /dashboard/myby-coin/:trainee_id — Get trainee's MYBY Coin balance (autocreate wallet if it doesn't exist)
 router.get('/myby-coin/:trainee_id', async (req, res) => {
   const { trainee_id } = req.params;
