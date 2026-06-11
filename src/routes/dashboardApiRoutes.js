@@ -398,7 +398,7 @@ router.get('/myby-coin/:trainee_id', async (req, res) => {
   try {
     // 1. Verify that the trainee exists in the database
     const traineeResult = await db.query(
-      'SELECT id, trainee_name FROM dashboard_trainne WHERE id = $1',
+      'SELECT id, trainee_name, total_gold_periode FROM dashboard_trainne WHERE id = $1',
       [trainee_id]
     );
 
@@ -420,15 +420,16 @@ router.get('/myby-coin/:trainee_id', async (req, res) => {
     let walletData;
 
     if (coinResult.rows.length === 0) {
-      // 3. Wallet doesn't exist, create it (Welcome Bonus: 50 GP, 0 MYBY)
+      // 3. Wallet doesn't exist, create it (GP balance dari total_gold_periode, 0 MYBY)
+      const initialGp = traineeInfo.total_gold_periode ? parseInt(traineeInfo.total_gold_periode, 10) || 0 : 0;
       const insertResult = await db.query(
         `INSERT INTO myby_coin (id, trainee_name, myby_balance, gp_balance)
-         VALUES ($1, $2, 0, 50)
+         VALUES ($1, $2, 0, $3)
          RETURNING id, trainee_name, myby_balance, gp_balance, created_at, updated_at`,
-        [trainee_id, traineeInfo.trainee_name]
+        [trainee_id, traineeInfo.trainee_name, initialGp]
       );
       walletData = insertResult.rows[0];
-      console.log(`[MYBY Coin] Created wallet for trainee ${trainee_id} (${traineeInfo.trainee_name}) with 50 GP.`);
+      console.log(`[MYBY Coin] Created wallet for trainee ${trainee_id} (${traineeInfo.trainee_name}) with ${initialGp} GP.`);
     } else {
       walletData = coinResult.rows[0];
     }

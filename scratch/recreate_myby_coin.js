@@ -12,7 +12,7 @@ const db = require('../src/db/neonClient');
         id VARCHAR(50) PRIMARY KEY,
         trainee_name VARCHAR(255) NOT NULL,
         myby_balance INTEGER DEFAULT 0,
-        gp_balance INTEGER DEFAULT 50,
+        gp_balance INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );

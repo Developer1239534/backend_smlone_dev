@@ -65,8 +65,8 @@ const request = (method, path, body) => {
     if (resFirst.status !== 200 || !resFirst.body.success) {
       throw new Error('Failed to fetch/initialize wallet!');
     }
-    if (resFirst.body.data.gp_balance !== 50 || resFirst.body.data.myby_balance !== 0) {
-      throw new Error('Initial balance incorrect! Expected 50 GP and 0 MYBY.');
+    if (resFirst.body.data.gp_balance !== 120 || resFirst.body.data.myby_balance !== 0) {
+      throw new Error('Initial balance incorrect! Expected 120 GP and 0 MYBY.');
     }
     if (resFirst.body.data.trainee_name !== 'Delmond Osyan Sudilan') {
       throw new Error('Incorrect trainee name returned!');
