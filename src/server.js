@@ -72,8 +72,7 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
         myby_balance INTEGER DEFAULT 0,
         gp_balance INTEGER DEFAULT 50,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT myby_coin_trainee_id FOREIGN KEY (trainee_id) REFERENCES dashboard_trainne(id) ON DELETE CASCADE
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     console.log('✅ Database schema verified!');
