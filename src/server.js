@@ -76,21 +76,53 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
       );
     `);
 
-    // Create myby_coin_ledger table
+    // Recreate myby_coin_ledger table with new columns
+    await db.query('DROP TABLE IF EXISTS myby_coin_ledger CASCADE');
     await db.query(`
       CREATE TABLE IF NOT EXISTS myby_coin_ledger (
-        id SERIAL PRIMARY KEY,
-        trainee_id VARCHAR(50) NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
-        transaction_type VARCHAR(20) NOT NULL,
-        action VARCHAR(50) NOT NULL,
-        amount INTEGER NOT NULL CHECK (amount > 0),
-        currency VARCHAR(10) NOT NULL,
+        ledger_id VARCHAR(50) PRIMARY KEY,
+        transaction_id VARCHAR(50) NOT NULL,
+        trainer_id VARCHAR(50) NOT NULL,
+        trainer_name VARCHAR(255) NOT NULL,
+        transaction_type VARCHAR(50) NOT NULL,
+        amount_gold_point INTEGER NOT NULL CHECK (amount_gold_point >= 0),
+        transaction_direction VARCHAR(20) NOT NULL,
         description TEXT,
+        status VARCHAR(20) NOT NULL,
+        transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
-    // Create rewards_shop table
+    // Create myby_coin_shop table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS myby_coin_shop (
+        product_id VARCHAR(50) PRIMARY KEY,
+        product_name VARCHAR(255) NOT NULL,
+        product_description TEXT,
+        product_image VARCHAR(255),
+        gold_point_price INTEGER NOT NULL CHECK (gold_point_price >= 0),
+        stock INTEGER DEFAULT 99 CHECK (stock >= 0),
+        status VARCHAR(20) DEFAULT 'Active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create myby_coin_shop_transaction table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS myby_coin_shop_transaction (
+        transaction_id VARCHAR(50) PRIMARY KEY,
+        trainer_id VARCHAR(50) NOT NULL,
+        trainer_name VARCHAR(255) NOT NULL,
+        product_id VARCHAR(50) NOT NULL REFERENCES myby_coin_shop(product_id) ON DELETE CASCADE,
+        product_name VARCHAR(255) NOT NULL,
+        amount_gold_point INTEGER NOT NULL CHECK (amount_gold_point >= 0),
+        status VARCHAR(20) NOT NULL,
+        transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create rewards_shop table (keep for backward compatibility)
     await db.query(`
       CREATE TABLE IF NOT EXISTS rewards_shop (
         id SERIAL PRIMARY KEY,
@@ -143,6 +175,19 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
         ('Exclusive SMLONE T-Shirt', 'Kaos eksklusif edisi terbatas dari SMLONE Academy.', 10, 'GP', 25)
       `);
       console.log('🌱 Seeding completed!');
+    }
+
+    // Seed data for myby_coin_shop
+    const coinShopCheck = await db.query('SELECT COUNT(*) FROM myby_coin_shop');
+    if (parseInt(coinShopCheck.rows[0].count, 10) === 0) {
+      console.log('🌱 Seeding myby_coin_shop table...');
+      await db.query(`
+        INSERT INTO myby_coin_shop (product_id, product_name, product_description, gold_point_price, stock, status) VALUES
+        ('P-01', 'Exclusive SMLONE Hoodie', 'Hoodie berkualitas premium dari SMLONE Academy.', 15, 50, 'Active'),
+        ('P-02', 'SMLONE Canvas Tote Bag', 'Tote bag ramah lingkungan untuk menemani belajar.', 5, 100, 'Active'),
+        ('P-03', 'Professional Certificate Frame', 'Bingkai sertifikat kayu kokoh untuk memajang prestasimu.', 8, 30, 'Active')
+      `);
+      console.log('🌱 Seeding myby_coin_shop completed!');
     }
 
     console.log('✅ Database schema verified!');
