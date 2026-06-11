@@ -12,6 +12,7 @@ const studentRoutes = require('./routes/studentRoutes');
 const adminTraineesRoutes = require('./routes/adminTraineesRoutes');
 const adminAwardsRoutes = require('./routes/adminAwardsRoutes');
 const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
+const userMyByRoutes = require('./routes/userMyByRoutes');
 
 // Auto DB migration for new columns
 (async () => {
@@ -86,6 +87,7 @@ app.use('/api/quiz', quizRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/user', userMyByRoutes);
 
 // Custom Dashboard & Contact Endpoints
 app.use('/api/dashboard', dashboardApiRoutes);

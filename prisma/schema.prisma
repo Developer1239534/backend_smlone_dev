@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model awards {
+  id           Int       @id @default(autoincrement())
+  award_type   String    @db.VarChar(20)
+  award_name   String    @db.VarChar(100)
+  category     String    @db.VarChar(20)
+  medal        String    @db.VarChar(10)
+  trainee_id   String    @default("") @db.VarChar(50)
+  trainee_name String    @db.VarChar(255)
+  score        Int?      @default(0)
+  threshold    Int?      @default(0)
+  period       String?   @default("jun-2026") @db.VarChar(20)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+
+  @@unique([award_name, category, trainee_id, period])
+}
+
+model dashboard_trainne {
+  id                         String  @id @db.VarChar(50)
+  trainee_name               String  @db.VarChar(255)
+  status                     String? @db.VarChar(100)
+  program                    String? @db.VarChar(255)
+  class                      String? @db.VarChar(255)
+  level                      String? @db.VarChar(255)
+  membership_expiry          String? @db.VarChar(255)
+  last_speaking_project      String? @db.VarChar(255)
+  progress_ke_next_level     String? @db.VarChar(255)
+  highlight_terbaru          String?
+  pengumuman                 String?
+  weekly_report              String?
+  quarterly_report           String?
+  referral_code              String? @db.VarChar(255)
+  gold_rank                  String?
+  progress_video             String?
+  laporan_sebelumnya         String?
+  laporan_quarter_sebelumnya String?
+  completed_speaking_project String?
+  password                   String? @db.VarChar(255)
+  phone                      String? @db.VarChar(50)
+  profile_picture            String? @db.VarChar(500)
+  tanggal_lahir              String? @db.VarChar(50)
+  plain_password             String? @db.VarChar(255)
+  tautan_tambahan            String? @db.VarChar(500)
+  laporan_terkini            String? @db.VarChar(500)
+  cabang                     String? @db.VarChar(100)
+  house_sml                  String? @db.VarChar(255)
+  total_gold_periode         String? @db.VarChar(50)
+  junior_youth               String? @db.VarChar(50)
+  rank_id_junior             String? @db.VarChar(50)
+  rank_id_youth              String? @db.VarChar(50)
+  rank_id_junior_timor       String? @db.VarChar(50)
+  rank_id_youth_timor        String? @db.VarChar(50)
+  rank_id_junior_tritura     String? @db.VarChar(50)
+  rank_id_youth_tritura      String? @db.VarChar(50)
+  rank_id_junior_cemara      String? @db.VarChar(50)
+  rank_id_youth_cemara       String? @db.VarChar(50)
+}
+
+model houses {
+  id          String  @id @db.VarChar(50)
+  name        String  @db.VarChar(100)
+  description String?
+  core_value  String? @db.VarChar(100)
+}
+
+model questions {
+  id            Int    @id @default(autoincrement())
+  question_text String
+  option_a      String
+  option_b      String
+  option_c      String
+  option_d      String
+  option_e      String
+}
+
+model quiz_history {
+  student_id     String    @id @db.VarChar(50)
+  assigned_house String    @db.VarChar(50)
+  scores         Json
+  submitted_at   DateTime? @default(now()) @db.Timestamp(6)
+}
