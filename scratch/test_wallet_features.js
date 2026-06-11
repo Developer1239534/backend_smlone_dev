@@ -41,6 +41,7 @@ const request = (method, path, body) => {
     console.log('🧹 Preparing clean test database state for trainee 858...');
     await db.query('DELETE FROM myby_coin_ledger WHERE trainee_id = $1', [traineeId]);
     await db.query('DELETE FROM myby_coin_transfer WHERE created_by = $1', [traineeId]);
+    await db.query('DELETE FROM myby_coin_deposit WHERE trainee_id = $1', [traineeId]);
     await db.query('DELETE FROM myby_coin WHERE id = $1', [traineeId]);
     console.log('✅ Clean up completed.\n');
 
@@ -194,6 +195,50 @@ const request = (method, path, body) => {
     }
 
     console.log('✅ Validasi Ledger berhasil.\n');
+
+    // 10. Tes Deposit GP dari Trainer ke Trainee
+    console.log('9. Testing POST /api/dashboard/myby-coin/deposit (Deposit 10 GP from trainer)...');
+    const depGpRes = await request('POST', '/api/dashboard/myby-coin/deposit', {
+      trainee_id: traineeId,
+      trainer_id: 'T-02',
+      trainer_name: 'Trainer Charles',
+      amount_gold_point: 10,
+      deposit_method: 'Transfer Bank'
+    });
+    console.log('Deposit GP Status:', depGpRes.status);
+    console.log('Deposit GP Result:', JSON.stringify(depGpRes.body, null, 2));
+    if (depGpRes.body.status !== 'Success' || !depGpRes.body.notification_sent) {
+      throw new Error('Gagal memproses deposit GP!');
+    }
+    const depositId = depGpRes.body.deposit_id;
+
+    // Verifikasi saldo dompet setelah deposit GP
+    const balanceRes = await request('GET', `/api/dashboard/myby-coin/wallet/balance/${traineeId}`);
+    console.log('Wallet Balance Setelah Deposit GP:', JSON.stringify(balanceRes.body.balance, null, 2));
+    // Sisa saldo GP sebelumnya adalah 118, ditambah 10 GP harusnya menjadi 128
+    if (balanceRes.body.balance.gp_balance !== 128) {
+      throw new Error(`Saldo GP tidak bertambah dengan benar setelah deposit! Didapat: ${balanceRes.body.balance.gp_balance}, diharapkan 128.`);
+    }
+
+    // 11. Tes Deposit History
+    console.log('10. Testing GET /api/dashboard/myby-coin/deposit/history?trainee_id=858...');
+    const depHistoryRes = await request('GET', `/api/dashboard/myby-coin/deposit/history?trainee_id=${traineeId}`);
+    console.log('Deposit History Status:', depHistoryRes.status);
+    console.log('Jumlah Riwayat Deposit:', depHistoryRes.body.deposits.length);
+    if (depHistoryRes.body.deposits.length !== 1 || depHistoryRes.body.deposits[0].deposit_id !== depositId) {
+      throw new Error('Catatan riwayat deposit tidak cocok!');
+    }
+
+    // 12. Tes Deposit Detail
+    console.log(`11. Testing GET /api/dashboard/myby-coin/deposit/detail/${depositId}...`);
+    const depDetailRes = await request('GET', `/api/dashboard/myby-coin/deposit/detail/${depositId}`);
+    console.log('Deposit Detail Status:', depDetailRes.status);
+    console.log('Deposit Detail Data:', JSON.stringify(depDetailRes.body.deposit, null, 2));
+    if (depDetailRes.body.deposit.amount_gold_point !== 10 || depDetailRes.body.deposit.deposit_method !== 'Transfer Bank') {
+      throw new Error('Data detail transaksi deposit tidak cocok!');
+    }
+    console.log('✅ Pengujian Fitur Deposit GP Sukses.\n');
+
     console.log('🎉🎉🎉 ALL WALLET INTEGRATION TESTS PASSED SUCCESSFULLY! 🎉🎉🎉');
 
   } catch (err) {

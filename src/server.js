@@ -117,6 +117,21 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
       );
     `);
 
+    // Create myby_coin_deposit table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS myby_coin_deposit (
+        deposit_id VARCHAR(50) PRIMARY KEY,
+        trainer_id VARCHAR(50) NOT NULL,
+        trainer_name VARCHAR(255) NOT NULL,
+        trainee_id VARCHAR(50) NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
+        amount_gold_point INTEGER NOT NULL CHECK (amount_gold_point > 0),
+        deposit_method VARCHAR(100) NOT NULL,
+        status VARCHAR(20) NOT NULL,
+        deposit_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Seed data for rewards_shop
     const shopCheck = await db.query('SELECT COUNT(*) FROM rewards_shop');
     if (parseInt(shopCheck.rows[0].count, 10) === 0) {
