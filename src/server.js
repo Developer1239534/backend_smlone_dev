@@ -11,6 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const adminTraineesRoutes = require('./routes/adminTraineesRoutes');
 const adminAwardsRoutes = require('./routes/adminAwardsRoutes');
+const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
 
 // Auto DB migration for new columns
 (async () => {
@@ -97,6 +98,8 @@ app.use('/api/admin/trainees', adminTraineesRoutes);
 app.use('/admin/trainees', adminTraineesRoutes);
 app.use('/api/admin/awards', adminAwardsRoutes);
 app.use('/admin/awards', adminAwardsRoutes);
+app.use('/api/admin/quiz-history', adminQuizHistoryRoutes);
+app.use('/admin/quiz-history', adminQuizHistoryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);
 
