@@ -68,11 +68,12 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
     await db.query(`
       CREATE TABLE IF NOT EXISTS myby_coin (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        trainee_id VARCHAR(50) UNIQUE NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
+        trainee_id VARCHAR(50) UNIQUE NOT NULL,
         myby_balance INTEGER DEFAULT 0,
         gp_balance INTEGER DEFAULT 50,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT myby_coin_trainee_id FOREIGN KEY (trainee_id) REFERENCES dashboard_trainne(id) ON DELETE CASCADE
       );
     `);
     console.log('✅ Database schema verified!');
