@@ -19,8 +19,13 @@ const buildUpdateQuery = (table, fields, id) => {
 // Helper: format trainee data for admin response (include plain_password, exclude hashed password)
 const formatForAdmin = (row) => {
   const { password, ...rest } = row;
+  let classValue = row.class;
+  if (typeof classValue === 'string') {
+    classValue = classValue.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+  }
   return {
     ...rest,
+    class: classValue,
     plain_password: row.plain_password || null
   };
 };
@@ -91,8 +96,13 @@ router.post('/', async (req, res) => {
       ) RETURNING *;
     `;
 
+    let classValue = data.class || null;
+    if (typeof classValue === 'string') {
+      classValue = classValue.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+    }
+
     const values = [
-      data.id, data.trainee_name, data.status || 'Active', data.program || null, data.class || null,
+      data.id, data.trainee_name, data.status || 'Active', data.program || null, classValue,
       data.level || null, data.membership_expiry || null,
       data.last_speaking_project || null, data.progress_ke_next_level || null,
       data.highlight_terbaru || null, data.pengumuman || null, data.weekly_report || null,
@@ -161,11 +171,16 @@ router.put('/:id', async (req, res) => {
       WHERE id = $36 RETURNING *;
     `;
 
+    let classValue = data.class !== undefined ? data.class : current.class;
+    if (typeof classValue === 'string') {
+      classValue = classValue.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+    }
+
     const values = [
       data.trainee_name, 
       data.status !== undefined ? data.status : current.status,
       data.program !== undefined ? data.program : current.program,
-      data.class !== undefined ? data.class : current.class,
+      classValue,
       data.level !== undefined ? data.level : current.level,
       data.membership_expiry !== undefined ? data.membership_expiry : current.membership_expiry,
       data.last_speaking_project !== undefined ? data.last_speaking_project : current.last_speaking_project,
@@ -216,6 +231,10 @@ router.patch('/:id', async (req, res) => {
   // Prevent changing ID through PATCH
   delete updates.id;
   delete updates.hubungi_kami;
+
+  if (updates.class && typeof updates.class === 'string') {
+    updates.class = updates.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+  }
 
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({ success: false, message: 'No fields provided to update.' });

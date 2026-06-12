@@ -8,10 +8,16 @@ router.get('/', async (req, res) => {
     const result = await db.query(
       `SELECT * FROM dashboard_trainne ORDER BY id ASC`
     );
+    const sanitizedRows = result.rows.map(row => {
+      if (typeof row.class === 'string') {
+        row.class = row.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+      }
+      return row;
+    });
     res.json({
       success: true,
-      count: result.rows.length,
-      data: result.rows
+      count: sanitizedRows.length,
+      data: sanitizedRows
     });
   } catch (err) {
     console.error('[Dashboard] Fetch all error:', err.message);
@@ -30,9 +36,13 @@ router.get('/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Trainee not found.' });
     }
+    const trainee = result.rows[0];
+    if (typeof trainee.class === 'string') {
+      trainee.class = trainee.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+    }
     res.json({
       success: true,
-      data: result.rows[0]
+      data: trainee
     });
   } catch (err) {
     console.error('[Dashboard] Fetch single error:', err.message);

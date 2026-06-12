@@ -32,7 +32,7 @@ router.get('/profile/:id', async (req, res) => {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
       program: trainee.program,
-      class: trainee.class,
+      class: trainee.class ? trainee.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim() : trainee.class,
       level: trainee.level,
       membership_expiry: trainee.membership_expiry,
       profile_picture: trainee.profile_picture,
@@ -379,6 +379,9 @@ router.get('/awards/:trainee_id', async (req, res) => {
     );
 
     const traineeInfo = traineeResult.rows.length > 0 ? traineeResult.rows[0] : null;
+    if (traineeInfo && typeof traineeInfo.class === 'string') {
+      traineeInfo.class = traineeInfo.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+    }
 
     res.json({
       success: true,
