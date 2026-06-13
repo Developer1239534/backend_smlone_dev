@@ -84,12 +84,12 @@ router.post('/', async (req, res) => {
         referral_code, gold_rank, progress_video, password, plain_password,
         phone, profile_picture, tanggal_lahir, cabang, house_sml, junior_youth,
         gender, school, first_enroll, house_role, class_branch, newest_grade,
-        screening_test, draft_grade, prev_grade, ss_hub, last_life_project_date,
+        screening_test, last_life_project_date,
         last_life_project, tautan_tambahan
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
         $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-        $31, $32, $33, $34
+        $31
       ) RETURNING *;
     `;
 
@@ -108,7 +108,6 @@ router.post('/', async (req, res) => {
       data.house_sml || null, data.junior_youth || null, data.gender || null,
       data.school || null, data.first_enroll || null, data.house_role || null,
       data.class_branch || null, data.newest_grade || null, data.screening_test || null,
-      data.draft_grade || null, data.prev_grade || null, data.ss_hub || null,
       data.last_life_project_date || null, data.last_life_project || null,
       data.tautan_tambahan || null
     ];
@@ -159,9 +158,8 @@ router.put('/:id', async (req, res) => {
         phone = $15, profile_picture = $16, tanggal_lahir = $17, cabang = $18,
         house_sml = $19, junior_youth = $20, gender = $21, school = $22,
         first_enroll = $23, house_role = $24, class_branch = $25, newest_grade = $26,
-        screening_test = $27, draft_grade = $28, prev_grade = $29, ss_hub = $30,
-        last_life_project_date = $31, last_life_project = $32, tautan_tambahan = $33
-      WHERE id = $34 RETURNING *;
+        screening_test = $27, last_life_project_date = $28, last_life_project = $29, tautan_tambahan = $30
+      WHERE id = $31 RETURNING *;
     `;
 
     let classValue = data.class !== undefined ? data.class : current.class;
@@ -197,9 +195,6 @@ router.put('/:id', async (req, res) => {
       data.class_branch !== undefined ? data.class_branch : current.class_branch,
       data.newest_grade !== undefined ? data.newest_grade : current.newest_grade,
       data.screening_test !== undefined ? data.screening_test : current.screening_test,
-      data.draft_grade !== undefined ? data.draft_grade : current.draft_grade,
-      data.prev_grade !== undefined ? data.prev_grade : current.prev_grade,
-      data.ss_hub !== undefined ? data.ss_hub : current.ss_hub,
       data.last_life_project_date !== undefined ? data.last_life_project_date : current.last_life_project_date,
       data.last_life_project !== undefined ? data.last_life_project : current.last_life_project,
       data.tautan_tambahan !== undefined ? data.tautan_tambahan : current.tautan_tambahan,

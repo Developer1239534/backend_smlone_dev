@@ -6,7 +6,7 @@ const allowedColumns = [
   'id', 'trainee_name', 'gender', 'tanggal_lahir', 'school', 'program', 'status',
   'membership_expiry', 'cabang', 'first_enroll', 'class', 'house_sml', 'level',
   'house_role', 'class_branch', 'newest_grade', 'tautan_tambahan', 'screening_test',
-  'draft_grade', 'prev_grade', 'junior_youth', 'ss_hub', 'weekly_report',
+  'junior_youth', 'weekly_report',
   'last_speaking_project', 'progress_ke_next_level', 'last_life_project_date',
   'last_life_project', 'referral_code', 'progress_video', 'gold_rank',
   'password', 'plain_password', 'profile_picture', 'phone'
@@ -41,9 +41,9 @@ async function dropExtraColumns() {
 async function syncData() {
   try {
     await dropExtraColumns();
-    console.log('✅ Dropped extra columns');
+    console.log('✅ Dropped extra columns (ss_hub, draft_grade, prev_grade)');
 
-    const rawDataPath = 'C:\\Users\\ASUS ROG\\.gemini\\antigravity\\brain\\faa8c175-a20d-47af-af0e-98a66846f5d4\\raw_data_new.txt';
+    const rawDataPath = 'C:\\Users\\ASUS ROG\\.gemini\\antigravity\\brain\\faa8c175-a20d-47af-af0e-98a66846f5d4\\raw_data_newest.txt';
     const content = fs.readFileSync(rawDataPath, 'utf-8');
     const lines = content.split(/\r?\n/);
 
@@ -89,10 +89,10 @@ async function syncData() {
         newest_grade: cols[15],
         tautan_tambahan: cols[16],
         screening_test: cols[17],
-        draft_grade: cols[18],
-        prev_grade: cols[19],
+        // cols[18] is draft_grade
+        // cols[19] is prev_grade
         junior_youth: cols[20],
-        ss_hub: cols[21],
+        // cols[21] is ss_hub
         weekly_report: cols[22],
         last_speaking_project: cols[23],
         progress_ke_next_level: cols[24],
@@ -105,7 +105,7 @@ async function syncData() {
       idsSet.add(id);
     }
 
-    console.log(`📋 Parsed ${trainees.length} trainees from new data.`);
+    console.log(`📋 Parsed ${trainees.length} trainees from newest data.`);
 
     // Delete trainees not in new data
     console.log('🗑️ Deleting trainees not in the parsed list...');
@@ -139,17 +139,17 @@ async function syncData() {
           INSERT INTO dashboard_trainne (
             id, trainee_name, gender, tanggal_lahir, school, program, status, membership_expiry,
             cabang, first_enroll, class, house_sml, level, house_role, class_branch, newest_grade,
-            tautan_tambahan, screening_test, draft_grade, prev_grade, junior_youth, ss_hub,
+            tautan_tambahan, screening_test, junior_youth,
             weekly_report, last_speaking_project, progress_ke_next_level, last_life_project_date,
             last_life_project, referral_code, progress_video, gold_rank, password, plain_password
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-            $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19,
+            $20, $21, $22, $23, $24, $25, $26, $27, $28, $29
           )
         `, [
           t.id, t.name, t.gender, t.tanggal_lahir, t.school, t.program, t.status, t.membership_expiry,
           t.cabang, t.first_enroll, t.class, t.house_sml, t.level, t.house_role, t.class_branch, t.newest_grade,
-          t.tautan_tambahan, t.screening_test, t.draft_grade, t.prev_grade, t.junior_youth, t.ss_hub,
+          t.tautan_tambahan, t.screening_test, t.junior_youth,
           t.weekly_report, t.last_speaking_project, t.progress_ke_next_level, t.last_life_project_date,
           t.last_life_project, t.referral_code, t.progress_video, t.gold_rank, hashedPasswordToUse, passwordToUse
         ]);
@@ -160,14 +160,14 @@ async function syncData() {
           UPDATE dashboard_trainne SET
             trainee_name=$1, gender=$2, tanggal_lahir=$3, school=$4, program=$5, status=$6, membership_expiry=$7,
             cabang=$8, first_enroll=$9, class=$10, house_sml=$11, level=$12, house_role=$13, class_branch=$14, newest_grade=$15,
-            tautan_tambahan=$16, screening_test=$17, draft_grade=$18, prev_grade=$19, junior_youth=$20, ss_hub=$21,
-            weekly_report=$22, last_speaking_project=$23, progress_ke_next_level=$24, last_life_project_date=$25,
-            last_life_project=$26, referral_code=$27, progress_video=$28, gold_rank=$29
-          WHERE id = $30
+            tautan_tambahan=$16, screening_test=$17, junior_youth=$18,
+            weekly_report=$19, last_speaking_project=$20, progress_ke_next_level=$21, last_life_project_date=$22,
+            last_life_project=$23, referral_code=$24, progress_video=$25, gold_rank=$26
+          WHERE id = $27
         `, [
           t.name, t.gender, t.tanggal_lahir, t.school, t.program, t.status, t.membership_expiry,
           t.cabang, t.first_enroll, t.class, t.house_sml, t.level, t.house_role, t.class_branch, t.newest_grade,
-          t.tautan_tambahan, t.screening_test, t.draft_grade, t.prev_grade, t.junior_youth, t.ss_hub,
+          t.tautan_tambahan, t.screening_test, t.junior_youth,
           t.weekly_report, t.last_speaking_project, t.progress_ke_next_level, t.last_life_project_date,
           t.last_life_project, t.referral_code, t.progress_video, t.gold_rank, t.id
         ]);
