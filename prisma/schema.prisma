@@ -24,39 +24,44 @@ model awards {
 }
 
 model dashboard_trainne {
-  id                     String               @id @db.VarChar(50)
-  trainee_name           String               @db.VarChar(255)
-  status                 String?              @db.VarChar(100)
-  program                String?              @db.VarChar(255)
-  class                  String?              @db.VarChar(255)
-  level                  String?              @db.VarChar(255)
-  membership_expiry      String?              @db.VarChar(255)
-  last_speaking_project  String?              @db.VarChar(255)
-  progress_ke_next_level String?              @db.VarChar(255)
-  weekly_report          String?
-  referral_code          String?              @db.VarChar(255)
-  gold_rank              String?
-  progress_video         String?
-  password               String?              @db.VarChar(255)
-  phone                  String?              @db.VarChar(50)
-  profile_picture        String?              @db.VarChar(500)
-  tanggal_lahir          String?              @db.VarChar(50)
-  plain_password         String?              @db.VarChar(255)
-  tautan_tambahan        String?              @db.VarChar(500)
-  cabang                 String?              @db.VarChar(100)
-  house_sml              String?              @db.VarChar(255)
-  junior_youth           String?              @db.VarChar(50)
-  gender                 String?
-  school                 String?
-  first_enroll           String?
-  house_role             String?
-  class_branch           String?
-  newest_grade           String?
-  screening_test         String?
-  last_life_project_date String?
-  last_life_project      String?
-  myby_coin_deposit      myby_coin_deposit[]
-  myby_coin_transfer     myby_coin_transfer[]
+  id                         String  @id @db.VarChar(50)
+  trainee_name               String  @db.VarChar(255)
+  status                     String? @db.VarChar(100)
+  program                    String? @db.VarChar(255)
+  class                      String? @db.VarChar(255)
+  level                      String? @db.VarChar(255)
+  membership_expiry          String? @db.VarChar(255)
+  last_speaking_project      String? @db.VarChar(255)
+  progress_ke_next_level     String? @db.VarChar(255)
+  highlight_terbaru          String?
+  pengumuman                 String?
+  weekly_report              String?
+  quarterly_report           String?
+  referral_code              String? @db.VarChar(255)
+  gold_rank                  String?
+  progress_video             String?
+  laporan_sebelumnya         String?
+  laporan_quarter_sebelumnya String?
+  completed_speaking_project String?
+  password                   String? @db.VarChar(255)
+  phone                      String? @db.VarChar(50)
+  profile_picture            String? @db.VarChar(500)
+  tanggal_lahir              String? @db.VarChar(50)
+  plain_password             String? @db.VarChar(255)
+  tautan_tambahan            String? @db.VarChar(500)
+  laporan_terkini            String? @db.VarChar(500)
+  cabang                     String? @db.VarChar(100)
+  house_sml                  String? @db.VarChar(255)
+  total_gold_periode         String? @db.VarChar(50)
+  junior_youth               String? @db.VarChar(50)
+  rank_id_junior             String? @db.VarChar(50)
+  rank_id_youth              String? @db.VarChar(50)
+  rank_id_junior_timor       String? @db.VarChar(50)
+  rank_id_youth_timor        String? @db.VarChar(50)
+  rank_id_junior_tritura     String? @db.VarChar(50)
+  rank_id_youth_tritura      String? @db.VarChar(50)
+  rank_id_junior_cemara      String? @db.VarChar(50)
+  rank_id_youth_cemara       String? @db.VarChar(50)
 }
 
 model houses {
@@ -81,92 +86,4 @@ model quiz_history {
   assigned_house String    @db.VarChar(50)
   scores         Json
   submitted_at   DateTime? @default(now()) @db.Timestamp(6)
-}
-
-model myby_coin {
-  id           String    @id @db.VarChar(50)
-  trainee_name String    @db.VarChar(255)
-  myby_balance Int?      @default(0)
-  gp_balance   Int?      @default(0)
-  created_at   DateTime? @default(now()) @db.Timestamp(6)
-  updated_at   DateTime? @default(now()) @db.Timestamp(6)
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model myby_coin_deposit {
-  deposit_id        String            @id @db.VarChar(50)
-  trainer_id        String            @db.VarChar(50)
-  trainer_name      String            @db.VarChar(255)
-  trainee_id        String            @db.VarChar(50)
-  amount_gold_point Int
-  deposit_method    String            @db.VarChar(100)
-  status            String            @db.VarChar(20)
-  deposit_date      DateTime?         @default(now()) @db.Timestamp(6)
-  created_at        DateTime?         @default(now()) @db.Timestamp(6)
-  dashboard_trainne dashboard_trainne @relation(fields: [trainee_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model myby_coin_ledger {
-  ledger_id             String    @id @db.VarChar(50)
-  transaction_id        String    @db.VarChar(50)
-  trainer_id            String    @db.VarChar(50)
-  trainer_name          String    @db.VarChar(255)
-  transaction_type      String    @db.VarChar(50)
-  amount_gold_point     Int
-  transaction_direction String    @db.VarChar(20)
-  description           String?
-  status                String    @db.VarChar(20)
-  transaction_date      DateTime? @default(now()) @db.Timestamp(6)
-  created_at            DateTime? @default(now()) @db.Timestamp(6)
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model myby_coin_shop {
-  product_id                 String                       @id @db.VarChar(50)
-  product_name               String                       @db.VarChar(255)
-  product_description        String?
-  product_image              String?                      @db.VarChar(255)
-  gold_point_price           Int
-  stock                      Int?                         @default(99)
-  status                     String?                      @default("Active") @db.VarChar(20)
-  created_at                 DateTime?                    @default(now()) @db.Timestamp(6)
-  myby_coin_shop_transaction myby_coin_shop_transaction[]
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model myby_coin_shop_transaction {
-  transaction_id    String         @id @db.VarChar(50)
-  trainer_id        String         @db.VarChar(50)
-  trainer_name      String         @db.VarChar(255)
-  product_id        String         @db.VarChar(50)
-  product_name      String         @db.VarChar(255)
-  amount_gold_point Int
-  status            String         @db.VarChar(20)
-  transaction_date  DateTime?      @default(now()) @db.Timestamp(6)
-  myby_coin_shop    myby_coin_shop @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model myby_coin_transfer {
-  transfer_id       String            @id @db.VarChar(50)
-  trainer_id        String            @db.VarChar(50)
-  trainer_name      String            @db.VarChar(255)
-  amount_gold_point Int
-  status            String            @db.VarChar(20)
-  transfer_date     DateTime?         @default(now()) @db.Timestamp(6)
-  created_by        String            @db.VarChar(50)
-  created_at        DateTime?         @default(now()) @db.Timestamp(6)
-  dashboard_trainne dashboard_trainne @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model rewards_shop {
-  id          Int       @id @default(autoincrement())
-  reward_name String    @db.VarChar(255)
-  description String?
-  cost        Int
-  currency    String?   @default("MYBY") @db.VarChar(10)
-  stock       Int?      @default(99)
-  created_at  DateTime? @default(now()) @db.Timestamp(6)
 }
