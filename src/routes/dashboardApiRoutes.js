@@ -21,6 +21,35 @@ async function getTraineeOrError(id, res) {
   }
 }
 
+// Helper to parse period string for sorting
+function parsePeriod(periodStr) {
+  if (!periodStr) return { year: 0, quarter: 0 };
+  const clean = periodStr.replace(/\s+/g, '').toLowerCase();
+  const yearMatch = clean.match(/\d{4}$/);
+  const year = yearMatch ? parseInt(yearMatch[0], 10) : 0;
+  
+  let quarter = 0;
+  if (clean.includes('jan') || clean.includes('mar')) {
+    quarter = 1;
+  } else if (clean.includes('apr') || clean.includes('jun')) {
+    quarter = 2;
+  } else if (clean.includes('jul') || clean.includes('sep')) {
+    quarter = 3;
+  } else if (clean.includes('oct') || clean.includes('dec')) {
+    quarter = 4;
+  }
+  return { year, quarter };
+}
+
+function comparePeriods(a, b) {
+  const pa = parsePeriod(a);
+  const pb = parsePeriod(b);
+  if (pa.year !== pb.year) {
+    return pb.year - pa.year;
+  }
+  return pb.quarter - pa.quarter;
+}
+
 // 1. GET /dashboard/profile/:id
 router.get('/profile/:id', async (req, res) => {
   const trainee = await getTraineeOrError(req.params.id, res);
@@ -171,15 +200,27 @@ router.get('/reports/:id', async (req, res) => {
   const trainee = await getTraineeOrError(req.params.id, res);
   if (!trainee) return;
 
-  res.json({
-    success: true,
-    data: {
-      id_trainee: trainee.id,
-      nama_trainee: trainee.trainee_name,
-      weekly_report: trainee.weekly_report,
-      quarterly_report: null
-    }
-  });
+  try {
+    const reportsResult = await db.query(
+      'SELECT periode, url FROM quarterly_report WHERE trainee_id = $1',
+      [trainee.id]
+    );
+    const sortedReports = reportsResult.rows.sort((a, b) => comparePeriods(a.periode, b.periode));
+
+    res.json({
+      success: true,
+      data: {
+        id_trainee: trainee.id,
+        nama_trainee: trainee.trainee_name,
+        weekly_report: trainee.weekly_report,
+        quarterly_report: sortedReports[0]?.url || null,
+        quarterly_reports: sortedReports
+      }
+    });
+  } catch (err) {
+    console.error(`[Dashboard API Error] GET /reports/${req.params.id}:`, err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
 });
 
 // 5. GET /dashboard/rankings/:id
@@ -229,15 +270,26 @@ router.get('/reports/previous/:id', async (req, res) => {
   const trainee = await getTraineeOrError(req.params.id, res);
   if (!trainee) return;
 
-  res.json({
-    success: true,
-    data: {
-      id_trainee: trainee.id,
-      nama_trainee: trainee.trainee_name,
-      laporan_sebelumnya: null,
-      laporan_quarter_sebelumnya: null
-    }
-  });
+  try {
+    const reportsResult = await db.query(
+      'SELECT periode, url FROM quarterly_report WHERE trainee_id = $1',
+      [trainee.id]
+    );
+    const sortedReports = reportsResult.rows.sort((a, b) => comparePeriods(a.periode, b.periode));
+
+    res.json({
+      success: true,
+      data: {
+        id_trainee: trainee.id,
+        nama_trainee: trainee.trainee_name,
+        laporan_sebelumnya: sortedReports[1]?.url || null,
+        laporan_quarter_sebelumnya: sortedReports[2]?.url || null
+      }
+    });
+  } catch (err) {
+    console.error(`[Dashboard API Error] GET /reports/previous/${req.params.id}:`, err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
 });
 
 // 8. GET /contact/:id (Can be accessed via /contact/:id or /dashboard/contact/:id)

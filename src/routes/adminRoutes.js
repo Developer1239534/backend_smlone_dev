@@ -172,14 +172,29 @@ router.post('/reports/weekly', async (req, res) => {
   }
 });
 
-/*
+function getCurrentPeriod() {
+  const date = new Date();
+  const month = date.getMonth(); // 0-indexed
+  const year = date.getFullYear();
+  if (month >= 0 && month <= 2) {
+    return `Jan-Mar ${year}`;
+  } else if (month >= 3 && month <= 5) {
+    return `Apr-Jun ${year}`;
+  } else if (month >= 6 && month <= 8) {
+    return `Jul-Sept ${year}`;
+  } else {
+    return `Oct-Dec ${year}`;
+  }
+}
+
 // 7. POST /admin/reports/quarterly - Upload Quarterly Report
 // Body: { id, quarterly_report } atau { studentId, quarterly_report }
 router.post('/reports/quarterly', async (req, res) => {
   const id = req.body.id || req.body.studentId;
-  const quarterly_report = req.body.quarterly_report || req.body.url;
+  const url = req.body.url || req.body.quarterly_report || req.body.link;
+  const periode = req.body.periode || req.body.period || getCurrentPeriod();
 
-  if (!id || quarterly_report === undefined) {
+  if (!id || url === undefined) {
     return res.status(400).json({ success: false, message: 'ID trainee dan quarterly_report / url wajib diisi.' });
   }
 
@@ -190,17 +205,20 @@ router.post('/reports/quarterly', async (req, res) => {
     }
 
     await db.query(
-      `UPDATE dashboard_trainne SET quarterly_report = $1 WHERE id = $2`,
-      [quarterly_report, id]
+      `INSERT INTO quarterly_report (trainee_id, periode, url)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (trainee_id, periode)
+       DO UPDATE SET url = EXCLUDED.url`,
+      [id, periode, url]
     );
 
-    res.json({ success: true, message: 'Quarterly Report berhasil diupload/diperbarui.', data: { id, quarterly_report } });
+    res.json({ success: true, message: 'Quarterly Report berhasil diupload/diperbarui.', data: { id, url, periode } });
   } catch (err) {
     console.error('[Admin] Upload Quarterly Report error:', err.message);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
-*/
+
 
 // 8. PATCH /admin/students/:id/progress - Update Progress Student
 // Body: { progress_video }

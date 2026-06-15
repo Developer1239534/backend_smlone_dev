@@ -36,6 +36,18 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_junior_cemara VARCHAR(50) DEFAULT NULL;');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_youth_cemara VARCHAR(50) DEFAULT NULL;');
     
+    // Create quarterly_report table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS quarterly_report (
+        id SERIAL PRIMARY KEY,
+        trainee_id VARCHAR(50) NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
+        periode VARCHAR(100) NOT NULL,
+        url TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(trainee_id, periode)
+      );
+    `);
+
     // Create quiz_history table
     await db.query(`
       CREATE TABLE IF NOT EXISTS quiz_history (
