@@ -50,6 +50,16 @@ function comparePeriods(a, b) {
   return pb.quarter - pa.quarter;
 }
 
+function parseRealStagePeriod(periodStr) {
+  if (!periodStr) return 0;
+  const match = periodStr.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+}
+
+function compareRealStagePeriods(a, b) {
+  return parseRealStagePeriod(b) - parseRealStagePeriod(a);
+}
+
 // 1. GET /dashboard/profile/:id
 router.get('/profile/:id', async (req, res) => {
   const trainee = await getTraineeOrError(req.params.id, res);
@@ -219,6 +229,33 @@ router.get('/reports/:id', async (req, res) => {
     });
   } catch (err) {
     console.error(`[Dashboard API Error] GET /reports/${req.params.id}:`, err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+// 4.5 GET /dashboard/reports/real-stage/:id
+router.get('/reports/real-stage/:id', async (req, res) => {
+  const trainee = await getTraineeOrError(req.params.id, res);
+  if (!trainee) return;
+
+  try {
+    const reportsResult = await db.query(
+      'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
+      [trainee.id]
+    );
+    const sortedReports = reportsResult.rows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
+
+    res.json({
+      success: true,
+      data: {
+        id_trainee: trainee.id,
+        nama_trainee: trainee.trainee_name,
+        real_stage: sortedReports[0]?.url || null,
+        real_stages: sortedReports
+      }
+    });
+  } catch (err) {
+    console.error(`[Dashboard API Error] GET /reports/real-stage/${req.params.id}:`, err.message);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });

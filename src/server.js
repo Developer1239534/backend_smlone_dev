@@ -48,6 +48,19 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
       );
     `);
 
+    // Create real_stage table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS real_stage (
+        id SERIAL PRIMARY KEY,
+        trainee_id VARCHAR(50) NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
+        periode VARCHAR(100) NOT NULL,
+        url TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(trainee_id, periode)
+      );
+    `);
+
+
     // Create quiz_history table
     await db.query(`
       CREATE TABLE IF NOT EXISTS quiz_history (

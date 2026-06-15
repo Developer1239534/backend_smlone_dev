@@ -219,6 +219,39 @@ router.post('/reports/quarterly', async (req, res) => {
   }
 });
 
+// 7.5 POST /admin/reports/real-stage - Upload Real Stage Report
+// Body: { id, real_stage_report } atau { studentId, real_stage_report }
+router.post('/reports/real-stage', async (req, res) => {
+  const id = req.body.id || req.body.studentId;
+  const url = req.body.url || req.body.real_stage_report || req.body.link;
+  const periode = req.body.periode || req.body.period;
+
+  if (!id || !periode) {
+    return res.status(400).json({ success: false, message: 'ID trainee dan periode Real Stage wajib diisi.' });
+  }
+
+  try {
+    const exists = await traineeExists(id);
+    if (!exists) {
+      return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
+    }
+
+    await db.query(
+      `INSERT INTO real_stage (trainee_id, periode, url)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (trainee_id, periode)
+       DO UPDATE SET url = EXCLUDED.url`,
+      [id, periode, url || null]
+    );
+
+    res.json({ success: true, message: 'Real Stage Report berhasil diupload/diperbarui.', data: { id, url, periode } });
+  } catch (err) {
+    console.error('[Admin] Upload Real Stage Report error:', err.message);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+
 
 // 8. PATCH /admin/students/:id/progress - Update Progress Student
 // Body: { progress_video }
