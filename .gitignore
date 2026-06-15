@@ -5,5 +5,4 @@ trainee_passwords.txt
 *.txt
 src/db/last_msg.txt
 src/db/untruncated_user_request.txt
-
-/src/generated/prisma
+.npm-cache/

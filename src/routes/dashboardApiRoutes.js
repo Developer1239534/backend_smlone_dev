@@ -144,7 +144,7 @@ router.get('/progress/:id', async (req, res) => {
     data: {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
-      progress_ke_next_level: trainee.progress_ke_next_level,
+      progress_ke_next_level: null,
       progress_video: trainee.progress_video
     }
   });
@@ -160,8 +160,8 @@ router.get('/highlights/:id', async (req, res) => {
     data: {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
-      highlight_terbaru: trainee.highlight_terbaru,
-      pengumuman: trainee.pengumuman
+      highlight_terbaru: null,
+      pengumuman: null
     }
   });
 });
@@ -177,7 +177,7 @@ router.get('/reports/:id', async (req, res) => {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
       weekly_report: trainee.weekly_report,
-      quarterly_report: trainee.quarterly_report
+      quarterly_report: null
     }
   });
 });
@@ -219,7 +219,7 @@ router.get('/speaking-projects/:id', async (req, res) => {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
       last_speaking_project: trainee.last_speaking_project,
-      completed_speaking_project: trainee.completed_speaking_project
+      completed_speaking_project: null
     }
   });
 });
@@ -234,8 +234,8 @@ router.get('/reports/previous/:id', async (req, res) => {
     data: {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
-      laporan_sebelumnya: trainee.laporan_sebelumnya,
-      laporan_quarter_sebelumnya: trainee.laporan_quarter_sebelumnya
+      laporan_sebelumnya: null,
+      laporan_quarter_sebelumnya: null
     }
   });
 });

@@ -44,9 +44,6 @@ async function main() {
       const level = columns[5] ? columns[5].trim() : '';
       const membershipExpiry = columns[6] ? columns[6].trim() : '';
       const lastSpeakingProject = columns[7] ? columns[7].trim() : '';
-      const highlightTerbaru = columns[8] ? columns[8].trim() : '';
-      const pengumuman = columns[9] ? columns[9].trim() : '';
-      const laporanTerkini = columns[10] ? columns[10].trim() : '';
       const tautanTambahan = columns[11] ? columns[11].trim() : '';
 
       trainees.push({
@@ -58,9 +55,6 @@ async function main() {
         level,
         membershipExpiry,
         lastSpeakingProject,
-        highlightTerbaru,
-        pengumuman,
-        laporanTerkini,
         tautanTambahan
       });
       idsSet.add(id);
@@ -122,12 +116,12 @@ async function main() {
         await db.query(
           `INSERT INTO dashboard_trainne (
             id, trainee_name, status, program, class, level, membership_expiry,
-            last_speaking_project, highlight_terbaru, pengumuman, laporan_terkini, tautan_tambahan,
+            last_speaking_project, tautan_tambahan,
             password, plain_password
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
           [
             trainee.id, trainee.name, trainee.status, trainee.program, trainee.class, trainee.level, trainee.membershipExpiry,
-            trainee.lastSpeakingProject, trainee.highlightTerbaru, trainee.pengumuman, trainee.laporanTerkini, trainee.tautanTambahan,
+            trainee.lastSpeakingProject, trainee.tautanTambahan,
             hashedPasswordToUse, passwordToUse
           ]
         );
@@ -137,12 +131,12 @@ async function main() {
           await db.query(
             `UPDATE dashboard_trainne SET
               trainee_name = $1, status = $2, program = $3, class = $4, level = $5, membership_expiry = $6,
-              last_speaking_project = $7, highlight_terbaru = $8, pengumuman = $9, laporan_terkini = $10, tautan_tambahan = $11,
-              password = $12, plain_password = $13
-             WHERE id = $14`,
+              last_speaking_project = $7, tautan_tambahan = $8,
+              password = $9, plain_password = $10
+             WHERE id = $11`,
             [
               trainee.name, trainee.status, trainee.program, trainee.class, trainee.level, trainee.membershipExpiry,
-              trainee.lastSpeakingProject, trainee.highlightTerbaru, trainee.pengumuman, trainee.laporanTerkini, trainee.tautanTambahan,
+              trainee.lastSpeakingProject, trainee.tautanTambahan,
               hashedPasswordToUse, passwordToUse, trainee.id
             ]
           );
@@ -150,11 +144,11 @@ async function main() {
           await db.query(
             `UPDATE dashboard_trainne SET
               trainee_name = $1, status = $2, program = $3, class = $4, level = $5, membership_expiry = $6,
-              last_speaking_project = $7, highlight_terbaru = $8, pengumuman = $9, laporan_terkini = $10, tautan_tambahan = $11
-             WHERE id = $12`,
+              last_speaking_project = $7, tautan_tambahan = $8
+             WHERE id = $9`,
             [
               trainee.name, trainee.status, trainee.program, trainee.class, trainee.level, trainee.membershipExpiry,
-              trainee.lastSpeakingProject, trainee.highlightTerbaru, trainee.pengumuman, trainee.laporanTerkini, trainee.tautanTambahan,
+              trainee.lastSpeakingProject, trainee.tautanTambahan,
               trainee.id
             ]
           );

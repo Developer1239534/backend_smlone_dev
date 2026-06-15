@@ -504,17 +504,10 @@ async function seed() {
         level VARCHAR(255) DEFAULT NULL,
         membership_expiry VARCHAR(255) DEFAULT NULL,
         last_speaking_project VARCHAR(255) DEFAULT NULL,
-        progress_ke_next_level VARCHAR(255) DEFAULT NULL,
-        highlight_terbaru TEXT DEFAULT NULL,
-        pengumuman TEXT DEFAULT NULL,
         weekly_report TEXT DEFAULT NULL,
-        quarterly_report TEXT DEFAULT NULL,
         referral_code VARCHAR(255) DEFAULT NULL,
         gold_rank TEXT DEFAULT NULL,
-        progress_video TEXT DEFAULT NULL,
-        laporan_sebelumnya TEXT DEFAULT NULL,
-        laporan_quarter_sebelumnya TEXT DEFAULT NULL,
-        completed_speaking_project TEXT DEFAULT NULL
+        progress_video TEXT DEFAULT NULL
       );
     `);
     console.log('✅ Table dashboard_trainne created!');

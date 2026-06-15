@@ -8,6 +8,7 @@ async function traineeExists(id) {
   return result.rows.length > 0;
 }
 
+/*
 // 1. POST /admin/announcements - Tambah Pengumuman
 // Body: { id, announcement } atau { studentId, announcement }
 router.post('/announcements', async (req, res) => {
@@ -141,6 +142,7 @@ router.patch('/highlights/:id', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
+*/
 
 // 6. POST /admin/reports/weekly - Upload Weekly Report
 // Body: { id, weekly_report } atau { studentId, weekly_report }
@@ -170,6 +172,7 @@ router.post('/reports/weekly', async (req, res) => {
   }
 });
 
+/*
 // 7. POST /admin/reports/quarterly - Upload Quarterly Report
 // Body: { id, quarterly_report } atau { studentId, quarterly_report }
 router.post('/reports/quarterly', async (req, res) => {
@@ -197,12 +200,12 @@ router.post('/reports/quarterly', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
+*/
 
 // 8. PATCH /admin/students/:id/progress - Update Progress Student
-// Body: { progress_ke_next_level, progress_video }
+// Body: { progress_video }
 router.patch('/students/:id/progress', async (req, res) => {
   const { id } = req.params;
-  const progress_ke_next_level = req.body.progress_ke_next_level || req.body.progress;
   const { progress_video } = req.body;
 
   try {
@@ -211,30 +214,16 @@ router.patch('/students/:id/progress', async (req, res) => {
       return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
     }
 
-    // Dynamic update depending on fields provided
-    let query = 'UPDATE dashboard_trainne SET ';
-    const params = [];
-    const fields = [];
-
-    if (progress_ke_next_level !== undefined) {
-      params.push(progress_ke_next_level);
-      fields.push(`progress_ke_next_level = $${params.length}`);
-    }
-    if (progress_video !== undefined) {
-      params.push(progress_video);
-      fields.push(`progress_video = $${params.length}`);
-    }
-
-    if (fields.length === 0) {
+    if (progress_video === undefined) {
       return res.status(400).json({ success: false, message: 'Tidak ada data progress yang dikirim untuk diupdate.' });
     }
 
-    params.push(id);
-    query += fields.join(', ') + ` WHERE id = $${params.length}`;
+    await db.query(
+      `UPDATE dashboard_trainne SET progress_video = $1 WHERE id = $2`,
+      [progress_video, id]
+    );
 
-    await db.query(query, params);
-
-    res.json({ success: true, message: 'Progress student berhasil diperbarui.', data: { id, progress_ke_next_level, progress_video } });
+    res.json({ success: true, message: 'Progress student berhasil diperbarui.', data: { id, progress_video } });
   } catch (err) {
     console.error('[Admin] Update Progress error:', err.message);
     res.status(500).json({ success: false, message: 'Server error.' });
@@ -298,10 +287,10 @@ router.patch('/students/:id/membership', async (req, res) => {
 });
 
 // 11. POST /admin/speaking-projects - Tambah Speaking Project
-// Body: { id, last_speaking_project, completed_speaking_project } atau { studentId, ... }
+// Body: { id, last_speaking_project } atau { studentId, ... }
 router.post('/speaking-projects', async (req, res) => {
   const id = req.body.id || req.body.studentId;
-  const { last_speaking_project, completed_speaking_project } = req.body;
+  const { last_speaking_project } = req.body;
 
   if (!id) {
     return res.status(400).json({ success: false, message: 'ID trainee wajib diisi.' });
@@ -313,29 +302,16 @@ router.post('/speaking-projects', async (req, res) => {
       return res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
     }
 
-    let query = 'UPDATE dashboard_trainne SET ';
-    const params = [];
-    const fields = [];
-
-    if (last_speaking_project !== undefined) {
-      params.push(last_speaking_project);
-      fields.push(`last_speaking_project = $${params.length}`);
-    }
-    if (completed_speaking_project !== undefined) {
-      params.push(completed_speaking_project);
-      fields.push(`completed_speaking_project = $${params.length}`);
-    }
-
-    if (fields.length === 0) {
+    if (last_speaking_project === undefined) {
       return res.status(400).json({ success: false, message: 'Tidak ada data speaking project yang dikirim.' });
     }
 
-    params.push(id);
-    query += fields.join(', ') + ` WHERE id = $${params.length}`;
+    await db.query(
+      `UPDATE dashboard_trainne SET last_speaking_project = $1 WHERE id = $2`,
+      [last_speaking_project, id]
+    );
 
-    await db.query(query, params);
-
-    res.json({ success: true, message: 'Speaking Project berhasil ditambahkan/diperbarui.', data: { id, last_speaking_project, completed_speaking_project } });
+    res.json({ success: true, message: 'Speaking Project berhasil ditambahkan/diperbarui.', data: { id, last_speaking_project } });
   } catch (err) {
     console.error('[Admin] Speaking Project error:', err.message);
     res.status(500).json({ success: false, message: 'Server error.' });

@@ -80,10 +80,8 @@ router.post('/', async (req, res) => {
     const insertQuery = `
       INSERT INTO dashboard_trainne (
         id, trainee_name, status, program, class, level, membership_expiry,
-        last_speaking_project, progress_ke_next_level, highlight_terbaru,
-        pengumuman, weekly_report, quarterly_report, referral_code, gold_rank,
-        progress_video, laporan_sebelumnya, laporan_quarter_sebelumnya,
-        completed_speaking_project, password, plain_password, phone, profile_picture, tanggal_lahir,
+        last_speaking_project, weekly_report, referral_code, gold_rank,
+        progress_video, password, plain_password, phone, profile_picture, tanggal_lahir,
         cabang, house_sml, total_gold_periode, junior_youth,
         rank_id_junior, rank_id_youth,
         rank_id_junior_timor, rank_id_youth_timor,
@@ -91,8 +89,7 @@ router.post('/', async (req, res) => {
         rank_id_junior_cemara, rank_id_youth_cemara
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-        $31, $32, $33, $34, $35, $36
+        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29
       ) RETURNING *;
     `;
 
@@ -104,12 +101,10 @@ router.post('/', async (req, res) => {
     const values = [
       data.id, data.trainee_name, data.status || 'Active', data.program || null, classValue,
       data.level || null, data.membership_expiry || null,
-      data.last_speaking_project || null, data.progress_ke_next_level || null,
-      data.highlight_terbaru || null, data.pengumuman || null, data.weekly_report || null,
-      data.quarterly_report || null, data.referral_code || null, data.gold_rank || null,
-      data.progress_video || null, data.laporan_sebelumnya || null,
-      data.laporan_quarter_sebelumnya || null, data.completed_speaking_project || null,
-      hashedPassword, plainPassword, data.phone || null, data.profile_picture || null, data.tanggal_lahir || null,
+      data.last_speaking_project || null, data.weekly_report || null,
+      data.referral_code || null, data.gold_rank || null,
+      data.progress_video || null, hashedPassword, plainPassword,
+      data.phone || null, data.profile_picture || null, data.tanggal_lahir || null,
       data.cabang || null, data.house_sml || null, data.total_gold_periode || null, data.junior_youth || null,
       data.rank_id_junior || null, data.rank_id_youth || null,
       data.rank_id_junior_timor || null, data.rank_id_youth_timor || null,
@@ -157,18 +152,15 @@ router.put('/:id', async (req, res) => {
     const updateQuery = `
       UPDATE dashboard_trainne SET
         trainee_name = $1, status = $2, program = $3, class = $4, level = $5,
-        membership_expiry = $6, last_speaking_project = $7,
-        progress_ke_next_level = $8, highlight_terbaru = $9, pengumuman = $10,
-        weekly_report = $11, quarterly_report = $12, referral_code = $13, gold_rank = $14,
-        progress_video = $15, laporan_sebelumnya = $16, laporan_quarter_sebelumnya = $17,
-        completed_speaking_project = $18, password = $19, plain_password = $20, phone = $21,
-        profile_picture = $22, tanggal_lahir = $23,
-        cabang = $24, house_sml = $25, total_gold_periode = $26, junior_youth = $27,
-        rank_id_junior = $28, rank_id_youth = $29,
-        rank_id_junior_timor = $30, rank_id_youth_timor = $31,
-        rank_id_junior_tritura = $32, rank_id_youth_tritura = $33,
-        rank_id_junior_cemara = $34, rank_id_youth_cemara = $35
-      WHERE id = $36 RETURNING *;
+        membership_expiry = $6, last_speaking_project = $7, weekly_report = $8,
+        referral_code = $9, gold_rank = $10, progress_video = $11,
+        password = $12, plain_password = $13, phone = $14, profile_picture = $15,
+        tanggal_lahir = $16, cabang = $17, house_sml = $18, total_gold_periode = $19,
+        junior_youth = $20, rank_id_junior = $21, rank_id_youth = $22,
+        rank_id_junior_timor = $23, rank_id_youth_timor = $24,
+        rank_id_junior_tritura = $25, rank_id_youth_tritura = $26,
+        rank_id_junior_cemara = $27, rank_id_youth_cemara = $28
+      WHERE id = $29 RETURNING *;
     `;
 
     let classValue = data.class !== undefined ? data.class : current.class;
@@ -184,17 +176,10 @@ router.put('/:id', async (req, res) => {
       data.level !== undefined ? data.level : current.level,
       data.membership_expiry !== undefined ? data.membership_expiry : current.membership_expiry,
       data.last_speaking_project !== undefined ? data.last_speaking_project : current.last_speaking_project,
-      data.progress_ke_next_level !== undefined ? data.progress_ke_next_level : current.progress_ke_next_level,
-      data.highlight_terbaru !== undefined ? data.highlight_terbaru : current.highlight_terbaru,
-      data.pengumuman !== undefined ? data.pengumuman : current.pengumuman,
       data.weekly_report !== undefined ? data.weekly_report : current.weekly_report,
-      data.quarterly_report !== undefined ? data.quarterly_report : current.quarterly_report,
       data.referral_code !== undefined ? data.referral_code : current.referral_code,
       data.gold_rank !== undefined ? data.gold_rank : current.gold_rank,
       data.progress_video !== undefined ? data.progress_video : current.progress_video,
-      data.laporan_sebelumnya !== undefined ? data.laporan_sebelumnya : current.laporan_sebelumnya,
-      data.laporan_quarter_sebelumnya !== undefined ? data.laporan_quarter_sebelumnya : current.laporan_quarter_sebelumnya,
-      data.completed_speaking_project !== undefined ? data.completed_speaking_project : current.completed_speaking_project,
       passwordValue,
       plainPasswordValue,
       data.phone !== undefined ? data.phone : current.phone,
