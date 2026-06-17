@@ -233,6 +233,34 @@ router.get('/reports/:id', async (req, res) => {
   }
 });
 
+// 4.1 GET /dashboard/reports/quarterly/:id (Frontend Compatibility)
+router.get('/reports/quarterly/:id', async (req, res) => {
+  const trainee = await getTraineeOrError(req.params.id, res);
+  if (!trainee) return;
+
+  try {
+    const reportsResult = await db.query(
+      'SELECT periode, url FROM quarterly_report WHERE trainee_id = $1',
+      [trainee.id]
+    );
+    const sortedReports = reportsResult.rows.sort((a, b) => comparePeriods(a.periode, b.periode));
+
+    res.json({
+      success: true,
+      data: {
+        id_trainee: trainee.id,
+        nama_trainee: trainee.trainee_name,
+        weekly_report: trainee.weekly_report,
+        quarterly_report: sortedReports[0]?.url || null,
+        quarterly_reports: sortedReports
+      }
+    });
+  } catch (err) {
+    console.error(`[Dashboard API Error] GET /reports/quarterly/${req.params.id}:`, err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
 // 4.5 GET /dashboard/reports/real-stage/:id
 router.get('/reports/real-stage/:id', async (req, res) => {
   const trainee = await getTraineeOrError(req.params.id, res);

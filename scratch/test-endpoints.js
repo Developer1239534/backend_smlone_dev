@@ -48,6 +48,11 @@ async function test() {
   console.log('GET reports status:', res1.status);
   console.log('GET reports body:', JSON.stringify(res1.body, null, 2));
 
+  console.log('\nTesting GET /dashboard/reports/quarterly/482...');
+  const resQuarterly = await get('http://localhost:4000/dashboard/reports/quarterly/482');
+  console.log('GET quarterly reports status:', resQuarterly.status);
+  console.log('GET quarterly reports body:', JSON.stringify(resQuarterly.body, null, 2));
+
   console.log('\nTesting GET /dashboard/reports/previous/482...');
   const res2 = await get('http://localhost:4000/dashboard/reports/previous/482');
   console.log('GET previous reports status:', res2.status);
