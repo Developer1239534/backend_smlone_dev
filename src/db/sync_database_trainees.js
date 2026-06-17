@@ -44,7 +44,6 @@ async function main() {
       const level = columns[5] ? columns[5].trim() : '';
       const membershipExpiry = columns[6] ? columns[6].trim() : '';
       const lastSpeakingProject = columns[7] ? columns[7].trim() : '';
-      const tautanTambahan = columns[11] ? columns[11].trim() : '';
 
       trainees.push({
         id,
@@ -54,8 +53,7 @@ async function main() {
         class: className,
         level,
         membershipExpiry,
-        lastSpeakingProject,
-        tautanTambahan
+        lastSpeakingProject
       });
       idsSet.add(id);
     }
@@ -116,12 +114,12 @@ async function main() {
         await db.query(
           `INSERT INTO dashboard_trainne (
             id, trainee_name, status, program, class, level, membership_expiry,
-            last_speaking_project, tautan_tambahan,
+            last_speaking_project,
             password, plain_password
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
           [
             trainee.id, trainee.name, trainee.status, trainee.program, trainee.class, trainee.level, trainee.membershipExpiry,
-            trainee.lastSpeakingProject, trainee.tautanTambahan,
+            trainee.lastSpeakingProject,
             hashedPasswordToUse, passwordToUse
           ]
         );
@@ -131,12 +129,12 @@ async function main() {
           await db.query(
             `UPDATE dashboard_trainne SET
               trainee_name = $1, status = $2, program = $3, class = $4, level = $5, membership_expiry = $6,
-              last_speaking_project = $7, tautan_tambahan = $8,
-              password = $9, plain_password = $10
-             WHERE id = $11`,
+              last_speaking_project = $7,
+              password = $8, plain_password = $9
+             WHERE id = $10`,
             [
               trainee.name, trainee.status, trainee.program, trainee.class, trainee.level, trainee.membershipExpiry,
-              trainee.lastSpeakingProject, trainee.tautanTambahan,
+              trainee.lastSpeakingProject,
               hashedPasswordToUse, passwordToUse, trainee.id
             ]
           );
@@ -144,11 +142,11 @@ async function main() {
           await db.query(
             `UPDATE dashboard_trainne SET
               trainee_name = $1, status = $2, program = $3, class = $4, level = $5, membership_expiry = $6,
-              last_speaking_project = $7, tautan_tambahan = $8
-             WHERE id = $9`,
+              last_speaking_project = $7
+             WHERE id = $8`,
             [
               trainee.name, trainee.status, trainee.program, trainee.class, trainee.level, trainee.membershipExpiry,
-              trainee.lastSpeakingProject, trainee.tautanTambahan,
+              trainee.lastSpeakingProject,
               trainee.id
             ]
           );
