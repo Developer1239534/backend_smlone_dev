@@ -1,12 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
+const verifyToken = require('../middleware/authMiddleware');
 
 // Helper to fetch trainee and handle errors
 async function getTraineeOrError(id, res) {
   try {
     const result = await db.query(
-      `SELECT * FROM dashboard_trainne WHERE id = $1`,
+      `SELECT dt.*, 
+              gp.total_gold_periode,
+              gp.rank_id_junior,
+              gp.rank_id_youth,
+              gp.rank_id_junior_timor,
+              gp.rank_id_youth_timor,
+              gp.rank_id_junior_tritura,
+              gp.rank_id_youth_tritura,
+              gp.rank_id_junior_cemara,
+              gp.rank_id_youth_cemara
+       FROM dashboard_trainne dt
+       LEFT JOIN (
+         SELECT DISTINCT ON (trainee_id) *
+         FROM gp_month
+         ORDER BY trainee_id, created_at DESC
+       ) gp ON dt.id = gp.trainee_id
+       WHERE dt.id = $1`,
       [id]
     );
     if (result.rows.length === 0) {
@@ -65,38 +82,68 @@ router.get('/profile/:id', async (req, res) => {
   const trainee = await getTraineeOrError(req.params.id, res);
   if (!trainee) return;
 
-  res.json({
-    success: true,
-    data: {
-      id_trainee: trainee.id,
-      nama_trainee: trainee.trainee_name,
-      program: trainee.program,
-      class: trainee.class ? trainee.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim() : trainee.class,
-      level: trainee.level,
-      membership_expiry: trainee.membership_expiry,
-      profile_picture: trainee.profile_picture,
-      phone: trainee.phone,
-      tanggal_lahir: trainee.tanggal_lahir,
-      cabang: trainee.cabang,
-      house_sml: trainee.house_sml,
-      total_gold_periode: trainee.total_gold_periode,
-      junior_youth: trainee.junior_youth,
-      rank_id_junior: trainee.rank_id_junior,
-      rank_id_youth: trainee.rank_id_youth,
-      rank_id_junior_timor: trainee.rank_id_junior_timor,
-      rank_id_youth_timor: trainee.rank_id_youth_timor,
-      rank_id_junior_tritura: trainee.rank_id_junior_tritura,
-      rank_id_youth_tritura: trainee.rank_id_youth_tritura,
-      rank_id_junior_cemara: trainee.rank_id_junior_cemara,
-      rank_id_youth_cemara: trainee.rank_id_youth_cemara
-    }
-  });
+  try {
+    const rsResult = await db.query(
+      'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
+      [trainee.id]
+    );
+    const sortedRS = rsResult.rows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
+
+    res.json({
+      success: true,
+      data: {
+        id_trainee: trainee.id,
+        nama_trainee: trainee.trainee_name,
+        program: trainee.program,
+        class: trainee.class ? trainee.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim() : trainee.class,
+        level: trainee.level,
+        membership_expiry: trainee.membership_expiry,
+        profile_picture: trainee.profile_picture,
+        phone: trainee.phone,
+        tanggal_lahir: trainee.tanggal_lahir,
+        cabang: trainee.cabang,
+        house_sml: trainee.house_sml,
+        total_gold_periode: trainee.total_gold_periode,
+        junior_youth: trainee.junior_youth,
+        rank_id_junior: trainee.rank_id_junior,
+        rank_id_youth: trainee.rank_id_youth,
+        rank_id_junior_timor: trainee.rank_id_junior_timor,
+        rank_id_youth_timor: trainee.rank_id_youth_timor,
+        rank_id_junior_tritura: trainee.rank_id_junior_tritura,
+        rank_id_youth_tritura: trainee.rank_id_youth_tritura,
+        rank_id_junior_cemara: trainee.rank_id_junior_cemara,
+        rank_id_youth_cemara: trainee.rank_id_youth_cemara,
+        newest_grade: trainee.newest_grade,
+        nama_sekolah: trainee.nama_sekolah,
+        wa_trainee: trainee.wa_trainee,
+        screening_test: trainee.screening_test,
+        screeningTest: trainee.screening_test,
+        // Real stage reports
+        real_stage: sortedRS[0]?.url || null,
+        real_stages: sortedRS,
+        realStage: sortedRS[0]?.url || null,
+        realStages: sortedRS,
+        real_stage_report: sortedRS[0]?.url || null,
+        realStageReport: sortedRS[0]?.url || null
+      }
+    });
+  } catch (err) {
+    console.error(`[Dashboard API Error] GET /profile/${req.params.id}:`, err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
 });
 
 // 1.5 PATCH /dashboard/profile/:id - User updates their own profile
-router.patch('/profile/:id', async (req, res) => {
+router.patch('/profile/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
+
+  if (!req.trainee || String(req.trainee.id) !== String(id)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak. Anda hanya diizinkan mengubah profil Anda sendiri.'
+    });
+  }
   
   // Explicitly prevent updating ID and Trainee Name (Read-Only)
   delete updates.id;
@@ -106,14 +153,19 @@ router.patch('/profile/:id', async (req, res) => {
   if (updates.tanggalLahir !== undefined) updates.tanggal_lahir = updates.tanggalLahir;
   if (updates.profilePicture !== undefined) updates.profile_picture = updates.profilePicture;
   if (updates.oldPassword !== undefined) updates.old_password = updates.oldPassword;
+  if (updates.newestGrade !== undefined) updates.newest_grade = updates.newestGrade;
+  if (updates.namaSekolah !== undefined) updates.nama_sekolah = updates.namaSekolah;
+  if (updates.school !== undefined) updates.nama_sekolah = updates.school;
+  if (updates.waTrainee !== undefined) updates.wa_trainee = updates.waTrainee;
+  if (updates.wa_trainee !== undefined) updates.wa_trainee = updates.wa_trainee;
 
   // List of fields that a USER is allowed to update
-  const allowedFields = ['profile_picture', 'phone', 'tanggal_lahir', 'password', 'old_password'];
+  const allowedFields = ['profile_picture', 'phone', 'tanggal_lahir', 'password', 'old_password', 'newest_grade', 'nama_sekolah', 'wa_trainee'];
   
   const updateData = {};
   for (const field of allowedFields) {
-    // Only update if the field is actually provided and not an empty string
-    if (updates[field] !== undefined && updates[field] !== '') {
+    // Only update if the field is actually provided (can be empty string or null)
+    if (updates[field] !== undefined) {
       updateData[field] = updates[field];
     }
   }
@@ -163,7 +215,7 @@ router.patch('/profile/:id', async (req, res) => {
     const values = Object.values(updateData);
     const setClause = keys.map((key, index) => `${key} = $${index + 1}`).join(', ');
     
-    const query = `UPDATE dashboard_trainne SET ${setClause} WHERE id = $${keys.length + 1} RETURNING id, trainee_name, profile_picture, phone, tanggal_lahir`;
+    const query = `UPDATE dashboard_trainne SET ${setClause} WHERE id = $${keys.length + 1} RETURNING id, trainee_name, profile_picture, phone, tanggal_lahir, newest_grade, nama_sekolah, wa_trainee`;
     
     const result = await db.query(query, [...values, id]);
     res.json({ success: true, message: 'Profil berhasil diperbarui.', data: result.rows[0] });
@@ -217,14 +269,30 @@ router.get('/reports/:id', async (req, res) => {
     );
     const sortedReports = reportsResult.rows.sort((a, b) => comparePeriods(a.periode, b.periode));
 
+    // Fetch real stage reports
+    const rsResult = await db.query(
+      'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
+      [trainee.id]
+    );
+    const sortedRS = rsResult.rows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
+
     res.json({
       success: true,
       data: {
         id_trainee: trainee.id,
         nama_trainee: trainee.trainee_name,
         weekly_report: trainee.weekly_report,
+        screening_test: trainee.screening_test,
+        screeningTest: trainee.screening_test,
         quarterly_report: sortedReports[0]?.url || null,
-        quarterly_reports: sortedReports
+        quarterly_reports: sortedReports,
+        // Real stage reports
+        real_stage: sortedRS[0]?.url || null,
+        real_stages: sortedRS,
+        realStage: sortedRS[0]?.url || null,
+        realStages: sortedRS,
+        real_stage_report: sortedRS[0]?.url || null,
+        realStageReport: sortedRS[0]?.url || null
       }
     });
   } catch (err) {
@@ -512,8 +580,15 @@ router.get('/awards/:trainee_id', async (req, res) => {
   }
 });
 // 13. POST /dashboard/myby-coin/convert — Convert MYBY to GP (50 MYBY = 1 GP)
-router.post('/myby-coin/convert', async (req, res) => {
+router.post('/myby-coin/convert', verifyToken, async (req, res) => {
   const { trainee_id, amount } = req.body;
+
+  if (!req.trainee || String(req.trainee.id) !== String(trainee_id)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak. Anda hanya diizinkan mengonversi koin untuk akun Anda sendiri.'
+    });
+  }
 
   if (!trainee_id || amount === undefined) {
     return res.status(400).json({ success: false, message: 'ID trainee dan jumlah koin (amount) diperlukan.' });
@@ -579,8 +654,15 @@ router.post('/myby-coin/convert', async (req, res) => {
 });
 
 // 14. POST /dashboard/myby-coin/vault-action — Deposit or Withdrawal MYBY/GP
-router.post('/myby-coin/vault-action', async (req, res) => {
+router.post('/myby-coin/vault-action', verifyToken, async (req, res) => {
   const { trainee_id, action_type, currency, amount } = req.body;
+
+  if (!req.trainee || String(req.trainee.id) !== String(trainee_id)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak. Anda hanya diizinkan melakukan transaksi deposit/withdrawal untuk akun Anda sendiri.'
+    });
+  }
 
   if (!trainee_id || !action_type || !currency || amount === undefined) {
     return res.status(400).json({ success: false, message: 'Parameter trainee_id, action_type, currency, dan amount diperlukan.' });
@@ -680,8 +762,15 @@ router.get('/myby-coin/rewards', async (req, res) => {
 });
 
 // 16. POST /dashboard/myby-coin/rewards/claim — Claim reward (legacy)
-router.post('/myby-coin/rewards/claim', async (req, res) => {
+router.post('/myby-coin/rewards/claim', verifyToken, async (req, res) => {
   const { trainee_id, reward_id } = req.body;
+
+  if (!req.trainee || String(req.trainee.id) !== String(trainee_id)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak. Anda hanya diizinkan mengklaim hadiah untuk akun Anda sendiri.'
+    });
+  }
 
   if (!trainee_id || !reward_id) {
     return res.status(400).json({ success: false, message: 'Parameter trainee_id dan reward_id diperlukan.' });
@@ -757,8 +846,15 @@ router.post('/myby-coin/rewards/claim', async (req, res) => {
 });
 
 // 18. POST /dashboard/myby-coin/transfer — Transfer Gold Point to Trainer
-router.post('/myby-coin/transfer', async (req, res) => {
+router.post('/myby-coin/transfer', verifyToken, async (req, res) => {
   const { created_by, trainer_id, trainer_name, amount_gold_point } = req.body;
+
+  if (!req.trainee || String(req.trainee.id) !== String(created_by)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak. Anda hanya diizinkan mentransfer poin untuk akun Anda sendiri.'
+    });
+  }
 
   if (!created_by || !trainer_id || !trainer_name || amount_gold_point === undefined) {
     return res.status(400).json({ success: false, message: 'Parameter created_by, trainer_id, trainer_name, dan amount_gold_point diperlukan.' });
@@ -852,8 +948,15 @@ router.post('/myby-coin/transfer', async (req, res) => {
 });
 
 // 19. POST /dashboard/myby-coin/deposit — Deposit Gold Point from Trainer to Trainee
-router.post('/myby-coin/deposit', async (req, res) => {
+router.post('/myby-coin/deposit', verifyToken, async (req, res) => {
   const { trainee_id, trainer_id, trainer_name, amount_gold_point, deposit_method } = req.body;
+
+  if (!req.trainee || String(req.trainee.id) !== String(trainee_id)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak. Anda hanya diizinkan memproses deposit untuk akun Anda sendiri.'
+    });
+  }
 
   if (!trainee_id || !trainer_id || !trainer_name || amount_gold_point === undefined || !deposit_method) {
     return res.status(400).json({ success: false, message: 'Parameter trainee_id, trainer_id, trainer_name, amount_gold_point, dan deposit_method diperlukan.' });
@@ -881,7 +984,17 @@ router.post('/myby-coin/deposit', async (req, res) => {
     await client.query('BEGIN');
 
     // 1. Verify trainee wallet exists (create if not exist)
-    const walletRes = await client.query('SELECT id, trainee_name, total_gold_periode FROM dashboard_trainne WHERE id = $1', [trainee_id]);
+    const walletRes = await client.query(
+      `SELECT dt.id, dt.trainee_name, gp.total_gold_periode 
+       FROM dashboard_trainne dt
+       LEFT JOIN (
+         SELECT DISTINCT ON (trainee_id) *
+         FROM gp_month
+         ORDER BY trainee_id, created_at DESC
+       ) gp ON dt.id = gp.trainee_id
+       WHERE dt.id = $1`,
+      [trainee_id]
+    );
     if (walletRes.rows.length === 0) {
       await client.query(
         `INSERT INTO myby_coin_deposit (deposit_id, trainer_id, trainer_name, trainee_id, amount_gold_point, deposit_method, status)
@@ -1049,8 +1162,15 @@ router.get('/myby-coin/shop/product/:id', async (req, res) => {
 });
 
 // 25. POST /dashboard/myby-coin/shop/purchase — Purchase product using GP
-router.post('/myby-coin/shop/purchase', async (req, res) => {
+router.post('/myby-coin/shop/purchase', verifyToken, async (req, res) => {
   const { trainer_id, trainer_name, product_id } = req.body;
+
+  if (!req.trainee || String(req.trainee.id) !== String(trainer_id)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak. Anda hanya diizinkan melakukan pembelian produk untuk akun Anda sendiri.'
+    });
+  }
 
   if (!trainer_id || !trainer_name || !product_id) {
     return res.status(400).json({ success: false, message: 'Parameter trainer_id, trainer_name, dan product_id diperlukan.' });
@@ -1287,7 +1407,14 @@ router.get('/myby-coin/:trainee_id', async (req, res) => {
   try {
     // 1. Verify that the trainee exists in the database
     const traineeResult = await db.query(
-      'SELECT id, trainee_name, total_gold_periode FROM dashboard_trainne WHERE id = $1',
+      `SELECT dt.id, dt.trainee_name, gp.total_gold_periode 
+       FROM dashboard_trainne dt
+       LEFT JOIN (
+         SELECT DISTINCT ON (trainee_id) *
+         FROM gp_month
+         ORDER BY trainee_id, created_at DESC
+       ) gp ON dt.id = gp.trainee_id
+       WHERE dt.id = $1`,
       [trainee_id]
     );
 

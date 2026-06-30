@@ -12,6 +12,9 @@ const studentRoutes = require('./routes/studentRoutes');
 const adminTraineesRoutes = require('./routes/adminTraineesRoutes');
 const adminAwardsRoutes = require('./routes/adminAwardsRoutes');
 const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
+const verifyToken = require('./middleware/authMiddleware');
+const { rateLimit } = require('express-rate-limit');
+const helmet = require('helmet');
 
 // Auto DB migration for new columns
 (async () => {
@@ -35,6 +38,7 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_youth_tritura VARCHAR(50) DEFAULT NULL;');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_junior_cemara VARCHAR(50) DEFAULT NULL;');
     await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_youth_cemara VARCHAR(50) DEFAULT NULL;');
+    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS wa_trainee VARCHAR(50) DEFAULT NULL;');
     
     // Create quarterly_report table
     await db.query(`
@@ -57,6 +61,24 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
         url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(trainee_id, periode)
+      );
+    `);
+
+    // Create gp_month table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS gp_month (
+        trainee_id VARCHAR(50) PRIMARY KEY REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
+        periode VARCHAR(50) NOT NULL,
+        total_gold_periode VARCHAR(50),
+        rank_id_junior VARCHAR(50),
+        rank_id_youth VARCHAR(50),
+        rank_id_junior_timor VARCHAR(50),
+        rank_id_youth_timor VARCHAR(50),
+        rank_id_junior_tritura VARCHAR(50),
+        rank_id_youth_tritura VARCHAR(50),
+        rank_id_junior_cemara VARCHAR(50),
+        rank_id_youth_cemara VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -224,9 +246,38 @@ const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.set('trust proxy', 1);
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 150,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Terlalu banyak permintaan dari IP Anda. Silakan coba lagi setelah 15 menit.'
+  }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Terlalu banyak percobaan masuk/daftar. Silakan coba lagi setelah 15 menit.'
+  }
+});
+
+app.use('/api', generalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -246,14 +297,14 @@ app.use('/api/contact', dashboardApiRoutes);
 app.use('/contact', dashboardApiRoutes);
 
 // Admin Management Endpoints
-app.use('/api/admin/trainees', adminTraineesRoutes);
-app.use('/admin/trainees', adminTraineesRoutes);
-app.use('/api/admin/awards', adminAwardsRoutes);
-app.use('/admin/awards', adminAwardsRoutes);
-app.use('/api/admin/quiz-history', adminQuizHistoryRoutes);
-app.use('/admin/quiz-history', adminQuizHistoryRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/admin', adminRoutes);
+app.use('/api/admin/trainees', verifyToken, adminTraineesRoutes);
+app.use('/admin/trainees', verifyToken, adminTraineesRoutes);
+app.use('/api/admin/awards', verifyToken, adminAwardsRoutes);
+app.use('/admin/awards', verifyToken, adminAwardsRoutes);
+app.use('/api/admin/quiz-history', verifyToken, adminQuizHistoryRoutes);
+app.use('/admin/quiz-history', verifyToken, adminQuizHistoryRoutes);
+app.use('/api/admin', verifyToken, adminRoutes);
+app.use('/admin', verifyToken, adminRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
