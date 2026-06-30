@@ -82,6 +82,30 @@ const helmet = require('helmet');
       );
     `);
 
+    // Create house_rank table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS house_rank (
+        id SERIAL PRIMARY KEY,
+        house_name VARCHAR(100) NOT NULL,
+        periode VARCHAR(50) NOT NULL,
+        total_gold_house VARCHAR(50),
+        rank VARCHAR(50),
+        class VARCHAR(100),
+        cabang VARCHAR(100),
+        program VARCHAR(100),
+        rank_junior VARCHAR(50),
+        rank_youth VARCHAR(50),
+        rank_junior_timor VARCHAR(50),
+        rank_youth_timor VARCHAR(50),
+        rank_junior_tritura VARCHAR(50),
+        rank_youth_tritura VARCHAR(50),
+        rank_junior_cemara VARCHAR(50),
+        rank_youth_cemara VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (house_name, periode)
+      );
+    `);
+
 
     // Create quiz_history table
     await db.query(`

@@ -39,6 +39,21 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/dashboard-trainee/house-rank - Get all house rankings
+router.get('/house-rank', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM house_rank ORDER BY id ASC');
+    res.json({
+      success: true,
+      count: result.rows.length,
+      data: result.rows
+    });
+  } catch (err) {
+    console.error('[Dashboard] Fetch house rank error:', err.message);
+    res.status(500).json({ success: false, message: 'Server error fetching house ranks.' });
+  }
+});
+
 // GET /api/dashboard-trainee/:id - Get a specific trainee by ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
