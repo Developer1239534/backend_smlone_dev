@@ -8,7 +8,7 @@ async function getTraineeOrError(id, res) {
   try {
     const result = await db.query(
       `SELECT dt.*, 
-              gp.total_gold_periode,
+              COALESCE(gp.total_gold_periode, '0') AS total_gold_periode,
               gp.rank_id_junior,
               gp.rank_id_youth,
               gp.rank_id_junior_timor,
