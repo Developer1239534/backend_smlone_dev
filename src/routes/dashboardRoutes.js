@@ -54,6 +54,25 @@ router.get('/house-rank', async (req, res) => {
   }
 });
 
+// GET /api/dashboard-trainee/:id/gp-tahunan - Get annual gold point history for a trainee
+router.get('/:id/gp-tahunan', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query(
+      'SELECT * FROM gp_tahunan WHERE trainee_id = $1 ORDER BY id ASC',
+      [id]
+    );
+    res.json({
+      success: true,
+      count: result.rows.length,
+      data: result.rows
+    });
+  } catch (err) {
+    console.error('[Dashboard] Fetch gp_tahunan error:', err.message);
+    res.status(500).json({ success: false, message: 'Server error fetching annual gold points.' });
+  }
+});
+
 // GET /api/dashboard-trainee/:id - Get a specific trainee by ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;

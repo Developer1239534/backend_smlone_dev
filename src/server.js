@@ -106,6 +106,18 @@ const helmet = require('helmet');
       );
     `);
 
+    // Create gp_tahunan table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS gp_tahunan (
+        id SERIAL PRIMARY KEY,
+        trainee_id VARCHAR(50) NOT NULL,
+        date VARCHAR(50) NOT NULL,
+        total_gold INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_gp_tahunan_trainee ON gp_tahunan(trainee_id);
+    `);
+
 
     // Create quiz_history table
     await db.query(`
