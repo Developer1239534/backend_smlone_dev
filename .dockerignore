@@ -1,0 +1,7 @@
+node_modules
+.npm-cache
+.git
+scratch
+trainees_list.csv
+*.log
+.env
