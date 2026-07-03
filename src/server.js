@@ -320,10 +320,15 @@ const helmet = require('helmet');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(helmet());
+const path = require('path');
+
+app.use(helmet({ crossOriginResourcePolicy: false })); // allow static images cross-origin
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 app.set('trust proxy', 1);
 
