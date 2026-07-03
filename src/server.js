@@ -114,9 +114,15 @@ const helmet = require('helmet');
         date VARCHAR(50) NOT NULL,
         total_gold INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
       CREATE INDEX IF NOT EXISTS idx_gp_tahunan_trainee ON gp_tahunan(trainee_id);
+      CREATE INDEX IF NOT EXISTS idx_gp_tahunan_trainee_date ON gp_tahunan(trainee_id, date);
     `);
+
+    // Create indexes for dashboard_trainne
+    await db.query('CREATE INDEX IF NOT EXISTS idx_trainee_name ON dashboard_trainne(trainee_name);');
+    await db.query('CREATE INDEX IF NOT EXISTS idx_trainee_cabang ON dashboard_trainne(cabang);');
+    await db.query('CREATE INDEX IF NOT EXISTS idx_trainee_class ON dashboard_trainne(class);');
+    await db.query('CREATE INDEX IF NOT EXISTS idx_trainee_junior_youth ON dashboard_trainne(junior_youth);');
 
 
     // Create quiz_history table

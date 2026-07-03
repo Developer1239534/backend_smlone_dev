@@ -33,7 +33,13 @@ const formatForAdmin = (row) => {
 // 1. GET /api/admin/trainees - Get all trainees
 router.get('/', async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM dashboard_trainne ORDER BY CAST(id AS INTEGER) ASC');
+    const result = await db.query(`
+      SELECT * FROM dashboard_trainne 
+      ORDER BY 
+        CASE WHEN id ~ '^[0-9]+$' THEN 0 ELSE 1 END,
+        CASE WHEN id ~ '^[0-9]+$' THEN CAST(id AS BIGINT) ELSE NULL END ASC,
+        id ASC
+    `);
     res.json({ success: true, count: result.rows.length, data: result.rows.map(formatForAdmin) });
   } catch (err) {
     console.error('[Admin Trainees] GET All Error:', err.message);
@@ -218,7 +224,7 @@ router.patch('/:id', async (req, res) => {
   delete updates.hubungi_kami;
 
   if (updates.class && typeof updates.class === 'string') {
-    updates.class = updates.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+    updates.class = updates.class.replace(/\s*\([^)]*\)/g, '').trim();
   }
 
   if (Object.keys(updates).length === 0) {

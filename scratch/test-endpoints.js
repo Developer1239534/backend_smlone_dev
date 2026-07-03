@@ -1,76 +1,29 @@
 const http = require('http');
 
-function get(url) {
-  return new Promise((resolve, reject) => {
-    http.get(url, (res) => {
+function testUrl(url) {
+  return new Promise((resolve) => {
+    console.log(`Testing: ${url}`);
+    const req = http.get(url, (res) => {
       let data = '';
-      res.on('data', chunk => data += chunk);
+      res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         try {
-          resolve({ status: res.statusCode, body: JSON.parse(data) });
+          resolve({ success: true, statusCode: res.statusCode, data: JSON.parse(data) });
         } catch (e) {
-          resolve({ status: res.statusCode, body: data });
-        }
-      });
-    }).on('error', reject);
-  });
-}
-
-function post(url, payload) {
-  return new Promise((resolve, reject) => {
-    const dataString = JSON.stringify(payload);
-    const req = http.request(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': dataString.length
-      }
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          resolve({ status: res.statusCode, body: JSON.parse(data) });
-        } catch (e) {
-          resolve({ status: res.statusCode, body: data });
+          resolve({ success: true, statusCode: res.statusCode, body: data });
         }
       });
     });
-    req.on('error', reject);
-    req.write(dataString);
-    req.end();
+    req.on('error', (err) => resolve({ success: false, error: err.message }));
   });
 }
 
-async function test() {
-  console.log('Testing GET /dashboard/reports/482...');
-  const res1 = await get('http://localhost:4000/dashboard/reports/482');
-  console.log('GET reports status:', res1.status);
-  console.log('GET reports body:', JSON.stringify(res1.body, null, 2));
+async function main() {
+  const r1 = await testUrl('http://api.smlone.com/api/dashboard-trainee/house-rank');
+  console.log('House Rank Result Count:', r1.data ? r1.data.count : 'Error', 'Data sample:', r1.data ? r1.data.data.slice(0, 2) : '');
 
-  console.log('\nTesting GET /dashboard/reports/quarterly/482...');
-  const resQuarterly = await get('http://localhost:4000/dashboard/reports/quarterly/482');
-  console.log('GET quarterly reports status:', resQuarterly.status);
-  console.log('GET quarterly reports body:', JSON.stringify(resQuarterly.body, null, 2));
-
-  console.log('\nTesting GET /dashboard/reports/previous/482...');
-  const res2 = await get('http://localhost:4000/dashboard/reports/previous/482');
-  console.log('GET previous reports status:', res2.status);
-  console.log('GET previous reports body:', JSON.stringify(res2.body, null, 2));
-
-  console.log('\nTesting POST /admin/reports/quarterly...');
-  const testPayload = {
-    id: '482',
-    periode: 'Oct - Dec 2026',
-    url: 'https://docs.google.com/document/d/test-url-12345/edit'
-  };
-  const res3 = await post('http://localhost:4000/admin/reports/quarterly', testPayload);
-  console.log('POST status:', res3.status);
-  console.log('POST body:', JSON.stringify(res3.body, null, 2));
-
-  console.log('\nRe-Testing GET /dashboard/reports/482 after upload...');
-  const res4 = await get('http://localhost:4000/dashboard/reports/482');
-  console.log('GET reports body:', JSON.stringify(res4.body, null, 2));
+  const r2 = await testUrl('http://api.smlone.com/api/dashboard-trainee/970/gp-tahunan');
+  console.log('GP Tahunan (ID 970) Result Count:', r2.data ? r2.data.count : 'Error', 'Data sample:', r2.data ? r2.data.data.slice(0, 2) : '');
 }
 
-test().catch(console.error);
+main();

@@ -2,29 +2,72 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// GET /api/dashboard-trainee - Get all trainees
+// GET /api/dashboard-trainee - Get all trainees with optional search and filters
 router.get('/', async (req, res) => {
+  const { search, junior_youth, cabang, class: classFilter } = req.query;
   try {
-    const result = await db.query(
-      `SELECT dt.*, 
-              COALESCE(gp.total_gold_periode, '0') AS total_gold_periode,
-              gp.rank_id_junior,
-              gp.rank_id_youth,
-              gp.rank_id_junior_timor,
-              gp.rank_id_youth_timor,
-              gp.rank_id_junior_tritura,
-              gp.rank_id_youth_tritura,
-              gp.rank_id_junior_cemara,
-              gp.rank_id_youth_cemara
-       FROM dashboard_trainne dt
-       LEFT JOIN gp_month gp ON dt.id = gp.trainee_id
-       ORDER BY dt.id ASC`
-    );
+    let query = `
+      SELECT dt.*, 
+             COALESCE(gp.total_gold_periode, '0') AS total_gold_periode,
+             gp.rank_id_junior,
+             gp.rank_id_youth,
+             gp.rank_id_junior_timor,
+             gp.rank_id_youth_timor,
+             gp.rank_id_junior_tritura,
+             gp.rank_id_youth_tritura,
+             gp.rank_id_junior_cemara,
+             gp.rank_id_youth_cemara
+      FROM dashboard_trainne dt
+      LEFT JOIN gp_month gp ON dt.id = gp.trainee_id
+    `;
+    const conditions = [];
+    const params = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(dt.trainee_name ILIKE $${params.length} OR dt.id ILIKE $${params.length})`);
+    }
+
+    if (junior_youth) {
+      params.push(junior_youth);
+      conditions.push(`dt.junior_youth = $${params.length}`);
+    }
+
+    if (cabang) {
+      params.push(cabang);
+      conditions.push(`dt.cabang = $${params.length}`);
+    }
+
+    if (classFilter) {
+      params.push(classFilter);
+      conditions.push(`dt.class = $${params.length}`);
+    }
+
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : null;
+    const offset = req.query.offset ? parseInt(req.query.offset, 10) : null;
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY dt.id ASC';
+
+    if (limit !== null) {
+      params.push(limit);
+      query += ` LIMIT $${params.length}`;
+    }
+
+    if (offset !== null) {
+      params.push(offset);
+      query += ` OFFSET $${params.length}`;
+    }
+
+    const result = await db.query(query, params);
     const sanitizedRows = result.rows.map(row => {
       delete row.password;
       delete row.plain_password;
       if (typeof row.class === 'string') {
-        row.class = row.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+        row.class = row.class.replace(/\s*\([^)]*\)/g, '').trim();
       }
       return row;
     });
@@ -100,7 +143,7 @@ router.get('/:id', async (req, res) => {
     delete trainee.password;
     delete trainee.plain_password;
     if (typeof trainee.class === 'string') {
-      trainee.class = trainee.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+      trainee.class = trainee.class.replace(/\s*\([^)]*\)/g, '').trim();
     }
 
     // Fetch real stage reports

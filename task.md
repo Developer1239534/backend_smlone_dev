@@ -1,0 +1,4 @@
+- [ ] Create sync-screening-tests.js to load raw URLs, query trainees, fetch titles, and fuzzy match them
+- [ ] Run the sync script to update dashboard_trainne table
+- [ ] Run verification script to audit the results
+- [ ] Create walkthrough summary of updated screening tests

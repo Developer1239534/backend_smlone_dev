@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../db/neonClient');
+const verifyToken = require('../middleware/authMiddleware');
 const multer = require('multer');
 const cloudinary = require('../config/cloudinary');
 
@@ -86,14 +87,24 @@ const handlePasswordReset = async (req, res) => {
 const handleStudentUpdate = async (req, res) => {
   const { id } = req.params;
 
+  if (!req.trainee || String(req.trainee.id) !== String(id)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak. Anda hanya diizinkan mengubah profil Anda sendiri.'
+    });
+  }
+
   console.log('[Student Update Request]:', {
     id,
     body: req.body,
     files: req.files ? Object.keys(req.files) : null
   });
 
-  const { password, newPassword, phone, profile_picture, image, imageUrl, profile_photo, trainee_name } = req.body;
+  const { password, newPassword, phone, profile_picture, image, imageUrl, profile_photo, trainee_name, newest_grade, newestGrade, nama_sekolah, namaSekolah, school, wa_trainee, waTrainee, wa_trainnee } = req.body;
   const tanggal_lahir = req.body.tanggal_lahir !== undefined ? req.body.tanggal_lahir : req.body.tanggalLahir;
+  const resolvedNewestGrade = newest_grade !== undefined ? newest_grade : newestGrade;
+  const resolvedNamaSekolah = nama_sekolah !== undefined ? nama_sekolah : (namaSekolah !== undefined ? namaSekolah : school);
+  const resolvedWaTrainee = wa_trainee !== undefined ? wa_trainee : (waTrainee !== undefined ? waTrainee : wa_trainnee);
 
   // If password/newPassword is provided in request body, delegate to handlePasswordReset
   if (password || newPassword) {
@@ -186,6 +197,21 @@ const handleStudentUpdate = async (req, res) => {
       values.push(tanggal_lahir);
     }
 
+    if (resolvedNewestGrade !== undefined) {
+      updates.push(`newest_grade = $${paramIndex++}`);
+      values.push(resolvedNewestGrade);
+    }
+
+    if (resolvedNamaSekolah !== undefined) {
+      updates.push(`nama_sekolah = $${paramIndex++}`);
+      values.push(resolvedNamaSekolah);
+    }
+
+    if (resolvedWaTrainee !== undefined) {
+      updates.push(`wa_trainee = $${paramIndex++}`);
+      values.push(resolvedWaTrainee);
+    }
+
     if (updates.length === 0) {
       return res.status(400).json({ success: false, message: 'Tidak ada data profil yang dikirim untuk diperbarui.' });
     }
@@ -227,13 +253,20 @@ router.get('/:id', (req, res) => {
   });
 });
 
-router.patch('/:id', uploadMiddleware, handleStudentUpdate);
+router.patch('/:id', verifyToken, uploadMiddleware, handleStudentUpdate);
 router.post('/:id', handlePasswordReset);
-router.put('/:id', uploadMiddleware, handleStudentUpdate);
+router.put('/:id', verifyToken, uploadMiddleware, handleStudentUpdate);
 
 
-router.post('/:id/profile-picture', uploadMiddleware, async (req, res) => {
+router.post('/:id/profile-picture', verifyToken, uploadMiddleware, async (req, res) => {
   const { id } = req.params;
+
+  if (!req.trainee || String(req.trainee.id) !== String(id)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses ditolak. Anda hanya diizinkan mengubah foto profil Anda sendiri.'
+    });
+  }
 
   console.log('[Student Profile Picture Upload Request]:', {
     id,

@@ -125,7 +125,7 @@ router.post('/login', async (req, res) => {
         const { password, ...traineeProfile } = trainee;
         
         if (typeof traineeProfile.class === 'string') {
-          traineeProfile.class = traineeProfile.class.replace(/\s*\(Sat\s*4-6\)/gi, '').trim();
+          traineeProfile.class = traineeProfile.class.replace(/\s*\([^)]*\)/g, '').trim();
         }
 
         // Add robust aliases for Student ID to ensure perfect frontend compatibility
