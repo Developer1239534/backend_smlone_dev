@@ -77,6 +77,19 @@ function compareRealStagePeriods(a, b) {
   return parseRealStagePeriod(b) - parseRealStagePeriod(a);
 }
 
+// ========================================================
+// PUBLIC NEWS / ANNOUNCEMENTS
+// ========================================================
+router.get('/news', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM news_announcements ORDER BY id DESC');
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('[Dashboard API] GET News error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
 // 1. GET /dashboard/profile/:id
 router.get('/profile/:id', async (req, res) => {
   const trainee = await getTraineeOrError(req.params.id, res);
