@@ -428,6 +428,7 @@ app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
 app.use('/api/admin/house-rank', verifyToken, adminHouseRankRoutes);
 app.use('/api/admin/houses', verifyToken, adminHouseRoutes);
 app.use('/api/admin/myby-coin', verifyToken, adminMybyCoinRoutes);
+app.use('/api/admin/voucher-realstage', verifyToken, require('./routes/adminVoucherRealstageRoutes'));
 app.use('/api/admin', verifyToken, adminRoutes);
 app.use('/admin', verifyToken, adminRoutes);
 
