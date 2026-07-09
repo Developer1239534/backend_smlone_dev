@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
+const db = require('../db/neonClient');
 
 // GET /api/admin/voucher-realstage
 // Ambil semua data voucher dengan filter pencarian dan pagination opsional
