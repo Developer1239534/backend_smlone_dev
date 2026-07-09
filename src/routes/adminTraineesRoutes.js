@@ -92,10 +92,10 @@ router.post('/', async (req, res) => {
         rank_id_junior, rank_id_youth,
         rank_id_junior_timor, rank_id_youth_timor,
         rank_id_junior_tritura, rank_id_youth_tritura,
-        rank_id_junior_cemara, rank_id_youth_cemara
+        rank_id_junior_cemara, rank_id_youth_cemara, gender
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29
+        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
       ) RETURNING *;
     `;
 
@@ -115,7 +115,8 @@ router.post('/', async (req, res) => {
       data.rank_id_junior || null, data.rank_id_youth || null,
       data.rank_id_junior_timor || null, data.rank_id_youth_timor || null,
       data.rank_id_junior_tritura || null, data.rank_id_youth_tritura || null,
-      data.rank_id_junior_cemara || null, data.rank_id_youth_cemara || null
+      data.rank_id_junior_cemara || null, data.rank_id_youth_cemara || null,
+      data.gender || null
     ];
 
     const result = await db.query(insertQuery, values);
@@ -165,8 +166,8 @@ router.put('/:id', async (req, res) => {
         junior_youth = $20, rank_id_junior = $21, rank_id_youth = $22,
         rank_id_junior_timor = $23, rank_id_youth_timor = $24,
         rank_id_junior_tritura = $25, rank_id_youth_tritura = $26,
-        rank_id_junior_cemara = $27, rank_id_youth_cemara = $28
-      WHERE id = $29 RETURNING *;
+        rank_id_junior_cemara = $27, rank_id_youth_cemara = $28, gender = $29
+      WHERE id = $30 RETURNING *;
     `;
 
     let classValue = data.class !== undefined ? data.class : current.class;
@@ -203,6 +204,7 @@ router.put('/:id', async (req, res) => {
       data.rank_id_youth_tritura !== undefined ? data.rank_id_youth_tritura : current.rank_id_youth_tritura,
       data.rank_id_junior_cemara !== undefined ? data.rank_id_junior_cemara : current.rank_id_junior_cemara,
       data.rank_id_youth_cemara !== undefined ? data.rank_id_youth_cemara : current.rank_id_youth_cemara,
+      data.gender !== undefined ? data.gender : current.gender,
       id
     ];
 

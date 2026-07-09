@@ -395,15 +395,9 @@ app.use('/api/quiz', quizRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
-
-const voucherRealstageRoutes = require('./routes/voucherRealstageRoutes');
-
 // Custom Dashboard & Contact Endpoints
 app.use('/api/dashboard', dashboardApiRoutes);
 app.use('/dashboard', dashboardApiRoutes);
-
-// Voucher Endpoint
-app.use('/api/voucher-realstage', voucherRealstageRoutes);
 
 // News Endpoint
 app.use('/api/news', newsRoutes);
@@ -428,7 +422,6 @@ app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
 app.use('/api/admin/house-rank', verifyToken, adminHouseRankRoutes);
 app.use('/api/admin/houses', verifyToken, adminHouseRoutes);
 app.use('/api/admin/myby-coin', verifyToken, adminMybyCoinRoutes);
-app.use('/api/admin/voucher-realstage', verifyToken, require('./routes/adminVoucherRealstageRoutes'));
 app.use('/api/admin', verifyToken, adminRoutes);
 app.use('/admin', verifyToken, adminRoutes);
 

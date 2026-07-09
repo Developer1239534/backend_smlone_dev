@@ -95,9 +95,9 @@ router.post('/submit', async (req, res) => {
       [studentId, assignedHouseId, JSON.stringify(scores)]
     );
 
-    // 2. Update the student\'s class to their new assigned House in dashboard_trainne
+    // 2. Update the student\'s house_sml to their new assigned House in dashboard_trainne
     await pool.query(
-      'UPDATE dashboard_trainne SET class = $1 WHERE id = $2',
+      'UPDATE dashboard_trainne SET house_sml = $1 WHERE id = $2',
       [assignedHouseId, studentId]
     );
 

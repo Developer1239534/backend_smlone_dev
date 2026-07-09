@@ -139,9 +139,9 @@ router.post('/', async (req, res) => {
       [student_id, assigned_house, JSON.stringify(scoresObj), finalSubmittedAt]
     );
 
-    // 2. Sync to trainee class & house_sml
+    // 2. Sync to trainee house_sml
     await db.query(
-      `UPDATE dashboard_trainne SET class = $1, house_sml = $1 WHERE id = $2`,
+      `UPDATE dashboard_trainne SET house_sml = $1 WHERE id = $2`,
       [assigned_house, student_id]
     );
 
@@ -196,9 +196,9 @@ router.put('/:student_id', async (req, res) => {
       [assigned_house, JSON.stringify(scoresObj), finalSubmittedAt, student_id]
     );
 
-    // Sync to trainee class & house_sml
+    // Sync to trainee house_sml
     await db.query(
-      `UPDATE dashboard_trainne SET class = $1, house_sml = $1 WHERE id = $2`,
+      `UPDATE dashboard_trainne SET house_sml = $1 WHERE id = $2`,
       [assigned_house, student_id]
     );
 
@@ -262,10 +262,10 @@ router.patch('/:student_id', async (req, res) => {
       [assignedHouseVal, scoresVal, submittedAtVal, student_id]
     );
 
-    // Sync to trainee class & house_sml if assigned_house changed
+    // Sync to trainee house_sml if assigned_house changed
     if (updates.assigned_house) {
       await db.query(
-        `UPDATE dashboard_trainne SET class = $1, house_sml = $1 WHERE id = $2`,
+        `UPDATE dashboard_trainne SET house_sml = $1 WHERE id = $2`,
         [updates.assigned_house, student_id]
       );
     }
@@ -294,9 +294,9 @@ router.delete('/:student_id', async (req, res) => {
     // 1. Delete history
     const result = await db.query('DELETE FROM quiz_history WHERE student_id = $1 RETURNING *', [student_id]);
 
-    // 2. Reset trainee class & house_sml to NULL
+    // 2. Reset trainee house_sml to NULL
     await db.query(
-      `UPDATE dashboard_trainne SET class = NULL, house_sml = NULL WHERE id = $1`,
+      `UPDATE dashboard_trainne SET house_sml = NULL WHERE id = $1`,
       [student_id]
     );
 
