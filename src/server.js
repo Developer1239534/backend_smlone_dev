@@ -389,16 +389,6 @@ const authLimiter = rateLimit({
   }
 });
 
-// Let preflight requests through immediately (CORS middleware already handles them)
-app.options('*', cors({
-  origin: [
-    'https://portal.smlone.com',
-    'http://localhost:5173',
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-}));
 
 app.use('/api', generalLimiter);
 app.use('/api/auth/login', authLimiter);
