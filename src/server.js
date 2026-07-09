@@ -12,6 +12,14 @@ const studentRoutes = require('./routes/studentRoutes');
 const adminTraineesRoutes = require('./routes/adminTraineesRoutes');
 const adminAwardsRoutes = require('./routes/adminAwardsRoutes');
 const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
+const adminGpMonthRoutes = require('./routes/adminGpMonthRoutes');
+const adminHouseRankRoutes = require('./routes/adminHouseRankRoutes');
+const adminHouseRoutes = require('./routes/adminHouseRoutes');
+const adminMybyCoinRoutes = require('./routes/adminMybyCoinRoutes');
+const adminQuestionsRoutes = require('./routes/adminQuestionsRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const newsRoutes = require('./routes/newsRoutes');
+const whatsappRoutes = require('./routes/whatsappRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 const { rateLimit } = require('express-rate-limit');
 const helmet = require('helmet');
@@ -311,9 +319,28 @@ const helmet = require('helmet');
       console.log('🌱 Seeding myby_coin_shop completed!');
     }
 
-    console.log('✅ Database schema verified!');
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS whatsapp_contacts (
+        id SERIAL PRIMARY KEY,
+        cabang VARCHAR(100) NOT NULL,
+        nama_admin VARCHAR(100) NOT NULL,
+        nomor_wa VARCHAR(50) NOT NULL,
+        image_url TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await db.query(`
+      ALTER TABLE gp_month ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;
+    `);
+
+    await db.query(`
+      ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS gender VARCHAR(50);
+    `);
+
+    console.log('✅ Database schema updated successfully.');
   } catch (err) {
-    console.error('❌ Database migration error:', err.message);
+    console.error('❌ Error checking/updating database schema:', err.message);
   }
 })();
 
@@ -369,9 +396,21 @@ app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 
+const voucherRealstageRoutes = require('./routes/voucherRealstageRoutes');
+
 // Custom Dashboard & Contact Endpoints
 app.use('/api/dashboard', dashboardApiRoutes);
 app.use('/dashboard', dashboardApiRoutes);
+
+// Voucher Endpoint
+app.use('/api/voucher-realstage', voucherRealstageRoutes);
+
+// News Endpoint
+app.use('/api/news', newsRoutes);
+
+// WhatsApp Contacts Endpoint
+app.use('/api/whatsapp', whatsappRoutes);
+
 app.use('/api/contact', dashboardApiRoutes);
 app.use('/contact', dashboardApiRoutes);
 
@@ -382,11 +421,16 @@ app.use('/api/admin/awards', verifyToken, adminAwardsRoutes);
 app.use('/admin/awards', verifyToken, adminAwardsRoutes);
 app.use('/api/admin/quiz-history', verifyToken, adminQuizHistoryRoutes);
 app.use('/admin/quiz-history', verifyToken, adminQuizHistoryRoutes);
+app.use('/api/admin/questions', verifyToken, adminQuestionsRoutes);
+app.use('/admin/questions', verifyToken, adminQuestionsRoutes);
+app.use('/api/chat', verifyToken, chatRoutes);
+app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
+app.use('/api/admin/house-rank', verifyToken, adminHouseRankRoutes);
+app.use('/api/admin/houses', verifyToken, adminHouseRoutes);
+app.use('/api/admin/myby-coin', verifyToken, adminMybyCoinRoutes);
 app.use('/api/admin', verifyToken, adminRoutes);
 app.use('/admin', verifyToken, adminRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
-
-
