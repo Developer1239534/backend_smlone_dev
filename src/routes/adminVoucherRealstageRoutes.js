@@ -16,8 +16,8 @@ router.get('/', async (req, res) => {
 
     if (search) {
       const searchStr = `%${search}%`;
-      query += ' WHERE no_voucher ILIKE $1 OR nama_trainee ILIKE $1';
-      countQuery += ' WHERE no_voucher ILIKE $1 OR nama_trainee ILIKE $1';
+      query += ' WHERE no_voucher ILIKE $1 OR trainee_name ILIKE $1';
+      countQuery += ' WHERE no_voucher ILIKE $1 OR trainee_name ILIKE $1';
       params.push(searchStr);
       countParams.push(searchStr);
     }
@@ -52,15 +52,15 @@ router.get('/', async (req, res) => {
 // Tambah voucher baru
 router.post('/', async (req, res) => {
   try {
-    const { issue_date, no_voucher, nama_trainee, doc_url } = req.body;
+    const { issue_date, no_voucher, trainee_name, doc_url } = req.body;
     
-    if (!no_voucher || !nama_trainee) {
-      return res.status(400).json({ success: false, message: 'no_voucher dan nama_trainee wajib diisi' });
+    if (!no_voucher || !trainee_name) {
+      return res.status(400).json({ success: false, message: 'no_voucher dan trainee_name wajib diisi' });
     }
 
     const result = await db.query(
-      'INSERT INTO voucher_realstage (issue_date, no_voucher, nama_trainee, doc_url) VALUES ($1, $2, $3, $4) RETURNING *',
-      [issue_date, no_voucher, nama_trainee, doc_url]
+      'INSERT INTO voucher_realstage (issue_date, no_voucher, trainee_name, doc_url) VALUES ($1, $2, $3, $4) RETURNING *',
+      [issue_date, no_voucher, trainee_name, doc_url]
     );
 
     res.status(201).json({ success: true, message: 'Voucher berhasil ditambahkan', data: result.rows[0] });
@@ -75,11 +75,11 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { issue_date, no_voucher, nama_trainee, doc_url } = req.body;
+    const { issue_date, no_voucher, trainee_name, doc_url } = req.body;
 
     const result = await db.query(
-      'UPDATE voucher_realstage SET issue_date = $1, no_voucher = $2, nama_trainee = $3, doc_url = $4 WHERE id = $5 RETURNING *',
-      [issue_date, no_voucher, nama_trainee, doc_url, id]
+      'UPDATE voucher_realstage SET issue_date = $1, no_voucher = $2, trainee_name = $3, doc_url = $4 WHERE id = $5 RETURNING *',
+      [issue_date, no_voucher, trainee_name, doc_url, id]
     );
 
     if (result.rowCount === 0) {

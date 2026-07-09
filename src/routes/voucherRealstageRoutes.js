@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
     let params = [];
     
     if (search) {
-      query += ' WHERE no_voucher ILIKE $1 OR nama_trainee ILIKE $1';
+      query += ' WHERE no_voucher ILIKE $1 OR trainee_name ILIKE $1';
       params.push(`%${search}%`);
     }
     
