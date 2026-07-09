@@ -114,7 +114,6 @@ const helmet = require('helmet');
       );
     `);
 
-    // Create gp_tahunan table
     await db.query(`
       CREATE TABLE IF NOT EXISTS gp_tahunan (
         id SERIAL PRIMARY KEY,
@@ -122,9 +121,10 @@ const helmet = require('helmet');
         date VARCHAR(50) NOT NULL,
         total_gold INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      CREATE INDEX IF NOT EXISTS idx_gp_tahunan_trainee ON gp_tahunan(trainee_id);
-      CREATE INDEX IF NOT EXISTS idx_gp_tahunan_trainee_date ON gp_tahunan(trainee_id, date);
+      );
     `);
+    await db.query('CREATE INDEX IF NOT EXISTS idx_gp_tahunan_trainee ON gp_tahunan(trainee_id);');
+    await db.query('CREATE INDEX IF NOT EXISTS idx_gp_tahunan_trainee_date ON gp_tahunan(trainee_id, date);');
 
     // Create indexes for dashboard_trainne
     await db.query('CREATE INDEX IF NOT EXISTS idx_trainee_name ON dashboard_trainne(trainee_name);');
