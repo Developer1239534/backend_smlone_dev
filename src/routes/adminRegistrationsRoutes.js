@@ -42,6 +42,7 @@ router.get('/', async (req, res) => {
         const phone = row['Contact / Whatsapp No.'] || '';
         const program = row['Program'] || '';
         const registration_date = row['Today\'s Date'] || '';
+        const agreement = row['I Agree, to allow PT. SMLONE INDONESIA, to use any documentation taken in SMLONE programs or other related programs to be used for promotional & educational Purposes.'] || '';
         const selected_program = row['Program Yang Dipilih'] || '';
         const school = row['Nama Sekolah (Peserta Training)'] || '';
         const parent_email = row['Parent\'s Email'] || '';
@@ -49,18 +50,25 @@ router.get('/', async (req, res) => {
         const emergency_contact_phone = row['Emergency Contact Number'] || '';
         const grade = row['Kelas (Peserta Training)'] || '';
         const source = row['Dari Manakah Anda Mengetahui SMLONE?'] || '';
+        const referral_name = row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan'] || '';
         const ig_mom = row['Akun Instagram Mama'] || '';
         const ig_dad = row['Akun Instagram Papa'] || '';
         const ig_child = row['Akun Instagram Anak'] || '';
+        const training_goal = row['Apakah Tujuan Anda Mengikuti Pelatihan Ini?'] || '';
+        const training_expectation = row['Apa yang ingin Anda dapatkan dari pelatihan ini?'] || '';
+        const event_source = row['Dari Manakah Anda Mengetahui Event Ini?'] || '';
+        const previous_program = row['Apakah anak Anda sebelumnya pernah mengikuti program di SMLONE?'] || '';
+        const previous_program_name = row['Jika pernah mengikuti program di SMLONE, mohon pilih program yang pernah anak Anda ikuti'] || '';
         const raw_data = JSON.stringify(row);
 
         const upsertQuery = `
           INSERT INTO level_1_ca_registrations (
             timestamp_str, email, full_name, dob, gender, address, phone, program, 
-            registration_date, selected_program, school, parent_email, emergency_contact_name, 
-            emergency_contact_phone, grade, source, ig_mom, ig_dad, ig_child, raw_data
+            registration_date, agreement, selected_program, school, parent_email, emergency_contact_name, 
+            emergency_contact_phone, grade, source, referral_name, ig_mom, ig_dad, ig_child, 
+            training_goal, training_expectation, event_source, previous_program, previous_program_name, raw_data
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27
           )
           ON CONFLICT (email, full_name) 
           DO UPDATE SET
@@ -71,6 +79,7 @@ router.get('/', async (req, res) => {
             phone = EXCLUDED.phone,
             program = EXCLUDED.program,
             registration_date = EXCLUDED.registration_date,
+            agreement = EXCLUDED.agreement,
             selected_program = EXCLUDED.selected_program,
             school = EXCLUDED.school,
             parent_email = EXCLUDED.parent_email,
@@ -78,16 +87,23 @@ router.get('/', async (req, res) => {
             emergency_contact_phone = EXCLUDED.emergency_contact_phone,
             grade = EXCLUDED.grade,
             source = EXCLUDED.source,
+            referral_name = EXCLUDED.referral_name,
             ig_mom = EXCLUDED.ig_mom,
             ig_dad = EXCLUDED.ig_dad,
             ig_child = EXCLUDED.ig_child,
+            training_goal = EXCLUDED.training_goal,
+            training_expectation = EXCLUDED.training_expectation,
+            event_source = EXCLUDED.event_source,
+            previous_program = EXCLUDED.previous_program,
+            previous_program_name = EXCLUDED.previous_program_name,
             raw_data = EXCLUDED.raw_data;
         `;
         
         await db.query(upsertQuery, [
           timestamp_str, email, full_name, dob, gender, address, phone, program, 
-          registration_date, selected_program, school, parent_email, emergency_contact_name, 
-          emergency_contact_phone, grade, source, ig_mom, ig_dad, ig_child, raw_data
+          registration_date, agreement, selected_program, school, parent_email, emergency_contact_name, 
+          emergency_contact_phone, grade, source, referral_name, ig_mom, ig_dad, ig_child, 
+          training_goal, training_expectation, event_source, previous_program, previous_program_name, raw_data
         ]);
       }
       
@@ -146,6 +162,7 @@ router.post('/push', async (req, res) => {
       const phone = row['Contact / Whatsapp No.'] || '';
       const program = row['Program'] || '';
       const registration_date = row['Today\'s Date'] || '';
+      const agreement = row['I Agree, to allow PT. SMLONE INDONESIA, to use any documentation taken in SMLONE programs or other related programs to be used for promotional & educational Purposes.'] || '';
       const selected_program = row['Program Yang Dipilih'] || '';
       const school = row['Nama Sekolah (Peserta Training)'] || '';
       const parent_email = row['Parent\'s Email'] || '';
@@ -153,18 +170,25 @@ router.post('/push', async (req, res) => {
       const emergency_contact_phone = row['Emergency Contact Number'] || '';
       const grade = row['Kelas (Peserta Training)'] || '';
       const source = row['Dari Manakah Anda Mengetahui SMLONE?'] || '';
+      const referral_name = row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan'] || '';
       const ig_mom = row['Akun Instagram Mama'] || '';
       const ig_dad = row['Akun Instagram Papa'] || '';
       const ig_child = row['Akun Instagram Anak'] || '';
+      const training_goal = row['Apakah Tujuan Anda Mengikuti Pelatihan Ini?'] || '';
+      const training_expectation = row['Apa yang ingin Anda dapatkan dari pelatihan ini?'] || '';
+      const event_source = row['Dari Manakah Anda Mengetahui Event Ini?'] || '';
+      const previous_program = row['Apakah anak Anda sebelumnya pernah mengikuti program di SMLONE?'] || '';
+      const previous_program_name = row['Jika pernah mengikuti program di SMLONE, mohon pilih program yang pernah anak Anda ikuti'] || '';
       const raw_data = JSON.stringify(row);
 
       const upsertQuery = `
         INSERT INTO level_1_ca_registrations (
           timestamp_str, email, full_name, dob, gender, address, phone, program, 
-          registration_date, selected_program, school, parent_email, emergency_contact_name, 
-          emergency_contact_phone, grade, source, ig_mom, ig_dad, ig_child, raw_data
+          registration_date, agreement, selected_program, school, parent_email, emergency_contact_name, 
+          emergency_contact_phone, grade, source, referral_name, ig_mom, ig_dad, ig_child, 
+          training_goal, training_expectation, event_source, previous_program, previous_program_name, raw_data
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27
         )
         ON CONFLICT (email, full_name) 
         DO UPDATE SET
@@ -175,6 +199,7 @@ router.post('/push', async (req, res) => {
           phone = EXCLUDED.phone,
           program = EXCLUDED.program,
           registration_date = EXCLUDED.registration_date,
+          agreement = EXCLUDED.agreement,
           selected_program = EXCLUDED.selected_program,
           school = EXCLUDED.school,
           parent_email = EXCLUDED.parent_email,
@@ -182,16 +207,23 @@ router.post('/push', async (req, res) => {
           emergency_contact_phone = EXCLUDED.emergency_contact_phone,
           grade = EXCLUDED.grade,
           source = EXCLUDED.source,
+          referral_name = EXCLUDED.referral_name,
           ig_mom = EXCLUDED.ig_mom,
           ig_dad = EXCLUDED.ig_dad,
           ig_child = EXCLUDED.ig_child,
+          training_goal = EXCLUDED.training_goal,
+          training_expectation = EXCLUDED.training_expectation,
+          event_source = EXCLUDED.event_source,
+          previous_program = EXCLUDED.previous_program,
+          previous_program_name = EXCLUDED.previous_program_name,
           raw_data = EXCLUDED.raw_data;
       `;
       
       await db.query(upsertQuery, [
         timestamp_str, email, full_name, dob, gender, address, phone, program, 
-        registration_date, selected_program, school, parent_email, emergency_contact_name, 
-        emergency_contact_phone, grade, source, ig_mom, ig_dad, ig_child, raw_data
+        registration_date, agreement, selected_program, school, parent_email, emergency_contact_name, 
+        emergency_contact_phone, grade, source, referral_name, ig_mom, ig_dad, ig_child, 
+        training_goal, training_expectation, event_source, previous_program, previous_program_name, raw_data
       ]);
       insertedCount++;
     }
