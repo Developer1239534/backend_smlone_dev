@@ -17,6 +17,7 @@ const adminHouseRankRoutes = require('./routes/adminHouseRankRoutes');
 const adminHouseRoutes = require('./routes/adminHouseRoutes');
 const adminMybyCoinRoutes = require('./routes/adminMybyCoinRoutes');
 const adminQuestionsRoutes = require('./routes/adminQuestionsRoutes');
+const adminRegistrationsRoutes = require('./routes/adminRegistrationsRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
@@ -338,6 +339,35 @@ const helmet = require('helmet');
       ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS gender VARCHAR(50);
     `);
 
+    // Create level_1_ca_registrations table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_1_ca_registrations (
+        id SERIAL PRIMARY KEY,
+        timestamp_str VARCHAR(100),
+        email VARCHAR(255),
+        full_name VARCHAR(255),
+        dob VARCHAR(100),
+        gender VARCHAR(50),
+        address TEXT,
+        phone VARCHAR(100),
+        program VARCHAR(100),
+        registration_date VARCHAR(100),
+        selected_program VARCHAR(100),
+        school VARCHAR(255),
+        parent_email VARCHAR(255),
+        emergency_contact_name VARCHAR(255),
+        emergency_contact_phone VARCHAR(100),
+        grade VARCHAR(100),
+        source VARCHAR(255),
+        ig_mom VARCHAR(100),
+        ig_dad VARCHAR(100),
+        ig_child VARCHAR(100),
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (email, full_name)
+      );
+    `);
+
     console.log('✅ Database schema updated successfully.');
   } catch (err) {
     console.error('❌ Error checking/updating database schema:', err.message);
@@ -353,7 +383,9 @@ app.use(helmet({ crossOriginResourcePolicy: false })); // allow static images cr
 app.use(cors({
   origin: [
     'https://portal.smlone.com',
+    'https://admin.smlone.com',
     'http://localhost:5173',       // local dev
+    'http://localhost:5174',
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -426,6 +458,19 @@ app.use('/api/admin/quiz-history', verifyToken, adminQuizHistoryRoutes);
 app.use('/admin/quiz-history', verifyToken, adminQuizHistoryRoutes);
 app.use('/api/admin/questions', verifyToken, adminQuestionsRoutes);
 app.use('/admin/questions', verifyToken, adminQuestionsRoutes);
+app.use('/api/admin/registrations', verifyToken, adminRegistrationsRoutes);
+app.use('/admin/registrations', verifyToken, adminRegistrationsRoutes);
+
+// Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
+// Menggunakan API Key statis sederhana
+app.use('/api/webhook/registrations', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, adminRegistrationsRoutes);
+
 app.use('/api/chat', verifyToken, chatRoutes);
 app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
 app.use('/api/admin/house-rank', verifyToken, adminHouseRankRoutes);
