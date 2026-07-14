@@ -422,7 +422,13 @@ const authLimiter = rateLimit({
 });
 
 
-app.use('/api', generalLimiter);
+// Apply general rate limiter to /api, EXCEPT for webhook routes
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/webhook')) {
+    return next(); // Bypass limiter for n8n webhooks
+  }
+  return generalLimiter(req, res, next);
+});
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
