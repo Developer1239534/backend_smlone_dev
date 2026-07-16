@@ -18,9 +18,13 @@ const adminHouseRoutes = require('./routes/adminHouseRoutes');
 const adminMybyCoinRoutes = require('./routes/adminMybyCoinRoutes');
 const adminQuestionsRoutes = require('./routes/adminQuestionsRoutes');
 const adminRegistrationsRoutes = require('./routes/adminRegistrationsRoutes');
+const level1CaCleanedTraineeRoutes = require('./routes/level1CaCleanedTraineeRoutes');
+const level1CpCleanedTraineeRoutes = require('./routes/level1CpCleanedTraineeRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
+const level1CpRegistrationsRoutes = require('./routes/level1CpRegistrationsRoutes');
+const level1TrRegistrationsRoutes = require('./routes/level1TrRegistrationsRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 const { rateLimit } = require('express-rate-limit');
 const helmet = require('helmet');
@@ -29,314 +33,15 @@ const helmet = require('helmet');
 (async () => {
   try {
     console.log('🔄 Checking database schema...');
-    await db.query('ALTER TABLE dashboard_trainne DROP COLUMN IF EXISTS email CASCADE;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS password VARCHAR(255) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(500) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS tanggal_lahir VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS plain_password VARCHAR(255) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS cabang VARCHAR(100) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS house_sml VARCHAR(255) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne DROP COLUMN IF EXISTS total_gold_periode CASCADE;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS junior_youth VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_junior VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_youth VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_junior_timor VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_youth_timor VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_junior_tritura VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_youth_tritura VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_junior_cemara VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS rank_id_youth_cemara VARCHAR(50) DEFAULT NULL;');
-    await db.query('ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS wa_trainee VARCHAR(50) DEFAULT NULL;');
-    
-    // Create quarterly_report table
+    // Create admin_akun table if it doesn't exist
     await db.query(`
-      CREATE TABLE IF NOT EXISTS quarterly_report (
+      CREATE TABLE IF NOT EXISTS admin_akun (
         id SERIAL PRIMARY KEY,
-        trainee_id VARCHAR(50) NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
-        periode VARCHAR(100) NOT NULL,
-        url TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(trainee_id, periode)
-      );
-    `);
-
-    // Create real_stage table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS real_stage (
-        id SERIAL PRIMARY KEY,
-        trainee_id VARCHAR(50) NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
-        periode VARCHAR(100) NOT NULL,
-        url TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(trainee_id, periode)
-      );
-    `);
-
-    // Create gp_month table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS gp_month (
-        trainee_id VARCHAR(50) PRIMARY KEY REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
-        periode VARCHAR(50) NOT NULL,
-        total_gold_periode VARCHAR(50),
-        rank_id_junior VARCHAR(50),
-        rank_id_youth VARCHAR(50),
-        rank_id_junior_timor VARCHAR(50),
-        rank_id_youth_timor VARCHAR(50),
-        rank_id_junior_tritura VARCHAR(50),
-        rank_id_youth_tritura VARCHAR(50),
-        rank_id_junior_cemara VARCHAR(50),
-        rank_id_youth_cemara VARCHAR(50),
+        username VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        plain_password VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-    `);
-
-    // Create house_rank table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS house_rank (
-        id SERIAL PRIMARY KEY,
-        house_name VARCHAR(100) NOT NULL,
-        periode VARCHAR(50) NOT NULL,
-        total_gold_house VARCHAR(50),
-        rank VARCHAR(50),
-        class VARCHAR(100),
-        cabang VARCHAR(100),
-        program VARCHAR(100),
-        rank_junior VARCHAR(50),
-        rank_youth VARCHAR(50),
-        rank_junior_timor VARCHAR(50),
-        rank_youth_timor VARCHAR(50),
-        rank_junior_tritura VARCHAR(50),
-        rank_youth_tritura VARCHAR(50),
-        rank_junior_cemara VARCHAR(50),
-        rank_youth_cemara VARCHAR(50),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE (house_name, periode)
-      );
-    `);
-
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS gp_tahunan (
-        id SERIAL PRIMARY KEY,
-        trainee_id VARCHAR(50) NOT NULL,
-        date VARCHAR(50) NOT NULL,
-        total_gold INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    await db.query('CREATE INDEX IF NOT EXISTS idx_gp_tahunan_trainee ON gp_tahunan(trainee_id);');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_gp_tahunan_trainee_date ON gp_tahunan(trainee_id, date);');
-
-    // Create indexes for dashboard_trainne
-    await db.query('CREATE INDEX IF NOT EXISTS idx_trainee_name ON dashboard_trainne(trainee_name);');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_trainee_cabang ON dashboard_trainne(cabang);');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_trainee_class ON dashboard_trainne(class);');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_trainee_junior_youth ON dashboard_trainne(junior_youth);');
-
-
-    // Create quiz_history table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS quiz_history (
-        student_id VARCHAR(50) PRIMARY KEY,
-        assigned_house VARCHAR(50) NOT NULL,
-        scores JSONB NOT NULL,
-        submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Create awards table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS awards (
-        id SERIAL PRIMARY KEY,
-        award_type VARCHAR(20) NOT NULL,
-        award_name VARCHAR(100) NOT NULL,
-        category VARCHAR(20) NOT NULL,
-        medal VARCHAR(10) NOT NULL,
-        trainee_id VARCHAR(50) NOT NULL DEFAULT '',
-        trainee_name VARCHAR(255) NOT NULL,
-        score INTEGER DEFAULT 0,
-        threshold INTEGER DEFAULT 0,
-        period VARCHAR(20) DEFAULT 'jun-2026',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(award_name, category, trainee_id, period)
-      );
-    `);
-
-    // Create myby_coin table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS myby_coin (
-        id VARCHAR(50) PRIMARY KEY,
-        trainee_name VARCHAR(255) NOT NULL,
-        myby_balance INTEGER DEFAULT 0,
-        gp_balance INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Recreate myby_coin_ledger table with new columns
-    await db.query('DROP TABLE IF EXISTS myby_coin_ledger CASCADE');
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS myby_coin_ledger (
-        ledger_id VARCHAR(50) PRIMARY KEY,
-        transaction_id VARCHAR(50) NOT NULL,
-        trainer_id VARCHAR(50) NOT NULL,
-        trainer_name VARCHAR(255) NOT NULL,
-        transaction_type VARCHAR(50) NOT NULL,
-        amount_gold_point INTEGER NOT NULL CHECK (amount_gold_point >= 0),
-        transaction_direction VARCHAR(20) NOT NULL,
-        description TEXT,
-        status VARCHAR(20) NOT NULL,
-        transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Create myby_coin_shop table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS myby_coin_shop (
-        product_id VARCHAR(50) PRIMARY KEY,
-        product_name VARCHAR(255) NOT NULL,
-        product_description TEXT,
-        product_image VARCHAR(255),
-        gold_point_price INTEGER NOT NULL CHECK (gold_point_price >= 0),
-        stock INTEGER DEFAULT 99 CHECK (stock >= 0),
-        status VARCHAR(20) DEFAULT 'Active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Create myby_coin_shop_transaction table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS myby_coin_shop_transaction (
-        transaction_id VARCHAR(50) PRIMARY KEY,
-        trainer_id VARCHAR(50) NOT NULL,
-        trainer_name VARCHAR(255) NOT NULL,
-        product_id VARCHAR(50) NOT NULL REFERENCES myby_coin_shop(product_id) ON DELETE CASCADE,
-        product_name VARCHAR(255) NOT NULL,
-        amount_gold_point INTEGER NOT NULL CHECK (amount_gold_point >= 0),
-        status VARCHAR(20) NOT NULL,
-        transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Create rewards_shop table (keep for backward compatibility)
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS rewards_shop (
-        id SERIAL PRIMARY KEY,
-        reward_name VARCHAR(255) NOT NULL,
-        description TEXT,
-        cost INTEGER NOT NULL CHECK (cost >= 0),
-        currency VARCHAR(10) DEFAULT 'MYBY',
-        stock INTEGER DEFAULT 99 CHECK (stock >= 0),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Create myby_coin_transfer table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS myby_coin_transfer (
-        transfer_id VARCHAR(50) PRIMARY KEY,
-        trainer_id VARCHAR(50) NOT NULL,
-        trainer_name VARCHAR(255) NOT NULL,
-        amount_gold_point INTEGER NOT NULL CHECK (amount_gold_point > 0),
-        status VARCHAR(20) NOT NULL,
-        transfer_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_by VARCHAR(50) NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Create myby_coin_deposit table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS myby_coin_deposit (
-        deposit_id VARCHAR(50) PRIMARY KEY,
-        trainer_id VARCHAR(50) NOT NULL,
-        trainer_name VARCHAR(255) NOT NULL,
-        trainee_id VARCHAR(50) NOT NULL REFERENCES dashboard_trainne(id) ON DELETE CASCADE,
-        amount_gold_point INTEGER NOT NULL CHECK (amount_gold_point > 0),
-        deposit_method VARCHAR(100) NOT NULL,
-        status VARCHAR(20) NOT NULL,
-        deposit_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Create news_announcements table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS news_announcements (
-        id SERIAL PRIMARY KEY,
-        category VARCHAR(100),
-        title VARCHAR(255) NOT NULL,
-        date_string VARCHAR(50),
-        time_string VARCHAR(50),
-        description TEXT,
-        contacts TEXT,
-        image_url VARCHAR(500),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Seed data for news_announcements
-    const newsCheck = await db.query('SELECT COUNT(*) FROM news_announcements');
-    if (parseInt(newsCheck.rows[0].count, 10) === 0) {
-      console.log('🌱 Seeding news_announcements table...');
-      await db.query(`
-        INSERT INTO news_announcements (category, title, date_string, time_string, description, contacts, image_url) VALUES
-        ('Umum', 'REAL STAGE: How to Join', '23 Jun 2026', '11:55', 'Trainee dapat mempersiapkan diri dan melakukan pendaftaran setelah menyelesaikan seluruh Speaking & Life Projects serta mempelajari panduan Real Stage yang telah disediakan.', 'Hubungi Sophia 081-1620-5815\nHubungi Jovita 0811-6505-815', NULL),
-        ('Umum', 'Parents Trainer Meeting', '23 Jun 2026', '10:41', 'Papa Mama dapat mendaftar sebelum 5 Juli 2026 melalui link pendaftaran https://smlone.xyz/ptm untuk mengikuti konsultasi one-on-one mengenai perkembangan anak dengan trainer di SMLONE Cabang Cemara Asri (https://g.co/kgs/VZxUctT).', 'Hubungi Sophia 081-1620-5815\nHubungi Jovita 0811-6505-815\nHubungi Aurel 0851-6355-9331', NULL),
-        ('Umum', 'Jumat Produktif Bersama SMLONE', '20 Jun 2026', '09:00', 'Tingkatkan diri Anda bersama SMLONE. Rangkaian program workshop interaktif mingguan untuk pembentukan karakter, kemampuan leadership, teknik presentasi sales, serta peningkatan produktivitas yang dibimbing langsung oleh trainer berpengalaman puluhan tahun di bidangnya.', 'Hubungi Jovita 0811-6785-818', NULL),
-        ('Umum', 'Future Leaders Camp 2026', '30 Jun 2026', '10:00', 'Summer camp program pembentukan karakter & kepercayaan diri anak usia sekolah. Tersedia kategori: Apprentice (1-3 SD), Junior (4-6 SD), dan Youth (SMP-SMA).', 'Hubungi Sophia 081-1620-5815\nHubungi Jovita 0811-6505-815\nHubungi Aurel 0851-6355-9331', NULL),
-        ('Umum', 'Lantern & Legends Holiday Camp', '11 Jun 2026', '08:30', 'Belajar budaya & bahasa Mandarin secara interaktif selama 2 hari penuh (Full Mandarin Speaking Experience). Terbuka untuk Explorers (Grade 2-6) dan Legends (Grade 7-12).', 'Hubungi Sophia 081-1620-5815\nHubungi Jovita 0811-6505-815\nHubungi Aurel 0851-6355-9331', NULL),
-        ('Umum', 'Open New Class Baca Tulis', '18 Jun 2026', '11:00', 'Kelas membaca dan menulis baru untuk si kecil. Dapatkan promo spesial harga khusus untuk 3 pendaftar pertama beserta free student pack lengkap (tas, kaos, map, progress report, trial sheet).', 'Hubungi Sophia 0811-620-5815', NULL),
-        ('Umum', 'Public Speaking Untuk Pemula', '26 Jul 2026', '13:44', 'Pelatihan public speaking intensif dengan praktek langsung, e-sertifikat, dokumentasi video, training handout, makan siang & coffee break. Khusus usia 18 tahun ke atas.', 'Hubungi Jovita 0811-6785-818', NULL)
-      `);
-      console.log('🌱 Seeding news_announcements completed!');
-    }
-
-    // Seed data for rewards_shop
-    const shopCheck = await db.query('SELECT COUNT(*) FROM rewards_shop');
-    if (parseInt(shopCheck.rows[0].count, 10) === 0) {
-      console.log('🌱 Seeding rewards_shop table...');
-      await db.query(`
-        INSERT INTO rewards_shop (reward_name, description, cost, currency, stock) VALUES
-        ('Premium Academy E-Book', 'E-Book pembelajaran akademi premium untuk tingkat lanjut.', 100, 'MYBY', 99),
-        ('1-on-1 Mentoring Session (30 mins)', 'Sesi konsultasi & mentoring privat dengan pengajar (30 menit).', 500, 'MYBY', 10),
-        ('Exclusive SMLONE T-Shirt', 'Kaos eksklusif edisi terbatas dari SMLONE Academy.', 10, 'GP', 25)
-      `);
-      console.log('🌱 Seeding completed!');
-    }
-
-    // Seed data for myby_coin_shop
-    const coinShopCheck = await db.query('SELECT COUNT(*) FROM myby_coin_shop');
-    if (parseInt(coinShopCheck.rows[0].count, 10) === 0) {
-      console.log('🌱 Seeding myby_coin_shop table...');
-      await db.query(`
-        INSERT INTO myby_coin_shop (product_id, product_name, product_description, gold_point_price, stock, status) VALUES
-        ('P-01', 'Exclusive SMLONE Hoodie', 'Hoodie berkualitas premium dari SMLONE Academy.', 15, 50, 'Active'),
-        ('P-02', 'SMLONE Canvas Tote Bag', 'Tote bag ramah lingkungan untuk menemani belajar.', 5, 100, 'Active'),
-        ('P-03', 'Professional Certificate Frame', 'Bingkai sertifikat kayu kokoh untuk memajang prestasimu.', 8, 30, 'Active')
-      `);
-      console.log('🌱 Seeding myby_coin_shop completed!');
-    }
-
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS whatsapp_contacts (
-        id SERIAL PRIMARY KEY,
-        cabang VARCHAR(100) NOT NULL,
-        nama_admin VARCHAR(100) NOT NULL,
-        nomor_wa VARCHAR(50) NOT NULL,
-        image_url TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    await db.query(`
-      ALTER TABLE gp_month ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;
-    `);
-
-    await db.query(`
-      ALTER TABLE dashboard_trainne ADD COLUMN IF NOT EXISTS gender VARCHAR(50);
     `);
 
     // Create level_1_ca_registrations table
@@ -368,6 +73,216 @@ const helmet = require('helmet');
       );
     `);
 
+    // Create level_1_cp_registrations table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_1_cp_registrations (
+        id SERIAL PRIMARY KEY,
+        timestamp_str TEXT,
+        email_address TEXT,
+        full_name TEXT,
+        last_name TEXT,
+        dob TEXT,
+        gender TEXT,
+        address TEXT,
+        contact_whatsapp TEXT,
+        email_account TEXT,
+        program TEXT,
+        todays_date TEXT,
+        i_agree_doc TEXT,
+        program_dipilih TEXT,
+        nama_sekolah TEXT,
+        emergency_contact_person TEXT,
+        emergency_contact_number TEXT,
+        kelas_peserta TEXT,
+        latest_self_portrait TEXT,
+        shirt_size TEXT,
+        tujuan_pelatihan TEXT,
+        harapan_pelatihan TEXT,
+        tahu_event_dari TEXT,
+        parents_email TEXT,
+        tahu_program_dari TEXT,
+        tahu_smlone_dari TEXT,
+        referensi_teman TEXT,
+        referensi_teman_2 TEXT,
+        ig_mama TEXT,
+        ig_papa TEXT,
+        ig_anak TEXT,
+        pernah_ikut_program TEXT,
+        program_pernah_diikuti TEXT,
+        ig_account_anda TEXT,
+        ig_account_anak_anda TEXT,
+        ig_account_anda_2 TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (email_address, full_name)
+      );
+    `);
+
+    // Create level_1_tr_registrations table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_1_tr_registrations (
+        id SERIAL PRIMARY KEY,
+        timestamp_str TEXT,
+        email_address TEXT,
+        full_name TEXT,
+        dob TEXT,
+        gender TEXT,
+        address TEXT,
+        contact_whatsapp TEXT,
+        program TEXT,
+        todays_date TEXT,
+        i_agree_doc TEXT,
+        program_dipilih TEXT,
+        nama_sekolah TEXT,
+        parents_email TEXT,
+        emergency_contact_person TEXT,
+        emergency_contact_number TEXT,
+        kelas_peserta TEXT,
+        tahu_smlone_dari TEXT,
+        latest_self_portrait TEXT,
+        tujuan_pelatihan TEXT,
+        harapan_pelatihan TEXT,
+        tahu_event_dari TEXT,
+        referensi_teman TEXT,
+        program_dipilih_2 TEXT,
+        nama_sekolah_2 TEXT,
+        parents_email_2 TEXT,
+        emergency_contact_person_2 TEXT,
+        emergency_contact_number_2 TEXT,
+        kelas_peserta_2 TEXT,
+        tahu_smlone_dari_2 TEXT,
+        referensi_teman_2 TEXT,
+        latest_self_portrait_2 TEXT,
+        referensi_teman_3 TEXT,
+        ig_mama TEXT,
+        ig_papa TEXT,
+        ig_anak TEXT,
+        ig_mama_2 TEXT,
+        ig_papa_2 TEXT,
+        ig_anak_2 TEXT,
+        pernah_ikut_program TEXT,
+        program_pernah_diikuti TEXT,
+        terhubung_ig TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (email_address, full_name)
+      );
+    `);
+
+    // Create level_1_ca_cleaned_trainee table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_1_ca_cleaned_trainee (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        trainee_id TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        gender TEXT,
+        dob TEXT,
+        school TEXT,
+        grade TEXT,
+        phone TEXT,
+        profession TEXT,
+        email_account TEXT,
+        location TEXT,
+        profile_picture TEXT,
+        emergency_contact_name TEXT,
+        emergency_contact_phone TEXT,
+        allow_sharing TEXT,
+        program_registered TEXT,
+        parents_email TEXT,
+        date_created TEXT,
+        shirt_size TEXT,
+        date_record_created TEXT,
+        start_date TEXT,
+        membership_duration_days TEXT,
+        membership_expiry_date TEXT,
+        days_left TEXT,
+        status_active_expired TEXT,
+        class_status TEXT,
+        cleaned_program TEXT,
+        membership_status TEXT,
+        clean_membership_status TEXT,
+        check_ac_ad TEXT,
+        cabang TEXT,
+        clean_parents_email TEXT,
+        new_parent_email TEXT,
+        class_name TEXT,
+        house TEXT,
+        level TEXT,
+        house_role TEXT,
+        nomor_trainee TEXT,
+        email_trainee TEXT,
+        check_double_id TEXT,
+        new_profile_picture TEXT,
+        less_than_2022_students_grade_helper TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (email_account, first_name)
+      );
+    `);
+
+    // Create level_1_cp_cleaned_trainee table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_1_cp_cleaned_trainee (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        trainee_id TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        gender TEXT,
+        dob TEXT,
+        school TEXT,
+        grade TEXT,
+        phone TEXT,
+        profession TEXT,
+        email_account TEXT,
+        location TEXT,
+        profile_picture TEXT,
+        emergency_contact_name TEXT,
+        emergency_contact_phone TEXT,
+        allow_sharing TEXT,
+        program_registered TEXT,
+        parents_email TEXT,
+        date_created TEXT,
+        shirt_size TEXT,
+        date_record_created TEXT,
+        start_date TEXT,
+        membership_duration_days TEXT,
+        membership_expiry_date TEXT,
+        days_left TEXT,
+        status_active_expired TEXT,
+        class_status TEXT,
+        cleaned_program TEXT,
+        membership_from_ae2 TEXT,
+        clean_membership_status TEXT,
+        check_ac_ad TEXT,
+        cabang TEXT,
+        clean_parents_email TEXT,
+        class_name TEXT,
+        house TEXT,
+        level TEXT,
+        house_role TEXT,
+        nomor_trainee TEXT,
+        email_trainee TEXT,
+        check_double_id TEXT,
+        new_profile_picture TEXT,
+        history_grade TEXT,
+        less_than_2022_students_grade_helper TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (email_account, first_name)
+      );
+    `);
+
+    // Clean up old tables as requested by user
+    await db.query(`DROP TABLE IF EXISTS level_1_ca_class CASCADE;`);
+    await db.query(`DROP TABLE IF EXISTS newest_grade CASCADE;`);
+    await db.query(`DROP TABLE IF EXISTS level_1_ca_class_newest_grade CASCADE;`);
+    await db.query(`DROP TABLE IF EXISTS cleaned_trainee CASCADE;`);
+
+
+
     console.log('✅ Database schema updated successfully.');
   } catch (err) {
     console.error('❌ Error checking/updating database schema:', err.message);
@@ -391,8 +306,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve static files
 app.use('/public', express.static(path.join(__dirname, 'public')));
@@ -466,6 +381,17 @@ app.use('/api/admin/questions', verifyToken, adminQuestionsRoutes);
 app.use('/admin/questions', verifyToken, adminQuestionsRoutes);
 app.use('/api/admin/registrations', verifyToken, adminRegistrationsRoutes);
 app.use('/admin/registrations', verifyToken, adminRegistrationsRoutes);
+app.use('/api/admin/level-1-cp-registrations', verifyToken, level1CpRegistrationsRoutes);
+app.use('/admin/level-1-cp-registrations', verifyToken, level1CpRegistrationsRoutes);
+app.use('/api/admin/level-1-tr-registrations', verifyToken, level1TrRegistrationsRoutes);
+app.use('/admin/level-1-tr-registrations', verifyToken, level1TrRegistrationsRoutes);
+app.use('/api/admin/level-1-ca-cleaned-trainee', verifyToken, level1CaCleanedTraineeRoutes);
+app.use('/admin/level-1-ca-cleaned-trainee', verifyToken, level1CaCleanedTraineeRoutes);
+app.use('/api/admin/level-1-cp-cleaned-trainee', verifyToken, level1CpCleanedTraineeRoutes);
+app.use('/admin/level-1-cp-cleaned-trainee', verifyToken, level1CpCleanedTraineeRoutes);
+// Alias untuk Dashboard frontend lama
+app.use('/api/admin/cleaned-trainees', verifyToken, level1CaCleanedTraineeRoutes);
+app.use('/admin/cleaned-trainees', verifyToken, level1CaCleanedTraineeRoutes);
 
 // Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
 // Menggunakan API Key statis sederhana
@@ -476,6 +402,40 @@ app.use('/api/webhook/registrations', (req, res, next) => {
   }
   next();
 }, adminRegistrationsRoutes);
+
+app.use('/api/webhook/level-1-cp-registrations', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, level1CpRegistrationsRoutes);
+
+app.use('/api/webhook/level-1-tr-registrations', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, level1TrRegistrationsRoutes);
+
+// Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
+// Menggunakan API Key statis sederhana
+app.use('/api/webhook/level-1-ca-cleaned-trainee', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, level1CaCleanedTraineeRoutes);
+
+app.use('/api/webhook/level-1-cp-cleaned-trainee', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, level1CpCleanedTraineeRoutes);
 
 app.use('/api/chat', verifyToken, chatRoutes);
 app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
