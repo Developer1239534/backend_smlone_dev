@@ -64,18 +64,18 @@ router.post('/push', async (req, res) => {
         continue;
       }
 
-      // Map JSON to columns
-      const name = row['Name'] || '';
-      const trainee_id = row['ID'] || '';
-      const first_name = row['First Name'] || '';
-      const last_name = row['Last Name'] || '';
-      const gender = row['Gender'] || '';
-      const dob = row['Date of Birth'] || '';
-      const school = row['Nama Sekolah'] || '';
-      const grade = row['Kelas'] || '';
-      const phone = row['Contact / Whatsapp'] || '';
-      const profession = row['Profession'] || '';
-      const email_account = row['Email Account'] || '';
+      // Map JSON to columns (with fallback for numeric keys if n8n reads the wrong header row)
+      const name = row['Name'] || row['AUTOMATED'] || ''; // Name is often under AUTOMATED in their sheet
+      const trainee_id = row['ID'] || row['2'] || '';
+      const first_name = row['First Name'] || row['3'] || '';
+      const last_name = row['Last Name'] || row['4'] || '';
+      const gender = row['Gender'] || row['5'] || '';
+      const dob = row['Date of Birth'] || row['6'] || '';
+      const school = row['Nama Sekolah'] || row['7'] || '';
+      const grade = row['Kelas'] || row['8'] || '';
+      const phone = row['Contact / Whatsapp'] || row['9'] || '';
+      const profession = row['Profession'] || row['10'] || '';
+      const email_account = row['Email Account'] || row['11'] || '';
       
       // Skip if essential data is missing
       if (!email_account || !first_name) {
@@ -84,17 +84,17 @@ router.post('/push', async (req, res) => {
         continue;
       }
 
-      const location = row['Location'] || '';
-      const profile_picture = row['Profile Picture'] || '';
-      const emergency_contact_name = row['Emergency Contact Person'] || '';
-      const emergency_contact_phone = row['Emergency Contact No'] || '';
-      const allow_sharing = row['Allow Sharing/Documentation'] || '';
-      const program_registered = row['Program Registered'] || '';
-      const parents_email = row['Parents Email'] || '';
-      const date_created = row['Date Created'] || '';
-      const shirt_size = row['Shirt Size'] || '';
-      const date_record_created = row['Date Record Created'] || '';
-      const start_date = row['Start Date'] || '';
+      const location = row['Location'] || row['12'] || '';
+      const profile_picture = row['Profile Picture'] || row['13'] || '';
+      const emergency_contact_name = row['Emergency Contact Person'] || row['14'] || '';
+      const emergency_contact_phone = row['Emergency Contact No'] || row['15'] || '';
+      const allow_sharing = row['Allow Sharing/Documentation'] || row['16'] || '';
+      const program_registered = row['Program Registered'] || row['17'] || '';
+      const parents_email = row['Parents Email'] || row['18'] || '';
+      const date_created = row['Date Created'] || row['19'] || '';
+      const shirt_size = row['Shirt Size'] || row['20'] || '';
+      const date_record_created = row['Date Record Created'] || row['20 Jan 00'] || '';
+      const start_date = row['Start Date'] || row['21 Jan 00'] || '';
       const membership_duration_days = row['Membership Duration (in Days)'] || '';
       const membership_expiry_date = row['Membership Expiry Date (AE2)'] || '';
       const days_left = row['Days Left'] || '';
