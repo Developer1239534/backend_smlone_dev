@@ -20,6 +20,7 @@ const adminQuestionsRoutes = require('./routes/adminQuestionsRoutes');
 const adminRegistrationsRoutes = require('./routes/adminRegistrationsRoutes');
 const level1CaCleanedTraineeRoutes = require('./routes/level1CaCleanedTraineeRoutes');
 const level1CpCleanedTraineeRoutes = require('./routes/level1CpCleanedTraineeRoutes');
+const level1TrCleanedTraineeRoutes = require('./routes/level1TrCleanedTraineeRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
@@ -275,6 +276,57 @@ const helmet = require('helmet');
       );
     `);
 
+    // Create level_1_tr_cleaned_trainee table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_1_tr_cleaned_trainee (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        trainee_id TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        gender TEXT,
+        dob TEXT,
+        school TEXT,
+        grade TEXT,
+        phone TEXT,
+        profession TEXT,
+        email_account TEXT,
+        location TEXT,
+        profile_picture TEXT,
+        admin_and_invoice TEXT,
+        emergency_contact_phone TEXT,
+        allow_sharing TEXT,
+        program_registered TEXT,
+        parents_email TEXT,
+        date_created TEXT,
+        shirt_size TEXT,
+        date_record_created TEXT,
+        start_date TEXT,
+        membership_duration_days TEXT,
+        membership_expiry_date TEXT,
+        days_left TEXT,
+        status_active_expired TEXT,
+        class_status TEXT,
+        cleaned_program TEXT,
+        membership_status TEXT,
+        clean_membership_status TEXT,
+        check_ac_ad TEXT,
+        cabang TEXT,
+        clean_parents_email TEXT,
+        new_parent_email TEXT,
+        class_name TEXT,
+        house TEXT,
+        level TEXT,
+        house_role TEXT,
+        nomor_trainee TEXT,
+        email_trainee TEXT,
+        check_double_id TEXT,
+        new_profile_picture TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Clean up old tables as requested by user
     await db.query(`DROP TABLE IF EXISTS level_1_ca_class CASCADE;`);
     await db.query(`DROP TABLE IF EXISTS newest_grade CASCADE;`);
@@ -389,6 +441,8 @@ app.use('/api/admin/level-1-ca-cleaned-trainee', verifyToken, level1CaCleanedTra
 app.use('/admin/level-1-ca-cleaned-trainee', verifyToken, level1CaCleanedTraineeRoutes);
 app.use('/api/admin/level-1-cp-cleaned-trainee', verifyToken, level1CpCleanedTraineeRoutes);
 app.use('/admin/level-1-cp-cleaned-trainee', verifyToken, level1CpCleanedTraineeRoutes);
+app.use('/api/admin/level-1-tr-cleaned-trainee', verifyToken, level1TrCleanedTraineeRoutes);
+app.use('/admin/level-1-tr-cleaned-trainee', verifyToken, level1TrCleanedTraineeRoutes);
 // Alias untuk Dashboard frontend lama
 app.use('/api/admin/cleaned-trainees', verifyToken, level1CaCleanedTraineeRoutes);
 app.use('/admin/cleaned-trainees', verifyToken, level1CaCleanedTraineeRoutes);
@@ -436,6 +490,14 @@ app.use('/api/webhook/level-1-cp-cleaned-trainee', (req, res, next) => {
   }
   next();
 }, level1CpCleanedTraineeRoutes);
+
+app.use('/api/webhook/level-1-tr-cleaned-trainee', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, level1TrCleanedTraineeRoutes);
 
 app.use('/api/chat', verifyToken, chatRoutes);
 app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
