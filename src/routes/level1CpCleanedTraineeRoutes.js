@@ -78,8 +78,9 @@ router.post('/push', async (req, res) => {
       const email_account = row['Email Account'] || row['11'] || '';
       
       // Skip if essential data is missing
-      if (!email_account || !first_name) {
-        console.warn(`[n8n Push CP Cleaned] Skipping row ${i}: missing email_account="${email_account}" or first_name="${first_name}". Keys: ${Object.keys(row).join(', ')}`);
+      // Remove strict skipping so all data from sheet goes in
+      if (!name && !first_name && !email_account && !trainee_id) {
+        console.warn(`[n8n Push CP Cleaned] Skipping row ${i}: completely empty row. Keys: ${Object.keys(row).join(', ')}`);
         skippedCount++;
         continue;
       }
