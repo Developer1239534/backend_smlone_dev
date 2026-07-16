@@ -22,6 +22,19 @@ router.get('/', async (req, res) => {
   }
 });
 
+// DEBUG endpoint: Echo what n8n sends (TEMPORARY)
+router.post('/debug', (req, res) => {
+  const body = req.body;
+  const isArray = Array.isArray(body);
+  const sample = isArray ? body[0] : body;
+  res.json({
+    is_array: isArray,
+    total_items: isArray ? body.length : 1,
+    sample_keys: sample ? Object.keys(sample) : [],
+    sample_first_item: sample || null
+  });
+});
+
 // POST endpoint: Push data from n8n
 router.post('/push', async (req, res) => {
   try {
