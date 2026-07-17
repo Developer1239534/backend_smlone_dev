@@ -22,6 +22,8 @@ const level1CaCleanedTraineeRoutes = require('./routes/level1CaCleanedTraineeRou
 const level1CpCleanedTraineeRoutes = require('./routes/level1CpCleanedTraineeRoutes');
 const level1TrCleanedTraineeRoutes = require('./routes/level1TrCleanedTraineeRoutes');
 const level2ReportSeluruhCabangRoutes = require('./routes/level2ReportSeluruhCabangRoutes');
+const level2FeedbackStudentsRoutes = require('./routes/level2FeedbackStudentsRoutes');
+const level3StudentsFeedbackRoutes = require('./routes/level3StudentsFeedbackRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
@@ -252,6 +254,64 @@ const helmet = require('helmet');
         last_real_stage TEXT,
         contact_whatsapp_parent TEXT,
         contact_whatsapp_anak TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create level_3_students_feedback table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_3_students_feedback (
+        id SERIAL PRIMARY KEY,
+        trainee_id TEXT UNIQUE,
+        student_name TEXT,
+        house TEXT,
+        class_trainers TEXT,
+        date TEXT,
+        coach_feedback TEXT,
+        challenge TEXT,
+        speaking_project TEXT,
+        role_2 TEXT,
+        role_3 TEXT,
+        role_4 TEXT,
+        life_project TEXT,
+        win TEXT,
+        fav TEXT,
+        total_gold TEXT,
+        level TEXT,
+        latest_speaking_project TEXT,
+        last_time_speaking TEXT,
+        class TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create level_2_feedback_students table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_2_feedback_students (
+        id SERIAL PRIMARY KEY,
+        row_hash TEXT UNIQUE,
+        student_name TEXT,
+        trainee_id TEXT,
+        house_1 TEXT,
+        class_trainers TEXT,
+        date_text TEXT,
+        coach_feedback TEXT,
+        challenge TEXT,
+        speaking_project TEXT,
+        role_2 TEXT,
+        role_3 TEXT,
+        role_4 TEXT,
+        life_project TEXT,
+        win TEXT,
+        fav TEXT,
+        total_gold TEXT,
+        house_2 TEXT,
+        level TEXT,
+        latest_speaking_project TEXT,
+        last_time_speaking TEXT,
+        class_name TEXT,
         raw_data JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -512,6 +572,10 @@ app.use('/api/admin/level-1-tr-cleaned-trainee', verifyToken, level1TrCleanedTra
 app.use('/admin/level-1-tr-cleaned-trainee', verifyToken, level1TrCleanedTraineeRoutes);
 app.use('/api/admin/level-2-report-seluruh-cabang', verifyToken, level2ReportSeluruhCabangRoutes);
 app.use('/admin/level-2-report-seluruh-cabang', verifyToken, level2ReportSeluruhCabangRoutes);
+app.use('/api/admin/level-2-feedback-students', verifyToken, level2FeedbackStudentsRoutes);
+app.use('/admin/level-2-feedback-students', verifyToken, level2FeedbackStudentsRoutes);
+app.use('/api/admin/level-3-students-feedback', verifyToken, level3StudentsFeedbackRoutes);
+app.use('/admin/level-3-students-feedback', verifyToken, level3StudentsFeedbackRoutes);
 // Alias untuk Dashboard frontend lama
 app.use('/api/admin/cleaned-trainees', verifyToken, level1CaCleanedTraineeRoutes);
 app.use('/admin/cleaned-trainees', verifyToken, level1CaCleanedTraineeRoutes);
@@ -575,6 +639,22 @@ app.use('/api/webhook/level-2-report-seluruh-cabang', (req, res, next) => {
   }
   next();
 }, level2ReportSeluruhCabangRoutes);
+
+app.use('/api/webhook/level-2-feedback-students', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, level2FeedbackStudentsRoutes);
+
+app.use('/api/webhook/level-3-students-feedback', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, level3StudentsFeedbackRoutes);
 
 app.use('/api/chat', verifyToken, chatRoutes);
 app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
