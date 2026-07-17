@@ -29,8 +29,8 @@ const verifyToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Simpan data trainee yang didekodekan ke request
-    req.trainee = decoded.trainee;
+    // Simpan data admin yang didekodekan ke request
+    req.admin = decoded.admin;
     req.user = decoded; // Menyimpan objek utuh untuk fleksibilitas tambahan
     
     next();
