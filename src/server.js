@@ -21,6 +21,7 @@ const adminRegistrationsRoutes = require('./routes/adminRegistrationsRoutes');
 const level1CaCleanedTraineeRoutes = require('./routes/level1CaCleanedTraineeRoutes');
 const level1CpCleanedTraineeRoutes = require('./routes/level1CpCleanedTraineeRoutes');
 const level1TrCleanedTraineeRoutes = require('./routes/level1TrCleanedTraineeRoutes');
+const level2ReportSeluruhCabangRoutes = require('./routes/level2ReportSeluruhCabangRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
@@ -256,6 +257,92 @@ const helmet = require('helmet');
       );
     `);
 
+    // Create level_2_report_seluruh_cabang table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_2_report_seluruh_cabang (
+        id SERIAL PRIMARY KEY,
+        trainee_id TEXT UNIQUE,
+        name TEXT,
+        branch TEXT,
+        membership_expiry_date TEXT,
+        active_expired TEXT,
+        cleaned_program TEXT,
+        cleaned_class TEXT,
+        house TEXT,
+        students_report_link TEXT,
+        id_vs_student_report_link TEXT,
+        total_gold TEXT,
+        level TEXT,
+        l1_sproject_1 TEXT,
+        l1_sproject_2 TEXT,
+        l1_sproject_3 TEXT,
+        l1_sproject_4 TEXT,
+        l1_sproject_5 TEXT,
+        l1_sproject_6 TEXT,
+        l1_sproject_7 TEXT,
+        l1_sproject_8 TEXT,
+        l2_sproject_1 TEXT,
+        l2_sproject_2 TEXT,
+        l2_sproject_3 TEXT,
+        l2_sproject_4 TEXT,
+        l2_sproject_5 TEXT,
+        l2_sproject_6 TEXT,
+        l2_sproject_7 TEXT,
+        l2_sproject_8 TEXT,
+        l2_sproject_9 TEXT,
+        l2_sproject_10 TEXT,
+        l3_sproject_1 TEXT,
+        l3_sproject_2 TEXT,
+        l3_sproject_3 TEXT,
+        l3_sproject_4 TEXT,
+        l3_sproject_5 TEXT,
+        l3_sproject_6 TEXT,
+        l3_sproject_7 TEXT,
+        l3_sproject_8 TEXT,
+        l3_sproject_9 TEXT,
+        l3_sproject_10 TEXT,
+        l4_sproject_1 TEXT,
+        l4_sproject_2 TEXT,
+        l4_sproject_3 TEXT,
+        l4_sproject_4 TEXT,
+        l4_sproject_5 TEXT,
+        l4_sproject_6 TEXT,
+        l4_sproject_7 TEXT,
+        l4_sproject_8 TEXT,
+        l4_sproject_9 TEXT,
+        l4_sproject_10 TEXT,
+        l5_sproject_1 TEXT,
+        l5_sproject_2 TEXT,
+        l5_sproject_3 TEXT,
+        l5_sproject_4 TEXT,
+        l5_sproject_5 TEXT,
+        l5_sproject_6 TEXT,
+        l5_sproject_7 TEXT,
+        l5_sproject_8 TEXT,
+        l5_sproject_9 TEXT,
+        l5_sproject_10 TEXT,
+        l6_sproject_1 TEXT,
+        l6_sproject_2 TEXT,
+        l6_sproject_3 TEXT,
+        l6_sproject_4 TEXT,
+        l6_sproject_5 TEXT,
+        l6_sproject_6 TEXT,
+        l6_sproject_7 TEXT,
+        l6_sproject_8 TEXT,
+        l6_sproject_9 TEXT,
+        l6_sproject_10 TEXT,
+        latest_speaking_project TEXT,
+        speaking_project_to_next_level TEXT,
+        level_6_link TEXT,
+        last_speaker_date TEXT,
+        last_life_project_date TEXT,
+        last_life_project TEXT,
+        last_attendance TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Create level_1_tr_cleaned_trainee table
     await db.query(`
       CREATE TABLE IF NOT EXISTS level_1_tr_cleaned_trainee (
@@ -423,6 +510,8 @@ app.use('/api/admin/level-1-cp-cleaned-trainee', verifyToken, level1CpCleanedTra
 app.use('/admin/level-1-cp-cleaned-trainee', verifyToken, level1CpCleanedTraineeRoutes);
 app.use('/api/admin/level-1-tr-cleaned-trainee', verifyToken, level1TrCleanedTraineeRoutes);
 app.use('/admin/level-1-tr-cleaned-trainee', verifyToken, level1TrCleanedTraineeRoutes);
+app.use('/api/admin/level-2-report-seluruh-cabang', verifyToken, level2ReportSeluruhCabangRoutes);
+app.use('/admin/level-2-report-seluruh-cabang', verifyToken, level2ReportSeluruhCabangRoutes);
 // Alias untuk Dashboard frontend lama
 app.use('/api/admin/cleaned-trainees', verifyToken, level1CaCleanedTraineeRoutes);
 app.use('/admin/cleaned-trainees', verifyToken, level1CaCleanedTraineeRoutes);
@@ -478,6 +567,14 @@ app.use('/api/webhook/level-1-tr-cleaned-trainee', (req, res, next) => {
   }
   next();
 }, level1TrCleanedTraineeRoutes);
+
+app.use('/api/webhook/level-2-report-seluruh-cabang', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, level2ReportSeluruhCabangRoutes);
 
 app.use('/api/chat', verifyToken, chatRoutes);
 app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
