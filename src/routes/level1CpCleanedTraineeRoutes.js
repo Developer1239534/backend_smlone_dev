@@ -64,95 +64,88 @@ router.post('/push', async (req, res) => {
         continue;
       }
 
-      // Map JSON to columns (with fallback for numeric keys if n8n reads the wrong header row)
-      const name = row['Name'] || row['AUTOMATED'] || ''; // Name is often under AUTOMATED in their sheet
-      const trainee_id = row['ID'] || row['2'] || '';
-      const first_name = row['First Name'] || row['3'] || '';
-      const last_name = row['Last Name'] || row['4'] || '';
-      const gender = row['Gender'] || row['5'] || '';
-      const dob = row['Date of Birth'] || row['6'] || '';
-      const school = row['Nama Sekolah'] || row['7'] || '';
-      const grade = row['Kelas'] || row['8'] || '';
-      const phone = row['Contact / Whatsapp'] || row['9'] || '';
-      const profession = row['Profession'] || row['10'] || '';
-      const email_account = row['Email Account'] || row['11'] || '';
-      
-      // Skip if essential data is missing
-      // Remove strict skipping so all data from sheet goes in
-      if (!name && !first_name && !email_account && !trainee_id) {
-        console.warn(`[n8n Push CP Cleaned] Skipping row ${i}: completely empty row. Keys: ${Object.keys(row).join(', ')}`);
-        skippedCount++;
-        continue;
-      }
-
-      const location = row['Location'] || row['12'] || '';
-      const profile_picture = row['Profile Picture'] || row['13'] || '';
-      const emergency_contact_name = row['Emergency Contact Person'] || row['14'] || '';
-      const emergency_contact_phone = row['Emergency Contact No'] || row['15'] || '';
-      const allow_sharing = row['Allow Sharing/Documentation'] || row['16'] || '';
-      const program_registered = row['Program Registered'] || row['17'] || '';
-      const parents_email = row['Parents Email'] || row['18'] || '';
-      const date_created = row['Date Created'] || row['19'] || '';
-      const shirt_size = row['Shirt Size'] || row['20'] || '';
-      const date_record_created = row['Date Record Created'] || row['20 Jan 00'] || '';
-      const start_date = row['Start Date'] || row['21 Jan 00'] || '';
-      const membership_duration_days = row['Membership Duration (in Days)'] || '';
-      const membership_expiry_date = row['Membership Expiry Date (AE2)'] || '';
-      const days_left = row['Days Left'] || '';
-      const status_active_expired = row['Active/ Expired'] || '';
-      const class_status = row['Class Status'] || '';
+      const trainee_id = row['ID'] || '';
+      const name = row['Name'] || '';
+      const gender = row['Gender'] || '';
+      const dob = row['Date of Birth'] || '';
+      const school = row['Nama Sekolah'] || '';
       const cleaned_program = row['Cleaned Program'] || '';
-      const membership_from_ae2 = row['MEMBERSHIP FROM AE2'] || '';
-      const clean_membership_status = row['Clean Membership Status'] || '';
-      const check_ac_ad = row['CHECK AC=AD'] || '';
-      const cabang = row['CABANG'] || '';
-      const clean_parents_email = row['Clean Parents? Email'] || '';
+      const membership = row['MEMBERSHIP'] || '';
+      const expiry_date = row['EXPIRY DATE'] || '';
+      const cabang_id = row['CABANG ID'] || '';
+      const first_enroll = row['FIRST ENROLL'] || '';
       const class_name = row['CLASS'] || '';
       const house = row['HOUSE'] || '';
       const level = row['Level'] || '';
       const house_role = row['House Role'] || '';
-      const nomor_trainee = row['Nomor Trainee'] || '';
-      const email_trainee = row['Email Trainee'] || '';
-      const check_double_id = row['Check double ID'] || '';
-      const new_profile_picture = row['New Profile Picture'] || '';
-      const history_grade = row['History Grade'] || '';
-      const less_than_2022_students_grade_helper = row['<2022 students grade helper'] || '';
+      const cabang_kelas = row['CABANG KELAS'] || '';
+      const newest_grade = row['NEWEST GRADE'] || '';
+      const trainee_homeroom = row['Trainee Homeroom'] || '';
+      const screening_test = row['Screening Test'] || '';
+      const draft_grade = row['Draft Grade'] || '';
+      const prev_grade = row['Prev Grade'] || '';
+      const ajy_by_class = row['A/J/Y by Class'] || '';
+      const last_real_stage = row['Last Real Stage'] || '';
+      const contact_whatsapp_parent = row['Contact / Whatsapp Parent'] || '';
+      const contact_whatsapp_anak = row['Contact / Whatsapp Anak'] || '';
+
+      if (!trainee_id && !name) {
+        console.warn(`[n8n Push CP Cleaned] Skipping row ${i}: empty ID and Name.`);
+        skippedCount++;
+        continue;
+      }
 
       const raw_data = JSON.stringify(row);
 
       try {
         const upsertQuery = `
           INSERT INTO level_1_cp_cleaned_trainee (
-            name, trainee_id, first_name, last_name, gender, dob, school, grade, phone, profession, 
-            email_account, location, profile_picture, emergency_contact_name, emergency_contact_phone, 
-            allow_sharing, program_registered, parents_email, date_created, shirt_size, date_record_created, 
-            start_date, membership_duration_days, membership_expiry_date, days_left, status_active_expired, 
-            class_status, cleaned_program, membership_from_ae2, clean_membership_status, check_ac_ad, cabang, 
-            clean_parents_email, class_name, house, level, house_role, nomor_trainee, 
-            email_trainee, check_double_id, new_profile_picture, history_grade, less_than_2022_students_grade_helper, raw_data
+            trainee_id, name, gender, dob, school, cleaned_program, membership, expiry_date,
+            cabang_id, first_enroll, class_name, house, level, house_role, cabang_kelas,
+            newest_grade, trainee_homeroom, screening_test, draft_grade, prev_grade,
+            ajy_by_class, last_real_stage, contact_whatsapp_parent, contact_whatsapp_anak, raw_data
           ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-            $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-            $31, $32, $33, $34, $35, $36, $37, $38, $39, $40,
-            $41, $42, $43, $44
-          )
+            $21, $22, $23, $24, $25
+          ) ON CONFLICT (trainee_id) DO UPDATE SET
+            name = EXCLUDED.name,
+            gender = EXCLUDED.gender,
+            dob = EXCLUDED.dob,
+            school = EXCLUDED.school,
+            cleaned_program = EXCLUDED.cleaned_program,
+            membership = EXCLUDED.membership,
+            expiry_date = EXCLUDED.expiry_date,
+            cabang_id = EXCLUDED.cabang_id,
+            first_enroll = EXCLUDED.first_enroll,
+            class_name = EXCLUDED.class_name,
+            house = EXCLUDED.house,
+            level = EXCLUDED.level,
+            house_role = EXCLUDED.house_role,
+            cabang_kelas = EXCLUDED.cabang_kelas,
+            newest_grade = EXCLUDED.newest_grade,
+            trainee_homeroom = EXCLUDED.trainee_homeroom,
+            screening_test = EXCLUDED.screening_test,
+            draft_grade = EXCLUDED.draft_grade,
+            prev_grade = EXCLUDED.prev_grade,
+            ajy_by_class = EXCLUDED.ajy_by_class,
+            last_real_stage = EXCLUDED.last_real_stage,
+            contact_whatsapp_parent = EXCLUDED.contact_whatsapp_parent,
+            contact_whatsapp_anak = EXCLUDED.contact_whatsapp_anak,
+            raw_data = EXCLUDED.raw_data;
         `;
         
         await db.query(upsertQuery, [
-          name, trainee_id, first_name, last_name, gender, dob, school, grade, phone, profession, 
-          email_account, location, profile_picture, emergency_contact_name, emergency_contact_phone, 
-          allow_sharing, program_registered, parents_email, date_created, shirt_size, date_record_created, 
-          start_date, membership_duration_days, membership_expiry_date, days_left, status_active_expired, 
-          class_status, cleaned_program, membership_from_ae2, clean_membership_status, check_ac_ad, cabang, 
-          clean_parents_email, class_name, house, level, house_role, nomor_trainee, 
-          email_trainee, check_double_id, new_profile_picture, history_grade, less_than_2022_students_grade_helper, raw_data
+            trainee_id, name, gender, dob, school, cleaned_program, membership, expiry_date,
+            cabang_id, first_enroll, class_name, house, level, house_role, cabang_kelas,
+            newest_grade, trainee_homeroom, screening_test, draft_grade, prev_grade,
+            ajy_by_class, last_real_stage, contact_whatsapp_parent, contact_whatsapp_anak, raw_data
         ]);
         insertedCount++;
       } catch (rowError) {
         errorCount++;
-        errors.push({ index: i, email: email_account, name: first_name, error: rowError.message });
-        console.error(`[n8n Push CP Cleaned] Error on row ${i} (${first_name} / ${email_account}):`, rowError.message);
+        errors.push({ index: i, id: trainee_id, name: name, error: rowError.message });
+        console.error(`[n8n Push CP Cleaned] Error on row ${i} (${name} / ${trainee_id}):`, rowError.message);
       }
     }
 
@@ -185,13 +178,10 @@ router.put('/:id', async (req, res) => {
 
   try {
     const allowedColumns = [
-      'name', 'trainee_id', 'first_name', 'last_name', 'gender', 'dob', 'school', 'grade', 'phone', 'profession', 
-      'email_account', 'location', 'profile_picture', 'emergency_contact_name', 'emergency_contact_phone', 
-      'allow_sharing', 'program_registered', 'parents_email', 'date_created', 'shirt_size', 'date_record_created', 
-      'start_date', 'membership_duration_days', 'membership_expiry_date', 'days_left', 'status_active_expired', 
-      'class_status', 'cleaned_program', 'membership_from_ae2', 'clean_membership_status', 'check_ac_ad', 'cabang', 
-      'clean_parents_email', 'class_name', 'house', 'level', 'house_role', 'nomor_trainee', 
-      'email_trainee', 'check_double_id', 'new_profile_picture', 'history_grade', 'less_than_2022_students_grade_helper', 'raw_data'
+      'trainee_id', 'name', 'gender', 'dob', 'school', 'cleaned_program', 'membership', 'expiry_date',
+      'cabang_id', 'first_enroll', 'class_name', 'house', 'level', 'house_role', 'cabang_kelas',
+      'newest_grade', 'trainee_homeroom', 'screening_test', 'draft_grade', 'prev_grade',
+      'ajy_by_class', 'last_real_stage', 'contact_whatsapp_parent', 'contact_whatsapp_anak', 'raw_data'
     ];
 
     let setQuery = [];
