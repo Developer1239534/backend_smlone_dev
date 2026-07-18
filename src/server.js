@@ -28,6 +28,7 @@ const newsRoutes = require('./routes/newsRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
 const level1CpRegistrationsRoutes = require('./routes/level1CpRegistrationsRoutes');
 const level1TrRegistrationsRoutes = require('./routes/level1TrRegistrationsRoutes');
+const level1KeseluruhanRoutes = require('./routes/level1KeseluruhanRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 const { rateLimit } = require('express-rate-limit');
 const helmet = require('helmet');
@@ -425,6 +426,38 @@ const helmet = require('helmet');
       );
     `);
 
+    // Create level_1_keseluruhan table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_1_keseluruhan (
+        id SERIAL PRIMARY KEY,
+        email_address TEXT,
+        full_name TEXT,
+        dob TEXT,
+        gender TEXT,
+        address TEXT,
+        contact_whatsapp TEXT,
+        program TEXT,
+        pernah_ikut_program TEXT,
+        program_pernah_diikuti TEXT,
+        todays_date TEXT,
+        i_agree_doc TEXT,
+        program_dipilih TEXT,
+        nama_sekolah TEXT,
+        kelas_peserta TEXT,
+        parents_email TEXT,
+        emergency_contact_person TEXT,
+        emergency_contact_number TEXT,
+        tahu_smlone_dari TEXT,
+        referensi_teman TEXT,
+        ig_mama TEXT,
+        ig_papa TEXT,
+        ig_anak TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (email_address, full_name)
+      );
+    `);
+
     // Clean up old tables as requested by user
     await db.query(`DROP TABLE IF EXISTS level_1_ca_class CASCADE;`);
     await db.query(`DROP TABLE IF EXISTS newest_grade CASCADE;`);
@@ -451,6 +484,8 @@ app.use(cors({
     'https://admin.smlone.com',
     'http://localhost:5173',       // local dev
     'http://localhost:5174',
+    'http://localhost:8000',
+    'http://localhost:3000',
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -535,6 +570,8 @@ app.use('/api/admin/level-1-cp-registrations', verifyToken, level1CpRegistration
 app.use('/admin/level-1-cp-registrations', verifyToken, level1CpRegistrationsRoutes);
 app.use('/api/admin/level-1-tr-registrations', verifyToken, level1TrRegistrationsRoutes);
 app.use('/admin/level-1-tr-registrations', verifyToken, level1TrRegistrationsRoutes);
+app.use('/api/admin/level-1-keseluruhan', verifyToken, level1KeseluruhanRoutes);
+app.use('/admin/level-1-keseluruhan', verifyToken, level1KeseluruhanRoutes);
 app.use('/api/admin/level-1-ca-cleaned-trainee', verifyToken, level1CaCleanedTraineeRoutes);
 app.use('/admin/level-1-ca-cleaned-trainee', verifyToken, level1CaCleanedTraineeRoutes);
 app.use('/api/admin/level-1-cp-cleaned-trainee', verifyToken, level1CpCleanedTraineeRoutes);
@@ -574,6 +611,14 @@ app.use('/api/webhook/level-1-tr-registrations', (req, res, next) => {
   }
   next();
 }, level1TrRegistrationsRoutes);
+
+app.use('/api/webhook/level-1-keseluruhan', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, level1KeseluruhanRoutes);
 
 // Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
 // Menggunakan API Key statis sederhana
