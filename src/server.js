@@ -482,7 +482,6 @@ app.use(cors({
   origin: [
     'https://portal.smlone.com',
     'https://admin.smlone.com',
-    'https://registrasi.smlone.com',
     'http://localhost:5173',       // local dev
     'http://localhost:5174',
     'http://localhost:8000',

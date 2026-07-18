@@ -171,6 +171,31 @@ router.post('/push', async (req, res) => {
           referensi_teman, ig_mama, ig_papa, ig_anak, raw_data
         ]);
         insertedCount++;
+
+        // ============================
+        // OTOMATIS KIRIM KE GOOGLE SHEETS VIA N8N
+        // ============================
+        const n8nWebhookUrl = process.env.N8N_SHEETS_WEBHOOK_URL;
+        if (n8nWebhookUrl) {
+          // Kirim payload asli dari React FE ke N8N secara real-time
+          fetch(n8nWebhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': 'smlone-n8n-secret-key-2026'
+            },
+            body: JSON.stringify(row)
+          })
+          .then(res => {
+            if (!res.ok) {
+              console.warn(`[N8N Sync Warning] N8N merespons dengan status: ${res.status}`);
+            }
+          })
+          .catch(err => {
+            console.error('[N8N Sync Error] Gagal mengirim data ke N8N:', err.message);
+          });
+        }
+
       } catch (rowError) {
         errorCount++;
         errors.push({ index: i, email: email_address, name: full_name, error: rowError.message });
