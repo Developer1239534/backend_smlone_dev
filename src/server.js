@@ -479,14 +479,18 @@ const path = require('path');
 
 app.use(helmet({ crossOriginResourcePolicy: false })); // allow static images cross-origin
 app.use(cors({
-  origin: [
-    'https://portal.smlone.com',
-    'https://admin.smlone.com',
-    'http://localhost:5173',       // local dev
-    'http://localhost:5174',
-    'http://localhost:8000',
-    'http://localhost:3000',
-  ],
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    
+    const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+    const isSmlone = origin.endsWith('.smlone.com') || origin === 'https://smlone.com' || origin.endsWith('.smlone.cloud') || origin === 'https://smlone.cloud';
+    
+    if (isLocalhost || isSmlone) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
