@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST endpoint: Push data from n8n
+// POST endpoint: Push data from n8n or React FE
 router.post('/push', async (req, res) => {
   try {
     let data = req.body;
@@ -40,13 +40,13 @@ router.post('/push', async (req, res) => {
     let errorCount = 0;
     const errors = [];
     
-    console.log(`[n8n Push Level 1 Keseluruhan] Received ${data.length} items`);
+    console.log(`[Push Level 1 Keseluruhan] Received ${data.length} items`);
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
 
       if (!row || typeof row !== 'object') {
-        console.warn(`[n8n Push Level 1 Keseluruhan] Skipping invalid row at index ${i}:`, row);
+        console.warn(`[Push Level 1 Keseluruhan] Skipping invalid row at index ${i}:`, row);
         skippedCount++;
         continue;
       }
@@ -58,73 +58,85 @@ router.post('/push', async (req, res) => {
 
       // ============================
       // HALAMAN 1: DATA DIRI UTAMA
+      // Mendukung Google Sheets header DAN standard camelCase/snake_case dari React FE
       // ============================
-      const email_address = row['Email'] || row['Email Address'] || '';
-      const full_name = row['Full Name'] || '';
-      const dob = row['Date of Birth'] || '';
-      const gender = row['Gender'] || '';
-      const address = row['Address'] || '';
-      const contact_whatsapp = row['Contact / Whatsapp No.'] || row['Contact / Whatsapp'] || '';
-      const program = row['Program'] || '';
-      const pernah_ikut_program = row['Apakah anak Anda sebelumnya pernah mengikuti program di SMLONE?'] || '';
+      const email_address = row['Email'] || row['Email Address'] || row['email'] || row['email_address'] || row['emailAddress'] || '';
+      const full_name = row['Full Name'] || row['fullName'] || row['full_name'] || row['name'] || '';
+      const dob = row['Date of Birth'] || row['dateOfBirth'] || row['date_of_birth'] || row['dob'] || '';
+      const gender = row['Gender'] || row['gender'] || '';
+      const address = row['Address'] || row['address'] || '';
+      const contact_whatsapp = row['Contact / Whatsapp No.'] || row['Contact / Whatsapp'] || row['contact_whatsapp'] || row['contactWhatsapp'] || row['phone'] || row['whatsapp'] || '';
+      const program = row['Program'] || row['program'] || '';
+      const pernah_ikut_program = row['Apakah anak Anda sebelumnya pernah mengikuti program di SMLONE?'] || row['pernah_ikut_program'] || row['alreadyFollowed'] || row['is_previous_student'] || '';
       const program_pernah_diikuti = row['Jika pernah mengikuti program di SMLONE, mohon pilih program yang pernah anak Anda ikuti'] || 
                                      row['Jika pernah mengikuti program di SMLONE, mohon pilih program yang pernah anak Anda ikut'] || 
-                                     row['Program yang pernah diikuti'] || '';
-      const todays_date = row["Today's Date"] || '';
+                                     row['Program yang pernah diikuti'] || 
+                                     row['program_pernah_diikuti'] || row['previous_programs'] || '';
+      const todays_date = row["Today's Date"] || row['todays_date'] || row['todaysDate'] || row['date'] || '';
       const i_agree_doc = row['Consent Box (Persetujuan Dokumentasi)'] || 
-                          row['I Agree, to allow PT. SMLONE INDONESIA, to use any documentation taken in SMLONE programs or other related programs to be used for promotional & educational Purposes.'] || '';
+                          row['I Agree, to allow PT. SMLONE INDONESIA, to use any documentation taken in SMLONE programs or other related programs to be used for promotional & educational Purposes.'] || 
+                          row['i_agree_doc'] || row['consent'] || row['agreement'] || '';
 
       // ============================
-      // HALAMAN 2: DETAIL SEKOLAH & ORANG TUA (Menggabungkan Kolom yang Terbagi/Duplikat dari Google Sheets)
+      // HALAMAN 2: DETAIL SEKOLAH & ORANG TUA
       // ============================
-      const program_dipilih = row['Apprentice/Junior/Youth SMLONE Program Yang Dipilih'] || row['Program Yang Dipilih'] || '';
+      const program_dipilih = row['Apprentice/Junior/Youth SMLONE Program Yang Dipilih'] || row['Program Yang Dipilih'] || row['program_dipilih'] || row['selected_program'] || row['selectedProgram'] || '';
       
       const nama_sekolah = row['Nama Sekolah (Peserta Training)'] || 
                            row['Nama Sekolah (Peserta Training)1'] || 
-                           row['Nama Sekolah (Peserta Training) 1'] || '';
+                           row['Nama Sekolah (Peserta Training) 1'] || 
+                           row['nama_sekolah'] || row['school'] || row['schoolName'] || '';
       
       const kelas_peserta = row['Kelas (Peserta Training)'] || 
                             row['Kelas (Peserta Training)1'] || 
-                            row['Kelas (Peserta Training) 1'] || '';
+                            row['Kelas (Peserta Training) 1'] || 
+                            row['kelas_peserta'] || row['grade'] || row['class'] || '';
       
       const parents_email = row["Parent's Email"] || 
                             row["Parent's Email1"] || 
-                            row["Parent's Email 1"] || '';
+                            row["Parent's Email 1"] || 
+                            row['parents_email'] || row['parentEmail'] || row['parent_email'] || '';
       
       const emergency_contact_person = row['Emergency Contact Person'] || 
                                        row['Emergency Contact Person1'] || 
-                                       row['Emergency Contact Person 1'] || '';
+                                       row['Emergency Contact Person 1'] || 
+                                       row['emergency_contact_person'] || row['emergencyContactPerson'] || row['emergency_contact_name'] || '';
       
       const emergency_contact_number = row['Emergency Contact Number'] || 
                                        row['Emergency Contact Number1'] || 
-                                       row['Emergency Contact Number 1'] || '';
+                                       row['Emergency Contact Number 1'] || 
+                                       row['emergency_contact_number'] || row['emergencyContactNumber'] || row['emergency_contact_phone'] || '';
       
       const tahu_smlone_dari = row['Dari Manakah Anda Mengetahui SMLONE?'] || 
                                row['Dari Manakah Anda Mengetahui SMLONE?1'] || 
-                               row['Dari Manakah Anda Mengetahui SMLONE? 1'] || '';
+                               row['Dari Manakah Anda Mengetahui SMLONE? 1'] || 
+                               row['tahu_smlone_dari'] || row['source'] || row['knowFrom'] || '';
       
-      // Mengambil referensi teman ke-1, ke-2 atau ke-3 (karena bisa terpisah kolomnya)
       const referensi_teman = row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan'] || 
                               row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan1'] || 
                               row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan 1'] || 
                               row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan2'] || 
-                              row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan 2'] || '';
+                              row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan 2'] || 
+                              row['referensi_teman'] || row['referral'] || row['friendName'] || '';
 
       const ig_mama = row['Akun Instagram Mama'] || 
                       row['Akun Instagram Mama1'] || 
-                      row['Akun Instagram Mama 1'] || '';
+                      row['Akun Instagram Mama 1'] || 
+                      row['ig_mama'] || row['instagram_mama'] || row['instagramMama'] || '';
       
       const ig_papa = row['Akun Instagram Papa'] || 
                       row['Akun Instagram Papa1'] || 
-                      row['Akun Instagram Papa 1'] || '';
+                      row['Akun Instagram Papa 1'] || 
+                      row['ig_papa'] || row['instagram_papa'] || row['instagramPapa'] || '';
       
       const ig_anak = row['Akun Instagram Anak'] || 
                       row['Akun Instagram Anak1'] || 
-                      row['Akun Instagram Anak 1'] || '';
+                      row['Akun Instagram Anak 1'] || 
+                      row['ig_anak'] || row['instagram_anak'] || row['instagramAnak'] || '';
 
       // Skip jika data penting kosong
       if (!email_address || !full_name) {
-        console.warn(`[n8n Push Level 1 Keseluruhan] Skipping row ${i}: missing email_address="${email_address}" or full_name="${full_name}". Keys: ${Object.keys(row).join(', ')}`);
+        console.warn(`[Push Level 1 Keseluruhan] Skipping row ${i}: missing email_address="${email_address}" or full_name="${full_name}". Keys: ${Object.keys(row).join(', ')}`);
         skippedCount++;
         continue;
       }
@@ -182,11 +194,11 @@ router.post('/push', async (req, res) => {
       } catch (rowError) {
         errorCount++;
         errors.push({ index: i, email: email_address, name: full_name, error: rowError.message });
-        console.error(`[n8n Push Level 1 Keseluruhan] Error on row ${i} (${full_name} / ${email_address}):`, rowError.message);
+        console.error(`[Push Level 1 Keseluruhan] Error on row ${i} (${full_name} / ${email_address}):`, rowError.message);
       }
     }
 
-    console.log(`[n8n Push Level 1 Keseluruhan] Done: inserted=${insertedCount}, skipped=${skippedCount}, errors=${errorCount}`);
+    console.log(`[Push Level 1 Keseluruhan] Done: inserted=${insertedCount}, skipped=${skippedCount}, errors=${errorCount}`);
 
     res.json({
       success: true,
@@ -195,10 +207,10 @@ router.post('/push', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[n8n Push Level 1 Keseluruhan] Fatal error:', error.message);
+    console.error('[Push Level 1 Keseluruhan] Fatal error:', error.message);
     res.status(500).json({ 
       success: false, 
-      message: 'Gagal memproses data kiriman n8n.',
+      message: 'Gagal memproses data kiriman.',
       error: error.message 
     });
   }
