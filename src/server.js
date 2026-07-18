@@ -29,6 +29,7 @@ const whatsappRoutes = require('./routes/whatsappRoutes');
 const level1CpRegistrationsRoutes = require('./routes/level1CpRegistrationsRoutes');
 const level1TrRegistrationsRoutes = require('./routes/level1TrRegistrationsRoutes');
 const level1KeseluruhanRoutes = require('./routes/level1KeseluruhanRoutes');
+const level1AutomedSmloneStaffRoutes = require('./routes/level1AutomedSmloneStaffRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 const { rateLimit } = require('express-rate-limit');
 const helmet = require('helmet');
@@ -77,6 +78,37 @@ const helmet = require('helmet');
         raw_data JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE (email_address, full_name)
+      );
+    `);
+
+    // Create level_1_automed_smlone_staff table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS level_1_automed_smlone_staff (
+        id SERIAL PRIMARY KEY,
+        trainee_id TEXT UNIQUE,
+        name TEXT,
+        gender TEXT,
+        dob TEXT,
+        nama_sekolah TEXT,
+        cleaned_program TEXT,
+        membership TEXT,
+        expiry_date TEXT,
+        cabang_id TEXT,
+        first_enroll TEXT,
+        class_name TEXT,
+        house TEXT,
+        level TEXT,
+        house_role TEXT,
+        cabang_kelas TEXT,
+        newest_grade TEXT,
+        trainee_homeroom TEXT,
+        screening_test TEXT,
+        draft_grade TEXT,
+        prev_grade TEXT,
+        ajy_by_class TEXT,
+        last_real_stage TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -190,6 +222,8 @@ app.use('/api/admin/level-1-tr-registrations', verifyToken, level1TrRegistration
 app.use('/admin/level-1-tr-registrations', verifyToken, level1TrRegistrationsRoutes);
 app.use('/api/admin/level-1-keseluruhan', verifyToken, level1KeseluruhanRoutes);
 app.use('/admin/level-1-keseluruhan', verifyToken, level1KeseluruhanRoutes);
+app.use('/api/admin/level-1-automed-smlone-staff', verifyToken, level1AutomedSmloneStaffRoutes);
+app.use('/admin/level-1-automed-smlone-staff', verifyToken, level1AutomedSmloneStaffRoutes);
 app.use('/api/admin/level-1-ca-cleaned-trainee', verifyToken, level1CaCleanedTraineeRoutes);
 app.use('/admin/level-1-ca-cleaned-trainee', verifyToken, level1CaCleanedTraineeRoutes);
 app.use('/api/admin/level-1-cp-cleaned-trainee', verifyToken, level1CpCleanedTraineeRoutes);
@@ -231,6 +265,7 @@ app.use('/api/webhook/level-1-tr-registrations', (req, res, next) => {
 }, level1TrRegistrationsRoutes);
 
 app.use('/api/webhook/level-1-keseluruhan', level1KeseluruhanRoutes);
+app.use('/api/webhook/level-1-automed-smlone-staff', level1AutomedSmloneStaffRoutes);
 
 // Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
 // Menggunakan API Key statis sederhana
