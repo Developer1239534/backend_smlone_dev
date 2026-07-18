@@ -10,9 +10,9 @@ const pool = new Pool({
 
 async function dropTable() {
   try {
-    console.log('Dropping table voucher_realstage...');
-    await pool.query('DROP TABLE IF EXISTS voucher_realstage CASCADE;');
-    console.log('Table voucher_realstage has been successfully DROPPED!');
+    console.log('Dropping table level_1_cp_cleaned_trainee...');
+    await pool.query('DROP TABLE IF EXISTS level_1_cp_cleaned_trainee CASCADE;');
+    console.log('Table level_1_cp_cleaned_trainee has been successfully DROPPED!');
   } catch (e) {
     console.error('Error dropping table:', e);
   } finally {

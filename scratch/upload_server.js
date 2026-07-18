@@ -21,20 +21,28 @@ conn.on('ready', () => {
     const file1Local = './src/server.js';
     const file1Remote = '/root/backend_smlone_dev/src/server.js';
     
+    const file2Local = './src/routes/level1KeseluruhanRoutes.js';
+    const file2Remote = '/root/backend_smlone_dev/src/routes/level1KeseluruhanRoutes.js';
+    
     sftp.fastPut(file1Local, file1Remote, (err) => {
       if (err) throw err;
       console.log('Updated server.js');
       
-      console.log('Restarting server...');
-      conn.exec('cd /root/backend_smlone_dev && pm2 restart smlone-backend', (err, stream) => {
+      sftp.fastPut(file2Local, file2Remote, (err) => {
         if (err) throw err;
-        stream.on('close', (code, signal) => {
-          console.log('Server restarted! All done.');
-          conn.end();
-        }).on('data', (data) => {
-          process.stdout.write(data);
-        }).stderr.on('data', (data) => {
-          process.stderr.write(data);
+        console.log('Updated level1KeseluruhanRoutes.js');
+
+        console.log('Restarting server...');
+        conn.exec('cd /root/backend_smlone_dev && pm2 restart smlone-backend', (err, stream) => {
+          if (err) throw err;
+          stream.on('close', (code, signal) => {
+            console.log('Server restarted! All done.');
+            conn.end();
+          }).on('data', (data) => {
+            process.stdout.write(data);
+          }).stderr.on('data', (data) => {
+            process.stderr.write(data);
+          });
         });
       });
     });

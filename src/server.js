@@ -612,13 +612,7 @@ app.use('/api/webhook/level-1-tr-registrations', (req, res, next) => {
   next();
 }, level1TrRegistrationsRoutes);
 
-app.use('/api/webhook/level-1-keseluruhan', (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== 'smlone-n8n-secret-key-2026') {
-    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
-  }
-  next();
-}, level1KeseluruhanRoutes);
+app.use('/api/webhook/level-1-keseluruhan', level1KeseluruhanRoutes);
 
 // Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
 // Menggunakan API Key statis sederhana

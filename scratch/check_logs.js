@@ -8,9 +8,14 @@ const config = {
   readyTimeout: 30000,
 };
 conn.on('ready', () => {
-  conn.exec('pm2 logs smlone-backend --lines 50 --nostream', (err, stream) => {
+  console.log('Connected via SSH. Fetching pm2 logs...');
+  conn.exec('pm2 logs smlone-backend --lines 100 --nostream', (err, stream) => {
+    if (err) throw err;
     stream.on('close', () => {
       conn.end();
-    }).on('data', d => process.stdout.write(d)).stderr.on('data', d => process.stderr.write(d));
+    }).on('data', d => process.stdout.write(d))
+      .stderr.on('data', d => process.stderr.write(d));
   });
+}).on('error', (err) => {
+  console.error('Connection Error:', err);
 }).connect(config);
