@@ -17,17 +17,9 @@ const adminHouseRankRoutes = require('./routes/adminHouseRankRoutes');
 const adminHouseRoutes = require('./routes/adminHouseRoutes');
 const adminMybyCoinRoutes = require('./routes/adminMybyCoinRoutes');
 const adminQuestionsRoutes = require('./routes/adminQuestionsRoutes');
-const adminRegistrationsRoutes = require('./routes/adminRegistrationsRoutes');
-const level1CaCleanedTraineeRoutes = require('./routes/level1CaCleanedTraineeRoutes');
-const level1CpCleanedTraineeRoutes = require('./routes/level1CpCleanedTraineeRoutes');
-const level1TrCleanedTraineeRoutes = require('./routes/level1TrCleanedTraineeRoutes');
-const level2ReportSeluruhCabangRoutes = require('./routes/level2ReportSeluruhCabangRoutes');
-const level2FeedbackStudentsRoutes = require('./routes/level2FeedbackStudentsRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
-const level1CpRegistrationsRoutes = require('./routes/level1CpRegistrationsRoutes');
-const level1TrRegistrationsRoutes = require('./routes/level1TrRegistrationsRoutes');
 const level1KeseluruhanRoutes = require('./routes/level1KeseluruhanRoutes');
 const level1AutomedSmloneStaffRoutes = require('./routes/level1AutomedSmloneStaffRoutes');
 const verifyToken = require('./middleware/authMiddleware');
@@ -214,100 +206,15 @@ app.use('/api/admin/quiz-history', verifyToken, adminQuizHistoryRoutes);
 app.use('/admin/quiz-history', verifyToken, adminQuizHistoryRoutes);
 app.use('/api/admin/questions', verifyToken, adminQuestionsRoutes);
 app.use('/admin/questions', verifyToken, adminQuestionsRoutes);
-app.use('/api/admin/registrations', verifyToken, adminRegistrationsRoutes);
-app.use('/admin/registrations', verifyToken, adminRegistrationsRoutes);
-app.use('/api/admin/level-1-cp-registrations', verifyToken, level1CpRegistrationsRoutes);
-app.use('/admin/level-1-cp-registrations', verifyToken, level1CpRegistrationsRoutes);
-app.use('/api/admin/level-1-tr-registrations', verifyToken, level1TrRegistrationsRoutes);
-app.use('/admin/level-1-tr-registrations', verifyToken, level1TrRegistrationsRoutes);
 app.use('/api/admin/level-1-keseluruhan', verifyToken, level1KeseluruhanRoutes);
 app.use('/admin/level-1-keseluruhan', verifyToken, level1KeseluruhanRoutes);
 app.use('/api/admin/level-1-automed-smlone-staff', verifyToken, level1AutomedSmloneStaffRoutes);
 app.use('/admin/level-1-automed-smlone-staff', verifyToken, level1AutomedSmloneStaffRoutes);
-app.use('/api/admin/level-1-ca-cleaned-trainee', verifyToken, level1CaCleanedTraineeRoutes);
-app.use('/admin/level-1-ca-cleaned-trainee', verifyToken, level1CaCleanedTraineeRoutes);
-app.use('/api/admin/level-1-cp-cleaned-trainee', verifyToken, level1CpCleanedTraineeRoutes);
-app.use('/admin/level-1-cp-cleaned-trainee', verifyToken, level1CpCleanedTraineeRoutes);
-app.use('/api/admin/level-1-tr-cleaned-trainee', verifyToken, level1TrCleanedTraineeRoutes);
-app.use('/admin/level-1-tr-cleaned-trainee', verifyToken, level1TrCleanedTraineeRoutes);
-app.use('/api/admin/level-2-report-seluruh-cabang', verifyToken, level2ReportSeluruhCabangRoutes);
-app.use('/admin/level-2-report-seluruh-cabang', verifyToken, level2ReportSeluruhCabangRoutes);
-app.use('/api/admin/level-2-feedback-students', verifyToken, level2FeedbackStudentsRoutes);
-app.use('/admin/level-2-feedback-students', verifyToken, level2FeedbackStudentsRoutes);
-// Alias untuk Dashboard frontend lama
-app.use('/api/admin/cleaned-trainees', verifyToken, level1CaCleanedTraineeRoutes);
-app.use('/admin/cleaned-trainees', verifyToken, level1CaCleanedTraineeRoutes);
 
 // Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
 // Menggunakan API Key statis sederhana
-app.use('/api/webhook/registrations', (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== 'smlone-n8n-secret-key-2026') {
-    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
-  }
-  next();
-}, adminRegistrationsRoutes);
-
-app.use('/api/webhook/level-1-cp-registrations', (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== 'smlone-n8n-secret-key-2026') {
-    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
-  }
-  next();
-}, level1CpRegistrationsRoutes);
-
-app.use('/api/webhook/level-1-tr-registrations', (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== 'smlone-n8n-secret-key-2026') {
-    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
-  }
-  next();
-}, level1TrRegistrationsRoutes);
-
 app.use('/api/webhook/level-1-keseluruhan', level1KeseluruhanRoutes);
 app.use('/api/webhook/level-1-automed-smlone-staff', level1AutomedSmloneStaffRoutes);
-
-// Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
-// Menggunakan API Key statis sederhana
-app.use('/api/webhook/level-1-ca-cleaned-trainee', (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== 'smlone-n8n-secret-key-2026') {
-    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
-  }
-  next();
-}, level1CaCleanedTraineeRoutes);
-
-app.use('/api/webhook/level-1-cp-cleaned-trainee', (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== 'smlone-n8n-secret-key-2026') {
-    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
-  }
-  next();
-}, level1CpCleanedTraineeRoutes);
-
-app.use('/api/webhook/level-1-tr-cleaned-trainee', (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== 'smlone-n8n-secret-key-2026') {
-    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
-  }
-  next();
-}, level1TrCleanedTraineeRoutes);
-
-app.use('/api/webhook/level-2-report-seluruh-cabang', (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== 'smlone-n8n-secret-key-2026') {
-    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
-  }
-  next();
-}, level2ReportSeluruhCabangRoutes);
-
-app.use('/api/webhook/level-2-feedback-students', (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== 'smlone-n8n-secret-key-2026') {
-    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
-  }
-  next();
-}, level2FeedbackStudentsRoutes);
 
 app.use('/api/chat', verifyToken, chatRoutes);
 app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
