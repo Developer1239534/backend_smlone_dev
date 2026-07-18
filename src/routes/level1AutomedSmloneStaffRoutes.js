@@ -73,11 +73,6 @@ router.post('/push', async (req, res) => {
         continue;
       }
 
-      // Hapus row_number secara paksa
-      delete row['row_number'];
-      delete row['row number'];
-      delete row['Row Number'];
-
       // Pemetaan nama kolom dari Google Sheets (Spasi/Huruf Besar) dan camelCase/snake_case
       const trainee_id = row['ID'] || row['trainee_id'] || row['traineeId'] || '';
       const name = row['Name'] || row['name'] || '';

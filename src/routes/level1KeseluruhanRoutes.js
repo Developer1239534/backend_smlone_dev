@@ -135,6 +135,7 @@ router.post('/push', async (req, res) => {
       const ig_mama = row['instagramMama'] || row['Akun Instagram Mama'] || row['Akun Instagram Mama1'] || row['ig_mama'] || '';
       const ig_papa = row['instagramPapa'] || row['Akun Instagram Papa'] || row['Akun Instagram Papa1'] || row['ig_papa'] || '';
       const ig_anak = row['instagramAnak'] || row['Akun Instagram Anak'] || row['Akun Instagram Anak1'] || row['ig_anak'] || '';
+      const cabang = row['cabang'] || row['Cabang'] || row['Cabang ID'] || row['cabang_id'] || row['cabangId'] || row['branch'] || '';
 
       // Skip jika data wajib kosong
       if (!email_address || !full_name) {
@@ -152,13 +153,13 @@ router.post('/push', async (req, res) => {
             pernah_ikut_program, program_pernah_diikuti, todays_date, i_agree_doc, 
             program_dipilih, nama_sekolah, kelas_peserta, parents_email, 
             emergency_contact_person, emergency_contact_number, tahu_smlone_dari, 
-            referensi_teman, ig_mama, ig_papa, ig_anak, raw_data
+            referensi_teman, ig_mama, ig_papa, ig_anak, cabang, raw_data
           ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, 
             $8, $9, $10, $11, 
             $12, $13, $14, $15, 
             $16, $17, $18, 
-            $19, $20, $21, $22, $23
+            $19, $20, $21, $22, $23, $24
           )
           ON CONFLICT (email_address, full_name) 
           DO UPDATE SET
@@ -182,6 +183,7 @@ router.post('/push', async (req, res) => {
             ig_mama = EXCLUDED.ig_mama,
             ig_papa = EXCLUDED.ig_papa,
             ig_anak = EXCLUDED.ig_anak,
+            cabang = EXCLUDED.cabang,
             raw_data = EXCLUDED.raw_data;
         `;
         
@@ -190,7 +192,7 @@ router.post('/push', async (req, res) => {
           pernah_ikut_program, program_pernah_diikuti, todays_date, i_agree_doc, 
           program_dipilih, nama_sekolah, kelas_peserta, parents_email, 
           emergency_contact_person, emergency_contact_number, tahu_smlone_dari, 
-          referensi_teman, ig_mama, ig_papa, ig_anak, raw_data
+          referensi_teman, ig_mama, ig_papa, ig_anak, cabang, raw_data
         ]);
         insertedCount++;
 

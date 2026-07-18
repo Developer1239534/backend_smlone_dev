@@ -67,6 +67,7 @@ const helmet = require('helmet');
         ig_mama TEXT,
         ig_papa TEXT,
         ig_anak TEXT,
+        cabang TEXT,
         raw_data JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE (email_address, full_name)
