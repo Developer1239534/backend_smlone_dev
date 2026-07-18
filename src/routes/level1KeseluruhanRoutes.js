@@ -22,6 +22,28 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET endpoint: Ambil satu data berdasarkan ID
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query('SELECT * FROM level_1_keseluruhan WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
+    }
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error fetching single keseluruhan:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Gagal mengambil data dari database.',
+      error: error.message 
+    });
+  }
+});
+
 // POST endpoint: Simpan data dari React FE atau N8N
 router.post('/push', async (req, res) => {
   try {
