@@ -22,7 +22,9 @@ const newsRoutes = require('./routes/newsRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
 const level1KeseluruhanRoutes = require('./routes/level1KeseluruhanRoutes');
 const level1AutomedSmloneStaffRoutes = require('./routes/level1AutomedSmloneStaffRoutes');
+const dashboardCemaraRoutes = require('./routes/dashboardCemaraRoutes');
 const verifyToken = require('./middleware/authMiddleware');
+
 const { rateLimit } = require('express-rate-limit');
 const helmet = require('helmet');
 
@@ -100,6 +102,37 @@ const helmet = require('helmet');
         prev_grade TEXT,
         ajy_by_class TEXT,
         last_real_stage TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create dashboard_cemara table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS dashboard_cemara (
+        id SERIAL PRIMARY KEY,
+        trainee_id TEXT UNIQUE,
+        full_name TEXT,
+        gender TEXT,
+        birth_date TEXT,
+        school TEXT,
+        learning_program TEXT,
+        membership TEXT,
+        expiry_date TEXT,
+        branch TEXT,
+        enrollment_date TEXT,
+        class TEXT,
+        house TEXT,
+        level TEXT,
+        house_role TEXT,
+        class_branch TEXT,
+        current_grade TEXT,
+        homeroom TEXT,
+        screening_status TEXT,
+        draft_grade TEXT,
+        previous_grade TEXT,
+        class_category TEXT,
+        current_stage TEXT,
         raw_data JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -211,11 +244,14 @@ app.use('/api/admin/level-1-keseluruhan', verifyToken, level1KeseluruhanRoutes);
 app.use('/admin/level-1-keseluruhan', verifyToken, level1KeseluruhanRoutes);
 app.use('/api/admin/level-1-automed-smlone-staff', verifyToken, level1AutomedSmloneStaffRoutes);
 app.use('/admin/level-1-automed-smlone-staff', verifyToken, level1AutomedSmloneStaffRoutes);
+app.use('/api/admin/dashboard-cemara', verifyToken, dashboardCemaraRoutes);
+app.use('/admin/dashboard-cemara', verifyToken, dashboardCemaraRoutes);
 
 // Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
 // Menggunakan API Key statis sederhana
 app.use('/api/webhook/level-1-keseluruhan', level1KeseluruhanRoutes);
 app.use('/api/webhook/level-1-automed-smlone-staff', level1AutomedSmloneStaffRoutes);
+app.use('/api/webhook/dashboard-cemara', dashboardCemaraRoutes);
 
 app.use('/api/chat', verifyToken, chatRoutes);
 app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
