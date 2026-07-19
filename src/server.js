@@ -24,6 +24,7 @@ const level1KeseluruhanRoutes = require('./routes/level1KeseluruhanRoutes');
 const level1AutomedSmloneStaffRoutes = require('./routes/level1AutomedSmloneStaffRoutes');
 const dashboardCemaraRoutes = require('./routes/dashboardCemaraRoutes');
 const dataFormLamaRoutes = require('./routes/dataFormLamaRoutes');
+const smlReportRoutes = require('./routes/smlReportRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -175,6 +176,52 @@ const helmet = require('helmet');
       );
     `);
 
+    // Create sml_report table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS sml_report (
+        id SERIAL PRIMARY KEY,
+        student_id TEXT UNIQUE,
+        name TEXT,
+        branch TEXT,
+        membership_expiry_date TEXT,
+        active_expired TEXT,
+        cleaned_program TEXT,
+        cleaned_class TEXT,
+        house TEXT,
+        students_report_link TEXT,
+        id_vs_student_report_link TEXT,
+        total_gold TEXT,
+        level TEXT,
+        l1_s_project_1 TEXT, l1_s_project_2 TEXT, l1_s_project_3 TEXT, l1_s_project_4 TEXT, l1_s_project_5 TEXT, l1_s_project_6 TEXT, l1_s_project_7 TEXT, l1_s_project_8 TEXT,
+        l2_s_project_1 TEXT, l2_s_project_2 TEXT, l2_s_project_3 TEXT, l2_s_project_4 TEXT, l2_s_project_5 TEXT, l2_s_project_6 TEXT, l2_s_project_7 TEXT, l2_s_project_8 TEXT, l2_s_project_9 TEXT, l2_s_project_10 TEXT,
+        l3_s_project_1 TEXT, l3_s_project_2 TEXT, l3_s_project_3 TEXT, l3_s_project_4 TEXT, l3_s_project_5 TEXT, l3_s_project_6 TEXT, l3_s_project_7 TEXT, l3_s_project_8 TEXT, l3_s_project_9 TEXT, l3_s_project_10 TEXT,
+        l4_s_project_1 TEXT, l4_s_project_2 TEXT, l4_s_project_3 TEXT, l4_s_project_4 TEXT, l4_s_project_5 TEXT, l4_s_project_6 TEXT, l4_s_project_7 TEXT, l4_s_project_8 TEXT, l4_s_project_9 TEXT, l4_s_project_10 TEXT,
+        l5_s_project_1 TEXT, l5_s_project_2 TEXT, l5_s_project_3 TEXT, l5_s_project_4 TEXT, l5_s_project_5 TEXT, l5_s_project_6 TEXT, l5_s_project_7 TEXT, l5_s_project_8 TEXT, l5_s_project_9 TEXT, l5_s_project_10 TEXT,
+        l6_s_project_1 TEXT, l6_s_project_2 TEXT, l6_s_project_3 TEXT, l6_s_project_4 TEXT, l6_s_project_5 TEXT, l6_s_project_6 TEXT, l6_s_project_7 TEXT, l6_s_project_8 TEXT, l6_s_project_9 TEXT, l6_s_project_10 TEXT,
+        latest_speaking_project TEXT,
+        speaking_project_to_next_level TEXT,
+        discipline TEXT,
+        family_life TEXT,
+        school_life TEXT,
+        basic_manner TEXT,
+        survival_skill TEXT,
+        appreciation TEXT,
+        free_project TEXT,
+        life_project_to_next_level TEXT,
+        basic_level TEXT,
+        s_project_1 TEXT, s_project_2 TEXT, s_project_3 TEXT, s_project_4 TEXT, s_project_5 TEXT, s_project_6 TEXT, s_project_7 TEXT, s_project_8 TEXT, s_project_9 TEXT, s_project_10 TEXT,
+        jan25_a TEXT, feb25_a TEXT, mar25_a TEXT, apr25_a TEXT, may25_a TEXT, jun25_a TEXT, jul25_a TEXT, aug25_a TEXT, sep25_a TEXT, oct25_a TEXT, nov25_a TEXT, dec25_a TEXT,
+        jan25_b TEXT, feb25_b TEXT, mar25_b TEXT, apr25_b TEXT, may25_b TEXT, jun25_b TEXT, jul25_b TEXT, aug25_b TEXT, sep25_b TEXT, oct25_b TEXT, nov25_b TEXT, dec25_b TEXT,
+        level_6_link TEXT,
+        last_speaker_date TEXT,
+        last_life_project_date TEXT,
+        last_life_project TEXT,
+        last_attendance TEXT,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     console.log('✅ Database schema updated successfully.');
   } catch (err) {
     console.error('❌ Error checking/updating database schema:', err.message);
@@ -285,6 +332,8 @@ app.use('/api/admin/dashboard-cemara', verifyToken, dashboardCemaraRoutes);
 app.use('/admin/dashboard-cemara', verifyToken, dashboardCemaraRoutes);
 app.use('/api/admin/data-form-lama', verifyToken, dataFormLamaRoutes);
 app.use('/admin/data-form-lama', verifyToken, dataFormLamaRoutes);
+app.use('/api/admin/sml-report', verifyToken, smlReportRoutes);
+app.use('/admin/sml-report', verifyToken, smlReportRoutes);
 
 // Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
 // Menggunakan API Key statis sederhana
@@ -292,6 +341,7 @@ app.use('/api/webhook/level-1-keseluruhan', level1KeseluruhanRoutes);
 app.use('/api/webhook/level-1-automed-smlone-staff', level1AutomedSmloneStaffRoutes);
 app.use('/api/webhook/dashboard-cemara', dashboardCemaraRoutes);
 app.use('/api/webhook/data-form-lama', dataFormLamaRoutes);
+app.use('/api/webhook/sml-report', smlReportRoutes);
 
 app.use('/api/chat', verifyToken, chatRoutes);
 app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
