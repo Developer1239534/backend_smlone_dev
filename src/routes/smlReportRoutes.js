@@ -13,7 +13,6 @@ const schemaFields = {
   cleaned_class: ['Cleaned Class', 'cleaned_class', 'cleanedClass'],
   house: ['House', 'house'],
   students_report_link: ['Students Report Link', 'students_report_link', 'studentsReportLink'],
-  id_vs_student_report_link: ['ID vs Student Report Link', 'id_vs_student_report_link', 'idVsStudentReportLink'],
   total_gold: ['Total Gold', 'total_gold', 'totalGold'],
   level: ['Level', 'level'],
   latest_speaking_project: ['Latest Speaking Project', 'latest_speaking_project', 'latestSpeakingProject'],

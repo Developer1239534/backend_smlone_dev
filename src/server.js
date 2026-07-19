@@ -189,7 +189,6 @@ const helmet = require('helmet');
         cleaned_class TEXT,
         house TEXT,
         students_report_link TEXT,
-        id_vs_student_report_link TEXT,
         total_gold TEXT,
         level TEXT,
         l1_s_project_1 TEXT, l1_s_project_2 TEXT, l1_s_project_3 TEXT, l1_s_project_4 TEXT, l1_s_project_5 TEXT, l1_s_project_6 TEXT, l1_s_project_7 TEXT, l1_s_project_8 TEXT,
