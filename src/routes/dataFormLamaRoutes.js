@@ -139,6 +139,7 @@ router.post('/push', async (req, res) => {
             $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
             $22, $23, $24, $25, $26, $27, $28
           )
+          ON CONFLICT (timestamp, email_address, full_name) DO NOTHING
         `;
         
         await db.query(insertQuery, [
