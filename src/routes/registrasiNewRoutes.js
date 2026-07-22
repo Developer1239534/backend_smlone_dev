@@ -85,6 +85,8 @@ const parseRegistrasiData = (row) => {
     ig_papa,
     ig_anak,
     cabang,
+    class_branch: cabang,
+    branch: cabang,
     timestamp_str,
     raw_data: data,
     created_at: row.created_at
