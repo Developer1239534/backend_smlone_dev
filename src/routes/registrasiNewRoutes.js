@@ -2,17 +2,52 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// GET endpoint: Ambil semua data registrasi_new
+// GET endpoint: Ambil semua data dari registrasi_new_seluruh_cabang
 router.get('/', async (req, res) => {
   try {
-    const savedData = await db.query('SELECT * FROM registrasi_new ORDER BY created_at DESC');
+    const savedData = await db.query('SELECT * FROM registrasi_new_seluruh_cabang ORDER BY created_at DESC');
+    
+    // Map data agar kompatibel dengan React frontend
+    const mapped = savedData.rows.map(row => {
+      const data = row.data_registrasi || {};
+      return {
+        id: row.id,
+        email_address: data['Email Address'] || data['email_address'] || data['Email'] || data['email'] || '',
+        full_name: data['Full Name'] || data['full_name'] || data['Name'] || data['name'] || '',
+        dob: data['Date of Birth'] || data['dob'] || '',
+        gender: data['Gender'] || data['gender'] || '',
+        address: data['Address'] || data['address'] || '',
+        contact_whatsapp: data['Contact / Whatsapp No.'] || data['contact_whatsapp'] || data['phone'] || '',
+        program: data['Program'] || data['program'] || '',
+        pernah_ikut_program: data['Apakah anak Anda sebelumnya pernah mengikuti program di SMLONE?'] || data['pernah_ikut_program'] || '',
+        program_pernah_diikuti: data['Jika pernah mengikuti program di SMLONE, mohon pilih program yang pernah anak Anda ikuti'] || data['program_pernah_diikuti'] || '',
+        todays_date: data['Today\'s Date'] || data['todays_date'] || '',
+        i_agree_doc: data['I Agree, to allow PT. SMLONE INDONESIA, to use any documentation taken in SMLONE programs or other related programs to be used for promotional & educational Purposes.'] || data['i_agree_doc'] || '',
+        program_dipilih: data['Program Yang Dipilih'] || data['program_dipilih'] || '',
+        nama_sekolah: data['Nama Sekolah (Peserta Training)'] || data['nama_sekolah'] || '',
+        kelas_peserta: data['Kelas (Peserta Training)'] || data['kelas_peserta'] || '',
+        parents_email: data['Parent\'s Email'] || data['parents_email'] || '',
+        emergency_contact_person: data['Emergency Contact Person'] || data['emergency_contact_person'] || '',
+        emergency_contact_number: data['Emergency Contact Number'] || data['emergency_contact_number'] || '',
+        tahu_smlone_dari: data['Dari Manakah Anda Mengetahui SMLONE?'] || data['tahu_smlone_dari'] || '',
+        referensi_teman: data['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan'] || data['referensi_teman'] || '',
+        ig_mama: data['Akun Instagram Mama'] || data['ig_mama'] || '',
+        ig_papa: data['Akun Instagram Papa'] || data['ig_papa'] || '',
+        ig_anak: data['Akun Instagram Anak'] || data['ig_anak'] || '',
+        cabang: row.cabang || data['cabang'] || data['Cabang'] || '',
+        timestamp_str: data['Timestamp'] || data['timestamp_str'] || '',
+        raw_data: data,
+        created_at: row.created_at
+      };
+    });
+
     res.json({
       success: true,
-      message: 'Berhasil mengambil data registrasi new.',
-      data: savedData.rows
+      message: 'Berhasil mengambil data dari registrasi_new_seluruh_cabang.',
+      data: mapped
     });
   } catch (error) {
-    console.error('Error fetching registrasi_new:', error.message);
+    console.error('Error fetching registrasi_new_seluruh_cabang:', error.message);
     res.status(500).json({ 
       success: false, 
       message: 'Gagal mengambil data dari database.',
@@ -25,13 +60,46 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await db.query('SELECT * FROM registrasi_new WHERE id = $1', [id]);
+    const result = await db.query('SELECT * FROM registrasi_new_seluruh_cabang WHERE id = $1', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
     }
+    
+    const row = result.rows[0];
+    const data = row.data_registrasi || {};
+    const mapped = {
+      id: row.id,
+      email_address: data['Email Address'] || data['email_address'] || data['Email'] || data['email'] || '',
+      full_name: data['Full Name'] || data['full_name'] || data['Name'] || data['name'] || '',
+      dob: data['Date of Birth'] || data['dob'] || '',
+      gender: data['Gender'] || data['gender'] || '',
+      address: data['Address'] || data['address'] || '',
+      contact_whatsapp: data['Contact / Whatsapp No.'] || data['contact_whatsapp'] || data['phone'] || '',
+      program: data['Program'] || data['program'] || '',
+      pernah_ikut_program: data['Apakah anak Anda sebelumnya pernah mengikuti program di SMLONE?'] || data['pernah_ikut_program'] || '',
+      program_pernah_diikuti: data['Jika pernah mengikuti program di SMLONE, mohon pilih program yang pernah anak Anda ikuti'] || data['program_pernah_diikuti'] || '',
+      todays_date: data['Today\'s Date'] || data['todays_date'] || '',
+      i_agree_doc: data['I Agree, to allow PT. SMLONE INDONESIA, to use any documentation taken in SMLONE programs or other related programs to be used for promotional & educational Purposes.'] || data['i_agree_doc'] || '',
+      program_dipilih: data['Program Yang Dipilih'] || data['program_dipilih'] || '',
+      nama_sekolah: data['Nama Sekolah (Peserta Training)'] || data['nama_sekolah'] || '',
+      kelas_peserta: data['Kelas (Peserta Training)'] || data['kelas_peserta'] || '',
+      parents_email: data['Parent\'s Email'] || data['parents_email'] || '',
+      emergency_contact_person: data['Emergency Contact Person'] || data['emergency_contact_person'] || '',
+      emergency_contact_number: data['Emergency Contact Number'] || data['emergency_contact_number'] || '',
+      tahu_smlone_dari: data['Dari Manakah Anda Mengetahui SMLONE?'] || data['tahu_smlone_dari'] || '',
+      referensi_teman: data['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan'] || data['referensi_teman'] || '',
+      ig_mama: data['Akun Instagram Mama'] || data['ig_mama'] || '',
+      ig_papa: data['Akun Instagram Papa'] || data['ig_papa'] || '',
+      ig_anak: data['Akun Instagram Anak'] || data['ig_anak'] || '',
+      cabang: row.cabang || data['cabang'] || data['Cabang'] || '',
+      timestamp_str: data['Timestamp'] || data['timestamp_str'] || '',
+      raw_data: data,
+      created_at: row.created_at
+    };
+
     res.json({
       success: true,
-      data: result.rows[0]
+      data: mapped
     });
   } catch (error) {
     res.status(500).json({ 
@@ -39,106 +107,6 @@ router.get('/:id', async (req, res) => {
       message: 'Gagal mengambil data.',
       error: error.message 
     });
-  }
-});
-
-// POST endpoint: Simpan data ke registrasi_new (misal dari n8n/push jika dibutuhkan)
-router.post('/push', async (req, res) => {
-  try {
-    let data = req.body;
-    if (!Array.isArray(data)) {
-      data = [data];
-    }
-    if (data.length === 0) {
-      return res.status(400).json({ success: false, message: 'Data kosong.' });
-    }
-
-    await db.query('BEGIN');
-    let insertedCount = 0;
-
-    for (const row of data) {
-      const email_address = row['Email Address'] || row['email_address'] || row['email'] || '';
-      const full_name = row['Full Name'] || row['full_name'] || '';
-
-      if (!email_address || !full_name) continue;
-
-      const dob = row['Date of Birth'] || row['dob'] || '';
-      const gender = row['Gender'] || row['gender'] || '';
-      const address = row['Address'] || row['address'] || '';
-      const contact_whatsapp = row['Contact / Whatsapp No.'] || row['contact_whatsapp'] || row['phone'] || '';
-      const program = row['Program'] || row['program'] || '';
-      const pernah_ikut_program = row['Apakah anak Anda sebelumnya pernah mengikuti program di SMLONE?'] || row['pernah_ikut_program'] || '';
-      const program_pernah_diikuti = row['Jika pernah mengikuti program di SMLONE, mohon pilih program yang pernah anak Anda ikuti'] || row['program_pernah_diikuti'] || '';
-      const todays_date = row['Today\'s Date'] || row['todays_date'] || '';
-      const i_agree_doc = row['I Agree, to allow PT. SMLONE INDONESIA, to use any documentation taken in SMLONE programs or other related programs to be used for promotional & educational Purposes.'] || row['i_agree_doc'] || '';
-      const program_dipilih = row['Program Yang Dipilih'] || row['program_dipilih'] || '';
-      const nama_sekolah = row['Nama Sekolah (Peserta Training)'] || row['nama_sekolah'] || '';
-      const kelas_peserta = row['Kelas (Peserta Training)'] || row['kelas_peserta'] || '';
-      const parents_email = row['Parent\'s Email'] || row['parents_email'] || '';
-      const emergency_contact_person = row['Emergency Contact Person'] || row['emergency_contact_person'] || '';
-      const emergency_contact_number = row['Emergency Contact Number'] || row['emergency_contact_number'] || '';
-      const tahu_smlone_dari = row['Dari Manakah Anda Mengetahui SMLONE?'] || row['tahu_smlone_dari'] || '';
-      const referensi_teman = row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan'] || row['referensi_teman'] || '';
-      const ig_mama = row['Akun Instagram Mama'] || row['ig_mama'] || '';
-      const ig_papa = row['Akun Instagram Papa'] || row['ig_papa'] || '';
-      const ig_anak = row['Akun Instagram Anak'] || row['ig_anak'] || '';
-      const cabang = row['cabang'] || row['Cabang'] || '';
-      const timestamp_str = row['Timestamp'] || row['timestamp_str'] || '';
-      const raw_data = JSON.stringify(row);
-
-      const query = `
-        INSERT INTO registrasi_new (
-          email_address, full_name, dob, gender, address, contact_whatsapp, program,
-          pernah_ikut_program, program_pernah_diikuti, todays_date, i_agree_doc,
-          program_dipilih, nama_sekolah, kelas_peserta, parents_email,
-          emergency_contact_person, emergency_contact_number, tahu_smlone_dari,
-          referensi_teman, ig_mama, ig_papa, ig_anak, cabang, timestamp_str, raw_data
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
-        )
-        ON CONFLICT (email_address, full_name)
-        DO UPDATE SET
-          dob = EXCLUDED.dob,
-          gender = EXCLUDED.gender,
-          address = EXCLUDED.address,
-          contact_whatsapp = EXCLUDED.contact_whatsapp,
-          program = EXCLUDED.program,
-          pernah_ikut_program = EXCLUDED.pernah_ikut_program,
-          program_pernah_diikuti = EXCLUDED.program_pernah_diikuti,
-          todays_date = EXCLUDED.todays_date,
-          i_agree_doc = EXCLUDED.i_agree_doc,
-          program_dipilih = EXCLUDED.program_dipilih,
-          nama_sekolah = EXCLUDED.nama_sekolah,
-          kelas_peserta = EXCLUDED.kelas_peserta,
-          parents_email = EXCLUDED.parents_email,
-          emergency_contact_person = EXCLUDED.emergency_contact_person,
-          emergency_contact_number = EXCLUDED.emergency_contact_number,
-          tahu_smlone_dari = EXCLUDED.tahu_smlone_dari,
-          referensi_teman = EXCLUDED.referensi_teman,
-          ig_mama = EXCLUDED.ig_mama,
-          ig_papa = EXCLUDED.ig_papa,
-          ig_anak = EXCLUDED.ig_anak,
-          cabang = EXCLUDED.cabang,
-          timestamp_str = EXCLUDED.timestamp_str,
-          raw_data = EXCLUDED.raw_data
-      `;
-
-      await db.query(query, [
-        email_address, full_name, dob, gender, address, contact_whatsapp, program,
-        pernah_ikut_program, program_pernah_diikuti, todays_date, i_agree_doc,
-        program_dipilih, nama_sekolah, kelas_peserta, parents_email,
-        emergency_contact_person, emergency_contact_number, tahu_smlone_dari,
-        referensi_teman, ig_mama, ig_papa, ig_anak, cabang, timestamp_str, raw_data
-      ]);
-      insertedCount++;
-    }
-
-    await db.query('COMMIT');
-    res.json({ success: true, message: `Berhasil menerima dan menyimpan ${insertedCount} data.` });
-  } catch (error) {
-    await db.query('ROLLBACK');
-    console.error('Error in registrasi_new push:', error);
-    res.status(500).json({ success: false, message: 'Gagal memproses data.', error: error.message });
   }
 });
 
@@ -152,37 +120,51 @@ router.put('/:id', async (req, res) => {
   }
 
   try {
-    const allowedColumns = [
-      'email_address', 'full_name', 'dob', 'gender', 'address', 'contact_whatsapp', 'program', 
-      'pernah_ikut_program', 'program_pernah_diikuti', 'todays_date', 'i_agree_doc', 
-      'program_dipilih', 'nama_sekolah', 'kelas_peserta', 'parents_email', 
-      'emergency_contact_person', 'emergency_contact_number', 'tahu_smlone_dari', 
-      'referensi_teman', 'ig_mama', 'ig_papa', 'ig_anak', 'cabang', 'timestamp_str', 'raw_data'
-    ];
-
-    let setQuery = [];
-    let values = [];
-    let index = 1;
-
-    for (const key of Object.keys(updates)) {
-      if (allowedColumns.includes(key)) {
-        setQuery.push(`${key} = $${index}`);
-        values.push(updates[key]);
-        index++;
-      }
-    }
-
-    if (setQuery.length === 0) {
-      return res.status(400).json({ success: false, message: 'Tidak ada kolom valid yang diupdate.' });
-    }
-
-    values.push(id);
-    const query = `UPDATE registrasi_new SET ${setQuery.join(', ')} WHERE id = $${index} RETURNING *`;
-    const result = await db.query(query, values);
-
-    if (result.rows.length === 0) {
+    const checkRes = await db.query('SELECT * FROM registrasi_new_seluruh_cabang WHERE id = $1', [id]);
+    if (checkRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
     }
+
+    const row = checkRes.rows[0];
+    const data_registrasi = row.data_registrasi || {};
+    let newCabang = row.cabang;
+
+    // Update keys in data_registrasi
+    Object.keys(updates).forEach(key => {
+      if (key === 'cabang') {
+        newCabang = updates[key];
+        data_registrasi['cabang'] = updates[key];
+        data_registrasi['Cabang'] = updates[key];
+      } else if (key === 'email_address') {
+        data_registrasi['Email Address'] = updates[key];
+        data_registrasi['email_address'] = updates[key];
+      } else if (key === 'full_name') {
+        data_registrasi['Full Name'] = updates[key];
+        data_registrasi['full_name'] = updates[key];
+      } else if (key === 'contact_whatsapp') {
+        data_registrasi['Contact / Whatsapp No.'] = updates[key];
+        data_registrasi['contact_whatsapp'] = updates[key];
+      } else if (key === 'parents_email') {
+        data_registrasi['Parent\'s Email'] = updates[key];
+        data_registrasi['parents_email'] = updates[key];
+      } else if (key === 'emergency_contact_person') {
+        data_registrasi['Emergency Contact Person'] = updates[key];
+        data_registrasi['emergency_contact_person'] = updates[key];
+      } else if (key === 'emergency_contact_number') {
+        data_registrasi['Emergency Contact Number'] = updates[key];
+        data_registrasi['emergency_contact_number'] = updates[key];
+      } else {
+        data_registrasi[key] = updates[key];
+      }
+    });
+
+    const updateQuery = `
+      UPDATE registrasi_new_seluruh_cabang 
+      SET data_registrasi = $1, cabang = $2 
+      WHERE id = $3 
+      RETURNING *
+    `;
+    const result = await db.query(updateQuery, [JSON.stringify(data_registrasi), newCabang, id]);
 
     res.json({
       success: true,
@@ -190,7 +172,7 @@ router.put('/:id', async (req, res) => {
       data: result.rows[0]
     });
   } catch (error) {
-    console.error('Error updating registrasi_new:', error);
+    console.error('Error updating registrasi_new_seluruh_cabang:', error);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengupdate data.' });
   }
 });
@@ -199,7 +181,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await db.query('DELETE FROM registrasi_new WHERE id = $1 RETURNING id', [id]);
+    const result = await db.query('DELETE FROM registrasi_new_seluruh_cabang WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
     }
@@ -208,7 +190,7 @@ router.delete('/:id', async (req, res) => {
       message: 'Data berhasil dihapus.'
     });
   } catch (error) {
-    console.error('Error deleting registrasi_new:', error);
+    console.error('Error deleting registrasi_new_seluruh_cabang:', error);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan saat menghapus data.' });
   }
 });
