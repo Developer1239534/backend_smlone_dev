@@ -2,36 +2,47 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// GET all (Admin & Webhook)
+// GET endpoint: Ambil semua data registrasi_new
 router.get('/', async (req, res) => {
   try {
     const savedData = await db.query('SELECT * FROM registrasi_new ORDER BY created_at DESC');
     res.json({
       success: true,
-      message: 'Berhasil mengambil data registrasi NEW.',
+      message: 'Berhasil mengambil data registrasi new.',
       data: savedData.rows
     });
   } catch (error) {
     console.error('Error fetching registrasi_new:', error.message);
-    res.status(500).json({ success: false, message: 'Gagal mengambil data dari database.', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Gagal mengambil data dari database.',
+      error: error.message 
+    });
   }
 });
 
-// GET single by ID
+// GET endpoint: Ambil satu data berdasarkan ID
 router.get('/:id', async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
     const result = await db.query('SELECT * FROM registrasi_new WHERE id = $1', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
     }
-    res.json({ success: true, data: result.rows[0] });
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Terjadi kesalahan.', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Gagal mengambil data.',
+      error: error.message 
+    });
   }
 });
 
-// POST (Create / Push from n8n / Admin)
+// POST endpoint: Simpan data ke registrasi_new (misal dari n8n/push jika dibutuhkan)
 router.post('/push', async (req, res) => {
   try {
     let data = req.body;
@@ -46,7 +57,7 @@ router.post('/push', async (req, res) => {
     let insertedCount = 0;
 
     for (const row of data) {
-      const email_address = row['Email Address'] || row['email_address'] || '';
+      const email_address = row['Email Address'] || row['email_address'] || row['email'] || '';
       const full_name = row['Full Name'] || row['full_name'] || '';
 
       if (!email_address || !full_name) continue;
@@ -54,7 +65,7 @@ router.post('/push', async (req, res) => {
       const dob = row['Date of Birth'] || row['dob'] || '';
       const gender = row['Gender'] || row['gender'] || '';
       const address = row['Address'] || row['address'] || '';
-      const contact_whatsapp = row['Contact / Whatsapp No.'] || row['contact_whatsapp'] || '';
+      const contact_whatsapp = row['Contact / Whatsapp No.'] || row['contact_whatsapp'] || row['phone'] || '';
       const program = row['Program'] || row['program'] || '';
       const pernah_ikut_program = row['Apakah anak Anda sebelumnya pernah mengikuti program di SMLONE?'] || row['pernah_ikut_program'] || '';
       const program_pernah_diikuti = row['Jika pernah mengikuti program di SMLONE, mohon pilih program yang pernah anak Anda ikuti'] || row['program_pernah_diikuti'] || '';
@@ -71,7 +82,8 @@ router.post('/push', async (req, res) => {
       const ig_mama = row['Akun Instagram Mama'] || row['ig_mama'] || '';
       const ig_papa = row['Akun Instagram Papa'] || row['ig_papa'] || '';
       const ig_anak = row['Akun Instagram Anak'] || row['ig_anak'] || '';
-      const cabang = row['Pilihan Cabang'] || row['Pilihan Cabang (Cabang)'] || row['cabang'] || '';
+      const cabang = row['cabang'] || row['Cabang'] || '';
+      const timestamp_str = row['Timestamp'] || row['timestamp_str'] || '';
       const raw_data = JSON.stringify(row);
 
       const query = `
@@ -80,11 +92,11 @@ router.post('/push', async (req, res) => {
           pernah_ikut_program, program_pernah_diikuti, todays_date, i_agree_doc,
           program_dipilih, nama_sekolah, kelas_peserta, parents_email,
           emergency_contact_person, emergency_contact_number, tahu_smlone_dari,
-          referensi_teman, ig_mama, ig_papa, ig_anak, cabang, raw_data
+          referensi_teman, ig_mama, ig_papa, ig_anak, cabang, timestamp_str, raw_data
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
         )
-        ON CONFLICT (email_address, full_name) 
+        ON CONFLICT (email_address, full_name)
         DO UPDATE SET
           dob = EXCLUDED.dob,
           gender = EXCLUDED.gender,
@@ -107,6 +119,7 @@ router.post('/push', async (req, res) => {
           ig_papa = EXCLUDED.ig_papa,
           ig_anak = EXCLUDED.ig_anak,
           cabang = EXCLUDED.cabang,
+          timestamp_str = EXCLUDED.timestamp_str,
           raw_data = EXCLUDED.raw_data
       `;
 
@@ -115,7 +128,7 @@ router.post('/push', async (req, res) => {
         pernah_ikut_program, program_pernah_diikuti, todays_date, i_agree_doc,
         program_dipilih, nama_sekolah, kelas_peserta, parents_email,
         emergency_contact_person, emergency_contact_number, tahu_smlone_dari,
-        referensi_teman, ig_mama, ig_papa, ig_anak, cabang, raw_data
+        referensi_teman, ig_mama, ig_papa, ig_anak, cabang, timestamp_str, raw_data
       ]);
       insertedCount++;
     }
@@ -129,22 +142,22 @@ router.post('/push', async (req, res) => {
   }
 });
 
-// PUT (Edit/Update by Admin)
+// PUT endpoint: Admin Edit Data
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
-
+  
   if (!id || Object.keys(updates).length === 0) {
     return res.status(400).json({ success: false, message: 'ID dan data update wajib diisi.' });
   }
 
   try {
     const allowedColumns = [
-      'email_address', 'full_name', 'dob', 'gender', 'address', 'contact_whatsapp', 'program',
-      'pernah_ikut_program', 'program_pernah_diikuti', 'todays_date', 'i_agree_doc',
-      'program_dipilih', 'nama_sekolah', 'kelas_peserta', 'parents_email',
-      'emergency_contact_person', 'emergency_contact_number', 'tahu_smlone_dari',
-      'referensi_teman', 'ig_mama', 'ig_papa', 'ig_anak', 'cabang'
+      'email_address', 'full_name', 'dob', 'gender', 'address', 'contact_whatsapp', 'program', 
+      'pernah_ikut_program', 'program_pernah_diikuti', 'todays_date', 'i_agree_doc', 
+      'program_dipilih', 'nama_sekolah', 'kelas_peserta', 'parents_email', 
+      'emergency_contact_person', 'emergency_contact_number', 'tahu_smlone_dari', 
+      'referensi_teman', 'ig_mama', 'ig_papa', 'ig_anak', 'cabang', 'timestamp_str', 'raw_data'
     ];
 
     let setQuery = [];
@@ -171,14 +184,18 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
     }
 
-    res.json({ success: true, message: 'Data berhasil diupdate.', data: result.rows[0] });
+    res.json({
+      success: true,
+      message: 'Data berhasil diupdate.',
+      data: result.rows[0]
+    });
   } catch (error) {
     console.error('Error updating registrasi_new:', error);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengupdate data.' });
   }
 });
 
-// DELETE (Delete by Admin)
+// DELETE endpoint: Admin Delete Data
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -186,7 +203,10 @@ router.delete('/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
     }
-    res.json({ success: true, message: 'Data berhasil dihapus.' });
+    res.json({
+      success: true,
+      message: 'Data berhasil dihapus.'
+    });
   } catch (error) {
     console.error('Error deleting registrasi_new:', error);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan saat menghapus data.' });
