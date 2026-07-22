@@ -24,6 +24,7 @@ const registrasiCaRoutes = require('./routes/registrasiCaRoutes');
 const registrasiCpRoutes = require('./routes/registrasiCpRoutes');
 const registrasiTrRoutes = require('./routes/registrasiTrRoutes');
 const registrasiNewRoutes = require('./routes/registrasiNewRoutes');
+const dashboardKeseluruhanRoutes = require('./routes/dashboardKeseluruhanRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -313,6 +314,7 @@ app.use('/api/webhook/registrasi-tr', (req, res, next) => {
 
 
 app.use('/api/registrasi-new', registrasiNewRoutes);
+app.use('/api/dashboard-keseluruhan', verifyToken, dashboardKeseluruhanRoutes);
 app.use('/api/chat', verifyToken, chatRoutes);
 app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
 app.use('/api/admin/house-rank', verifyToken, adminHouseRankRoutes);
