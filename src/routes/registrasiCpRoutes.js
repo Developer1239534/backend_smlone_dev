@@ -141,7 +141,7 @@ router.post('/push', async (req, res) => {
           raw_data = EXCLUDED.raw_data
       `;
 
-      await pool.query(query, [
+      await db.query(query, [
         timestamp_str, email_address, full_name, last_name, dob, gender, address, 
         contact_whatsapp, email_account, program, todays_date, i_agree_doc, program_dipilih, 
         nama_sekolah, emergency_contact_person, emergency_contact_number, kelas_peserta, 
