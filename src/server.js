@@ -23,6 +23,7 @@ const whatsappRoutes = require('./routes/whatsappRoutes');
 const registrasiCaRoutes = require('./routes/registrasiCaRoutes');
 const registrasiCpRoutes = require('./routes/registrasiCpRoutes');
 const registrasiTrRoutes = require('./routes/registrasiTrRoutes');
+const registrasiNewRoutes = require('./routes/registrasiNewRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -49,6 +50,39 @@ const helmet = require('helmet');
     await db.query('DROP TABLE IF EXISTS dashboard_cemara CASCADE');
     await db.query('DROP TABLE IF EXISTS data_form_lama CASCADE');
     await db.query('DROP TABLE IF EXISTS sml_report CASCADE');
+
+    // Create registrasi_new table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS registrasi_new (
+        id SERIAL PRIMARY KEY,
+        email_address VARCHAR(255),
+        full_name VARCHAR(255),
+        dob VARCHAR(100),
+        gender VARCHAR(50),
+        address TEXT,
+        contact_whatsapp VARCHAR(100),
+        program VARCHAR(100),
+        pernah_ikut_program VARCHAR(255),
+        program_pernah_diikuti VARCHAR(255),
+        todays_date VARCHAR(100),
+        i_agree_doc TEXT,
+        program_dipilih VARCHAR(100),
+        nama_sekolah VARCHAR(255),
+        kelas_peserta VARCHAR(100),
+        parents_email VARCHAR(255),
+        emergency_contact_person VARCHAR(255),
+        emergency_contact_number VARCHAR(100),
+        tahu_smlone_dari VARCHAR(255),
+        referensi_teman VARCHAR(255),
+        ig_mama VARCHAR(100),
+        ig_papa VARCHAR(100),
+        ig_anak VARCHAR(100),
+        cabang VARCHAR(100),
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (email_address, full_name)
+      );
+    `);
 
     // Create registrasi_ca table
     await db.query(`
@@ -293,6 +327,11 @@ app.use('/admin/registrasi-cp', verifyToken, registrasiCpRoutes);
 app.use('/api/admin/registrasi-tr', verifyToken, registrasiTrRoutes);
 app.use('/admin/registrasi-tr', verifyToken, registrasiTrRoutes);
 
+app.use('/api/admin/registrasi-new', verifyToken, registrasiNewRoutes);
+app.use('/admin/registrasi-new', verifyToken, registrasiNewRoutes);
+app.use('/api/registrasi-new', verifyToken, registrasiNewRoutes);
+app.use('/registrasi-new', verifyToken, registrasiNewRoutes);
+
 // Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
 // Menggunakan API Key statis sederhana
 app.use('/api/webhook/registrasi-ca', (req, res, next) => {
@@ -318,6 +357,14 @@ app.use('/api/webhook/registrasi-tr', (req, res, next) => {
   }
   next();
 }, registrasiTrRoutes);
+
+app.use('/api/webhook/registrasi-new', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, registrasiNewRoutes);
 
 
 
