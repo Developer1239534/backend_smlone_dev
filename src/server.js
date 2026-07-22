@@ -20,10 +20,6 @@ const adminQuestionsRoutes = require('./routes/adminQuestionsRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
-const level1KeseluruhanRoutes = require('./routes/level1KeseluruhanRoutes');
-const level1AutomedSmloneStaffRoutes = require('./routes/level1AutomedSmloneStaffRoutes');
-const dashboardCemaraRoutes = require('./routes/dashboardCemaraRoutes');
-const dataFormLamaRoutes = require('./routes/dataFormLamaRoutes');
 const smlReportRoutes = require('./routes/smlReportRoutes');
 const registrasiCaRoutes = require('./routes/registrasiCaRoutes');
 const registrasiCpRoutes = require('./routes/registrasiCpRoutes');
@@ -48,136 +44,11 @@ const helmet = require('helmet');
       );
     `);
 
-    // Create level_1_keseluruhan table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS level_1_keseluruhan (
-        id SERIAL PRIMARY KEY,
-        email_address TEXT,
-        full_name TEXT,
-        dob TEXT,
-        gender TEXT,
-        address TEXT,
-        contact_whatsapp TEXT,
-        program TEXT,
-        pernah_ikut_program TEXT,
-        program_pernah_diikuti TEXT,
-        todays_date TEXT,
-        i_agree_doc TEXT,
-        program_dipilih TEXT,
-        nama_sekolah TEXT,
-        kelas_peserta TEXT,
-        parents_email TEXT,
-        emergency_contact_person TEXT,
-        emergency_contact_number TEXT,
-        tahu_smlone_dari TEXT,
-        referensi_teman TEXT,
-        ig_mama TEXT,
-        ig_papa TEXT,
-        ig_anak TEXT,
-        cabang TEXT,
-        raw_data JSONB,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE (email_address, full_name)
-      );
-    `);
-
-    // Create level_1_automed_smlone_staff table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS level_1_automed_smlone_staff (
-        id SERIAL PRIMARY KEY,
-        trainee_id TEXT UNIQUE,
-        name TEXT,
-        gender TEXT,
-        dob TEXT,
-        nama_sekolah TEXT,
-        cleaned_program TEXT,
-        membership TEXT,
-        expiry_date TEXT,
-        cabang_id TEXT,
-        first_enroll TEXT,
-        class_name TEXT,
-        house TEXT,
-        level TEXT,
-        house_role TEXT,
-        cabang_kelas TEXT,
-        newest_grade TEXT,
-        trainee_homeroom TEXT,
-        screening_test TEXT,
-        draft_grade TEXT,
-        prev_grade TEXT,
-        ajy_by_class TEXT,
-        last_real_stage TEXT,
-        raw_data JSONB,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Create dashboard_cemara table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS dashboard_cemara (
-        id SERIAL PRIMARY KEY,
-        trainee_id TEXT UNIQUE,
-        full_name TEXT,
-        gender TEXT,
-        birth_date TEXT,
-        school TEXT,
-        learning_program TEXT,
-        membership TEXT,
-        expiry_date TEXT,
-        branch TEXT,
-        enrollment_date TEXT,
-        class TEXT,
-        house TEXT,
-        level TEXT,
-        house_role TEXT,
-        class_branch TEXT,
-        current_grade TEXT,
-        homeroom TEXT,
-        screening_status TEXT,
-        draft_grade TEXT,
-        previous_grade TEXT,
-        class_category TEXT,
-        current_stage TEXT,
-        raw_data JSONB,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Create data_form_lama table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS data_form_lama (
-        id SERIAL PRIMARY KEY,
-        timestamp TEXT,
-        email_address TEXT,
-        full_name TEXT,
-        dob TEXT,
-        gender TEXT,
-        address TEXT,
-        whatsapp TEXT,
-        program TEXT,
-        todays_date TEXT,
-        agreement TEXT,
-        selected_program TEXT,
-        school TEXT,
-        parents_email TEXT,
-        emergency_contact_person TEXT,
-        emergency_contact_number TEXT,
-        class TEXT,
-        source_smlone TEXT,
-        referral_smlone TEXT,
-        instagram_mama TEXT,
-        instagram_papa TEXT,
-        instagram_anak TEXT,
-        purpose TEXT,
-        expectation TEXT,
-        source_event TEXT,
-        referral_event TEXT,
-        prev_smlone_program TEXT,
-        prev_smlone_program_details TEXT,
-        raw_data JSONB,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    // Drop requested tables to make sure they are removed and not recreated
+    await db.query('DROP TABLE IF EXISTS level_1_keseluruhan CASCADE');
+    await db.query('DROP TABLE IF EXISTS level_1_automed_smlone_staff CASCADE');
+    await db.query('DROP TABLE IF EXISTS dashboard_cemara CASCADE');
+    await db.query('DROP TABLE IF EXISTS data_form_lama CASCADE');
 
     // Create sml_report table
     await db.query(`
@@ -458,14 +329,7 @@ app.use('/api/admin/quiz-history', verifyToken, adminQuizHistoryRoutes);
 app.use('/admin/quiz-history', verifyToken, adminQuizHistoryRoutes);
 app.use('/api/admin/questions', verifyToken, adminQuestionsRoutes);
 app.use('/admin/questions', verifyToken, adminQuestionsRoutes);
-app.use('/api/admin/level-1-keseluruhan', verifyToken, level1KeseluruhanRoutes);
-app.use('/admin/level-1-keseluruhan', verifyToken, level1KeseluruhanRoutes);
-app.use('/api/admin/level-1-automed-smlone-staff', verifyToken, level1AutomedSmloneStaffRoutes);
-app.use('/admin/level-1-automed-smlone-staff', verifyToken, level1AutomedSmloneStaffRoutes);
-app.use('/api/admin/dashboard-cemara', verifyToken, dashboardCemaraRoutes);
-app.use('/admin/dashboard-cemara', verifyToken, dashboardCemaraRoutes);
-app.use('/api/admin/data-form-lama', verifyToken, dataFormLamaRoutes);
-app.use('/admin/data-form-lama', verifyToken, dataFormLamaRoutes);
+
 app.use('/api/admin/sml-report', verifyToken, smlReportRoutes);
 app.use('/admin/sml-report', verifyToken, smlReportRoutes);
 app.use('/api/admin/registrasi-ca', verifyToken, registrasiCaRoutes);
@@ -501,10 +365,7 @@ app.use('/api/webhook/registrasi-tr', (req, res, next) => {
   next();
 }, registrasiTrRoutes);
 
-app.use('/api/webhook/level-1-keseluruhan', level1KeseluruhanRoutes);
-app.use('/api/webhook/level-1-automed-smlone-staff', level1AutomedSmloneStaffRoutes);
-app.use('/api/webhook/dashboard-cemara', dashboardCemaraRoutes);
-app.use('/api/webhook/data-form-lama', dataFormLamaRoutes);
+
 app.use('/api/webhook/sml-report', smlReportRoutes);
 
 app.use('/api/chat', verifyToken, chatRoutes);
