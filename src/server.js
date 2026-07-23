@@ -25,6 +25,7 @@ const registrasiCpRoutes = require('./routes/registrasiCpRoutes');
 const registrasiTrRoutes = require('./routes/registrasiTrRoutes');
 const registrasiNewRoutes = require('./routes/registrasiNewRoutes');
 const dashboardKeseluruhanRoutes = require('./routes/dashboardKeseluruhanRoutes');
+const smlFeedbackRoutes = require('./routes/smlFeedbackRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -39,11 +40,33 @@ const helmet = require('helmet');
       CREATE TABLE IF NOT EXISTS admin_akun (
         id SERIAL PRIMARY KEY,
         username VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255),
+        role VARCHAR(100),
         password VARCHAR(255) NOT NULL,
         plain_password VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Auto-seed initial 5 Admin Accounts
+    const bcrypt = require('bcryptjs');
+    const defaultAccounts = [
+      { username: 'super@smlone.id', email: 'super@smlone.id', password: 'super123', role: 'super' },
+      { username: 'cro@smlone.id', email: 'cro@smlone.id', password: 'cro123', role: 'cro' },
+      { username: 'finance@smlone.id', email: 'finance@smlone.id', password: 'finance123', role: 'finance' },
+      { username: 'training@smlone.id', email: 'training@smlone.id', password: 'training123', role: 'training' },
+      { username: 'management@smlone.id', email: 'management@smlone.id', password: 'managament123', role: 'management' }
+    ];
+
+    for (const acc of defaultAccounts) {
+      const hash = await bcrypt.hash(acc.password, 10);
+      await db.query(`
+        INSERT INTO admin_akun (username, email, role, password, plain_password)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (username) DO UPDATE 
+        SET password = EXCLUDED.password, plain_password = EXCLUDED.plain_password, role = EXCLUDED.role, email = EXCLUDED.email
+      `, [acc.username, acc.email, acc.role, hash, acc.password]);
+    }
 
     // Drop requested tables to make sure they are removed and not recreated
     await db.query('DROP TABLE IF EXISTS level_1_keseluruhan CASCADE');
@@ -184,6 +207,8 @@ const helmet = require('helmet');
       );
     `);
 
+
+
     console.log('✅ Database schema updated successfully.');
   } catch (err) {
     console.error('❌ Error checking/updating database schema:', err.message);
@@ -284,6 +309,8 @@ app.use('/admin/registrasi-cp', verifyToken, registrasiCpRoutes);
 app.use('/api/admin/registrasi-tr', verifyToken, registrasiTrRoutes);
 app.use('/admin/registrasi-tr', verifyToken, registrasiTrRoutes);
 
+
+
 // Khusus untuk Webhook n8n (tanpa verifyToken agar tidak expired)
 // Menggunakan API Key statis sederhana
 app.use('/api/webhook/registrasi-ca', (req, res, next) => {
@@ -310,9 +337,22 @@ app.use('/api/webhook/registrasi-tr', (req, res, next) => {
   next();
 }, registrasiTrRoutes);
 
+app.use('/api/webhook/registrasi-new', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, registrasiNewRoutes);
 
 
 
+
+
+
+app.use('/api/registrasi-ca', registrasiCaRoutes);
+app.use('/api/registrasi-cp', registrasiCpRoutes);
+app.use('/api/registrasi-tr', registrasiTrRoutes);
 app.use('/api/registrasi-new', registrasiNewRoutes);
 app.use('/api/dashboard-keseluruhan', verifyToken, dashboardKeseluruhanRoutes);
 app.use('/api/chat', verifyToken, chatRoutes);
@@ -320,6 +360,8 @@ app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
 app.use('/api/admin/house-rank', verifyToken, adminHouseRankRoutes);
 app.use('/api/admin/houses', verifyToken, adminHouseRoutes);
 app.use('/api/admin/myby-coin', verifyToken, adminMybyCoinRoutes);
+app.use('/api/admin/sml-feedback', verifyToken, smlFeedbackRoutes);
+app.use('/admin/sml-feedback', verifyToken, smlFeedbackRoutes);
 app.use('/api/admin', verifyToken, adminRoutes);
 app.use('/admin', verifyToken, adminRoutes);
 

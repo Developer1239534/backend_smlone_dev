@@ -93,6 +93,77 @@ const parseRegistrasiData = (row) => {
   };
 };
 
+// POST endpoint: Handle new form submission from public registration form
+router.post('/', async (req, res) => {
+  try {
+    let data = req.body;
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(400).json({ success: false, message: 'Data registrasi tidak boleh kosong.' });
+    }
+
+    const cabang = data['cabang'] || data['Cabang'] || data['branch'] || data['branchSelected'] || data['Pilihan Cabang'] || 'Cemara';
+
+    if (!data['Timestamp'] && !data['timestamp'] && !data['todayDate']) {
+      data['Timestamp'] = new Date().toLocaleString('id-ID');
+    }
+
+    const query = `
+      INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
+      VALUES ($1, $2)
+      RETURNING *
+    `;
+    const result = await db.query(query, [JSON.stringify(data), cabang]);
+
+    res.status(201).json({
+      success: true,
+      message: 'Berhasil mengirim data pendaftaran baru.',
+      data: parseRegistrasiData(result.rows[0])
+    });
+  } catch (error) {
+    console.error('Error submitting registrasi_new_seluruh_cabang:', error.message);
+    res.status(500).json({ success: false, message: 'Gagal menyimpan data pendaftaran.', error: error.message });
+  }
+});
+
+// POST endpoint: Receive new registration data (n8n Webhook / Admin)
+router.post('/push', async (req, res) => {
+  try {
+    let data = req.body;
+    if (!Array.isArray(data)) {
+      data = [data];
+    }
+    if (data.length === 0) {
+      return res.status(400).json({ success: false, message: 'Data kosong.' });
+    }
+
+    await db.query('BEGIN');
+    let insertedCount = 0;
+
+    for (const row of data) {
+      // Extract branch name robustly
+      const cabang = row['cabang'] || row['Cabang'] || row['branch'] || row['branchSelected'] || '';
+      
+      const query = `
+        INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
+        VALUES ($1, $2)
+        RETURNING id
+      `;
+      await db.query(query, [JSON.stringify(row), cabang]);
+      insertedCount++;
+    }
+
+    await db.query('COMMIT');
+    res.json({
+      success: true,
+      message: `Berhasil menambahkan ${insertedCount} data registrasi baru.`
+    });
+  } catch (error) {
+    await db.query('ROLLBACK');
+    console.error('Error pushing registrasi_new_seluruh_cabang:', error.message);
+    res.status(500).json({ success: false, message: 'Gagal menyimpan data.', error: error.message });
+  }
+});
+
 // GET endpoint: Ambil semua data dari registrasi_new_seluruh_cabang
 router.get('/', async (req, res) => {
   try {
