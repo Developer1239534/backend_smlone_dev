@@ -175,11 +175,14 @@ router.post('/push', async (req, res) => {
         terhubung_ig, raw_data
       ]);
 
-      // Dual-insert into registrasi_new_seluruh_cabang
-      await db.query(`
-        INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
-        VALUES ($1, $2)
-      `, [JSON.stringify(row), 'Tritura']).catch(() => null);
+      try {
+        await db.query(`
+          INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
+          VALUES ($1, $2)
+        `, [JSON.stringify(row), 'Tritura']);
+      } catch (err) {
+        console.error('Dual insert error for Tritura:', err.message);
+      }
 
       insertedCount++;
     }

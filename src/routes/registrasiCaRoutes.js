@@ -135,11 +135,14 @@ router.post('/push', async (req, res) => {
         training_goal, training_expectation, event_source, previous_program, previous_program_name, raw_data
       ]);
 
-      // Dual-insert into registrasi_new_seluruh_cabang
-      await db.query(`
-        INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
-        VALUES ($1, $2)
-      `, [JSON.stringify(row), 'Cemara']).catch(() => null);
+      try {
+        await db.query(`
+          INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
+          VALUES ($1, $2)
+        `, [JSON.stringify(row), 'Cemara']);
+      } catch (err) {
+        console.error('Dual insert error for Cemara:', err.message);
+      }
 
       insertedCount++;
     }

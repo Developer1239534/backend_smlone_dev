@@ -164,11 +164,14 @@ router.post('/push', async (req, res) => {
         ig_account_anda, ig_account_anak_anda, ig_account_anda_2, raw_data
       ]);
 
-      // Dual-insert into registrasi_new_seluruh_cabang
-      await db.query(`
-        INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
-        VALUES ($1, $2)
-      `, [JSON.stringify(row), 'CP']).catch(() => null);
+      try {
+        await db.query(`
+          INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
+          VALUES ($1, $2)
+        `, [JSON.stringify(row), 'CP']);
+      } catch (err) {
+        console.error('Dual insert error for CP:', err.message);
+      }
 
       insertedCount++;
     }
