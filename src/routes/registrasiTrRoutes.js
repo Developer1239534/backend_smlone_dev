@@ -31,6 +31,19 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+const getVal = (obj, keys) => {
+  if (!obj) return '';
+  const objKeys = Object.keys(obj);
+  for (const key of keys) {
+    const k = key.toLowerCase();
+    const matched = objKeys.find(ok => ok.toLowerCase().includes(k) || ok.toLowerCase() === k);
+    if (matched && obj[matched] !== undefined && obj[matched] !== null && obj[matched] !== '') {
+      return String(obj[matched]).trim();
+    }
+  }
+  return '';
+};
+
 // POST (Create / Push from n8n / Admin)
 router.post('/push', async (req, res) => {
   try {
@@ -48,52 +61,52 @@ router.post('/push', async (req, res) => {
     for (const row of data) {
       if (!row || typeof row !== 'object') continue;
 
-      const timestamp_str = row['Timestamp'] || '';
-      const email_address = row['Email Address'] || row['email_address'] || '';
-      const full_name = row['Full Name'] || row['full_name'] || '';
+      const timestamp_str = getVal(row, ['timestamp']) || '';
+      const email_address = getVal(row, ['email address', 'email_address', 'email']) || '';
+      const full_name = getVal(row, ['full name', 'full_name', 'name', 'nama']) || '';
 
       if (!email_address || !full_name) continue;
 
-      const dob = row['Date of Birth'] || '';
-      const gender = row['Gender'] || '';
-      const address = row['Address'] || '';
-      const contact_whatsapp = row['Contact / Whatsapp No.'] || '';
-      const program = row['Program'] || '';
-      const todays_date = row['Today\'s Date'] || '';
-      const i_agree_doc = row['I Agree, to allow PT. SMLONE INDONESIA, to use any documentation taken in SMLONE programs or other related programs to be used for promotional & educational Purposes.'] || '';
-      const program_dipilih = row['Program Yang Dipilih'] || '';
-      const nama_sekolah = row['Nama Sekolah (Peserta Training)'] || '';
-      const parents_email = row['Parent\'s Email'] || '';
-      const emergency_contact_person = row['Emergency Contact Person'] || '';
-      const emergency_contact_number = row['Emergency Contact Number'] || '';
-      const kelas_peserta = row['Kelas (Peserta Training)'] || '';
-      const tahu_smlone_dari = row['Dari Manakah Anda Mengetahui SMLONE?'] || '';
-      const latest_self_portrait = row['Latest Self Potrait'] || '';
-      const tujuan_pelatihan = row['Apakah Tujuan Anda Mengikuti Pelatihan Ini?'] || '';
-      const harapan_pelatihan = row['Apa yang ingin Anda dapatkan dari pelatihan ini?'] || '';
-      const tahu_event_dari = row['Dari Manakah Anda Mengetahui Event Ini?'] || '';
-      const referensi_teman = row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan'] || '';
+      const dob = getVal(row, ['date of birth', 'dob', 'tanggal lahir']) || '';
+      const gender = getVal(row, ['gender', 'jenis kelamin']) || '';
+      const address = getVal(row, ['address', 'alamat']) || '';
+      const contact_whatsapp = getVal(row, ['contact', 'whatsapp', 'phone', 'wa']) || '';
+      const program = getVal(row, ['program']) || '';
+      const todays_date = getVal(row, ['todayDate', 'today\'s date', 'date', 'tanggal']) || '';
+      const i_agree_doc = getVal(row, ['consent', 'i agree', 'persetujuan']) || '';
+      const program_dipilih = getVal(row, ['program yang dipilih', 'subprogram', 'program_dipilih']) || '';
+      const nama_sekolah = getVal(row, ['sekolah', 'school']) || '';
+      const parents_email = getVal(row, ['parent\'s email', 'parent email', 'email orang tua']) || '';
+      const emergency_contact_person = getVal(row, ['emergency contact person', 'emergency name', 'kontak darurat nama']) || '';
+      const emergency_contact_number = getVal(row, ['emergency contact number', 'emergency number', 'kontak darurat nomor']) || '';
+      const kelas_peserta = getVal(row, ['kelas', 'grade']) || '';
+      const tahu_smlone_dari = getVal(row, ['tahu smlone', 'referral source']) || '';
+      const latest_self_portrait = getVal(row, ['portrait', 'self portrait', 'foto']) || '';
+      const tujuan_pelatihan = getVal(row, ['tujuan', 'goal']) || '';
+      const harapan_pelatihan = getVal(row, ['harapan', 'expectation']) || '';
+      const tahu_event_dari = getVal(row, ['tahu event']) || '';
+      const referensi_teman = getVal(row, ['referensi teman', 'referral friend']) || '';
 
-      const program_dipilih_2 = row['Program Yang Dipilih_2'] || '';
-      const nama_sekolah_2 = row['Nama Sekolah (Peserta Training)_2'] || '';
-      const parents_email_2 = row['Parent\'s Email_2'] || '';
-      const emergency_contact_person_2 = row['Emergency Contact Person_2'] || '';
-      const emergency_contact_number_2 = row['Emergency Contact Number_2'] || '';
-      const kelas_peserta_2 = row['Kelas (Peserta Training)_2'] || '';
-      const tahu_smlone_dari_2 = row['Dari Manakah Anda Mengetahui SMLONE?_2'] || '';
-      const referensi_teman_2 = row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan_2'] || '';
-      const latest_self_portrait_2 = row['Latest Self Potrait_2'] || '';
-      const referensi_teman_3 = row['Jika Anda mengenal SMLONE dari Referensi Teman, bolehkah dituliskan nama teman / nama anak teman yang mereferensikan_3'] || '';
+      const program_dipilih_2 = getVal(row, ['program yang dipilih_2', 'program_dipilih_2']) || '';
+      const nama_sekolah_2 = getVal(row, ['sekolah_2', 'school_2']) || '';
+      const parents_email_2 = getVal(row, ['parent\'s email_2', 'parents_email_2']) || '';
+      const emergency_contact_person_2 = getVal(row, ['emergency contact person_2', 'emergency_contact_person_2']) || '';
+      const emergency_contact_number_2 = getVal(row, ['emergency contact number_2', 'emergency_contact_number_2']) || '';
+      const kelas_peserta_2 = getVal(row, ['kelas_2', 'kelas_peserta_2']) || '';
+      const tahu_smlone_dari_2 = getVal(row, ['tahu smlone_2', 'tahu_smlone_dari_2']) || '';
+      const referensi_teman_2 = getVal(row, ['referensi teman_2', 'referensi_teman_2']) || '';
+      const latest_self_portrait_2 = getVal(row, ['portrait_2', 'latest_self_portrait_2']) || '';
+      const referensi_teman_3 = getVal(row, ['referensi teman_3', 'referensi_teman_3']) || '';
 
-      const ig_mama = row['Akun Instagram Mama'] || '';
-      const ig_papa = row['Akun Instagram Papa'] || '';
-      const ig_anak = row['Akun Instagram Anak'] || '';
-      const ig_mama_2 = row['Akun Instagram Mama_2'] || '';
-      const ig_papa_2 = row['Akun Instagram Papa_2'] || '';
-      const ig_anak_2 = row['Akun Instagram Anak_2'] || '';
-      const pernah_ikut_program = row['Apakah anak Anda sebelumnya pernah mengikuti program di SMLONE?'] || '';
-      const program_pernah_diikuti = row['Jika pernah mengikuti program di SMLONE, mohon pilih program yang pernah anak Anda ikuti'] || '';
-      const terhubung_ig = row['Terhubung dengan Kami di Instagram ≡ƒÿè'] || row['terhubung_ig'] || '';
+      const ig_mama = getVal(row, ['instagram mama', 'ig_mama']) || '';
+      const ig_papa = getVal(row, ['instagram papa', 'ig_papa']) || '';
+      const ig_anak = getVal(row, ['instagram anak', 'ig_anak']) || '';
+      const ig_mama_2 = getVal(row, ['instagram mama_2', 'ig_mama_2']) || '';
+      const ig_papa_2 = getVal(row, ['instagram papa_2', 'ig_papa_2']) || '';
+      const ig_anak_2 = getVal(row, ['instagram anak_2', 'ig_anak_2']) || '';
+      const pernah_ikut_program = getVal(row, ['pernah mengikuti program', 'pernah_ikut_program']) || '';
+      const program_pernah_diikuti = getVal(row, ['program yang pernah diikuti', 'program_pernah_diikuti']) || '';
+      const terhubung_ig = getVal(row, ['terhubung', 'instagram', 'terhubung_ig']) || '';
       const raw_data = JSON.stringify(row);
 
       const query = `
@@ -161,6 +174,13 @@ router.post('/push', async (req, res) => {
         latest_self_portrait_2, referensi_teman_3, ig_mama, ig_papa, ig_anak, ig_mama_2, ig_papa_2, ig_anak_2, pernah_ikut_program, program_pernah_diikuti,
         terhubung_ig, raw_data
       ]);
+
+      // Dual-insert into registrasi_new_seluruh_cabang
+      await db.query(`
+        INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
+        VALUES ($1, $2)
+      `, [JSON.stringify(row), 'Tritura']).catch(() => null);
+
       insertedCount++;
     }
 
