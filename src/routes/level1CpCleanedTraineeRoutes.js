@@ -7,10 +7,21 @@ router.get('/', async (req, res) => {
   try {
     const savedData = await db.query('SELECT * FROM level_1_cp_cleaned_trainee ORDER BY created_at DESC');
 
+    const mappedData = savedData.rows.map(row => ({
+      ...row,
+      id: row.id,
+      trainee_id: row.trainee_id,
+      full_name: row.name,
+      name: row.name,
+      class: row.class_name,
+      branch: row.cabang_id,
+      membership: row.membership
+    }));
+
     res.json({
       success: true,
       message: 'Berhasil mengambil data CP cleaned trainee.',
-      data: savedData.rows
+      data: mappedData
     });
   } catch (error) {
     console.error('Error fetching CP cleaned trainees:', error.message);
