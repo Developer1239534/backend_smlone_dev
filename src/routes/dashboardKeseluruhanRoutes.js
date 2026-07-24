@@ -157,7 +157,15 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Tidak ada kolom valid yang dikirim.' });
     }
 
-    const query = `INSERT INTO data_dashboard_keseluruhan (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
+    const updateStatements = columns
+      .filter(col => col !== 'id')
+      .map(col => `${col} = EXCLUDED.${col}`)
+      .join(', ');
+
+    const query = (columns.includes('id') && updateStatements.length > 0)
+      ? `INSERT INTO data_dashboard_keseluruhan (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) ON CONFLICT (id) DO UPDATE SET ${updateStatements} RETURNING *`
+      : `INSERT INTO data_dashboard_keseluruhan (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
+      
     const result = await db.query(query, values);
 
     res.json({
