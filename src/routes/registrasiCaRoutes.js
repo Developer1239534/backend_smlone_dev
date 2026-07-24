@@ -44,6 +44,63 @@ const getVal = (obj, keys) => {
   return '';
 };
 
+// POST (Create single registration)
+router.post('/', async (req, res) => {
+  try {
+    let data = req.body;
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(400).json({ success: false, message: 'Data registrasi tidak boleh kosong.' });
+    }
+    const timestamp_str = getVal(data, ['timestamp']) || new Date().toLocaleString('id-ID');
+    const email = getVal(data, ['email address', 'email_address', 'email', 'parentEmail']) || '';
+    const full_name = getVal(data, ['full name', 'full_name', 'name', 'fullName']) || 'Peserta Baru';
+
+    const dob = getVal(data, ['date of birth', 'dob', 'tanggal lahir']) || '';
+    const gender = getVal(data, ['gender', 'jenis kelamin']) || '';
+    const address = getVal(data, ['address', 'alamat']) || '';
+    const phone = getVal(data, ['contact', 'whatsapp', 'phone', 'mobileNumber']) || '';
+    const program = getVal(data, ['program', 'programSelected']) || '';
+    const registration_date = getVal(data, ['todayDate', 'date']) || '';
+    const agreement = getVal(data, ['consent', 'agreement']) ? 'Setuju' : '';
+    const selected_program = getVal(data, ['subProgramSelected', 'program_dipilih']) || '';
+    const school = getVal(data, ['schoolName', 'nama_sekolah']) || '';
+    const parent_email = getVal(data, ['parentEmail', 'parents_email']) || '';
+    const emergency_contact_name = getVal(data, ['emergencyName', 'emergency_contact_person']) || '';
+    const emergency_contact_phone = getVal(data, ['emergencyNumber', 'emergency_contact_number']) || '';
+    const grade = getVal(data, ['schoolGrade', 'kelas_peserta']) || '';
+    const source = getVal(data, ['referralSource', 'tahu_smlone_dari']) || '';
+    const referral_name = getVal(data, ['referralFriendName', 'referensi_teman']) || '';
+    const ig_mom = getVal(data, ['instagramMama', 'ig_mama']) || '';
+    const ig_dad = getVal(data, ['instagramPapa', 'ig_papa']) || '';
+    const ig_child = getVal(data, ['instagramAnak', 'ig_anak']) || '';
+
+    const query = `
+      INSERT INTO registrasi_ca (
+        timestamp_str, email, full_name, dob, gender, address, phone, program, 
+        registration_date, agreement, selected_program, school, parent_email, emergency_contact_name, 
+        emergency_contact_phone, grade, source, referral_name, ig_mom, ig_dad, ig_child, raw_data
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+      RETURNING *
+    `;
+
+    const result = await db.query(query, [
+      timestamp_str, email, full_name, dob, gender, address, phone, program, 
+      registration_date, agreement, selected_program, school, parent_email, emergency_contact_name, 
+      emergency_contact_phone, grade, source, referral_name, ig_mom, ig_dad, ig_child, JSON.stringify(data)
+    ]);
+
+    await db.query(`
+      INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
+      VALUES ($1, $2)
+    `, [JSON.stringify(data), 'Cemara']).catch(() => null);
+
+    res.status(201).json({ success: true, message: 'Berhasil menyimpan data registrasi Cemara.', data: result.rows[0] });
+  } catch (error) {
+    console.error('Error in registrasi_ca POST:', error);
+    res.status(500).json({ success: false, message: 'Gagal menyimpan data.', error: error.message });
+  }
+});
+
 // POST (Create / Push from n8n / Admin)
 router.post('/push', async (req, res) => {
   try {
@@ -135,14 +192,11 @@ router.post('/push', async (req, res) => {
         training_goal, training_expectation, event_source, previous_program, previous_program_name, raw_data
       ]);
 
-      try {
-        await db.query(`
-          INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
-          VALUES ($1, $2)
-        `, [JSON.stringify(row), 'Cemara']);
-      } catch (err) {
-        console.error('Dual insert error for Cemara:', err.message);
-      }
+      // Dual-insert into registrasi_new_seluruh_cabang
+      await db.query(`
+        INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
+        VALUES ($1, $2)
+      `, [JSON.stringify(row), 'Cemara']).catch(() => null);
 
       insertedCount++;
     }
