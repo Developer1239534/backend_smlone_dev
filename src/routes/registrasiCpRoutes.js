@@ -90,9 +90,17 @@ router.post('/', async (req, res) => {
     ]);
 
     await db.query(`
-      INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
-      VALUES ($1, $2)
-    `, [JSON.stringify(data), 'CP']).catch(() => null);
+      INSERT INTO registrasi_new_seluruh_cabang (
+        data_registrasi, cabang, email, full_name, dob, gender, phone, program, 
+        address, previous_program, selected_program, school, grade, parent_email, 
+        emergency_contact_name, emergency_contact_phone, source, agreement
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+    `, [
+      JSON.stringify(data), 'CP', email_address, full_name, dob, gender, contact_whatsapp, program, 
+      address, '', program_dipilih, nama_sekolah, kelas_peserta, parents_email, 
+      emergency_contact_person, emergency_contact_number, tahu_smlone_dari, i_agree_doc
+    ]).catch(() => null);
 
     res.status(201).json({ success: true, message: 'Berhasil menyimpan data registrasi CP.', data: result.rows[0] });
   } catch (error) {
@@ -223,9 +231,17 @@ router.post('/push', async (req, res) => {
 
       // Dual-insert into registrasi_new_seluruh_cabang
       await db.query(`
-        INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
-        VALUES ($1, $2)
-      `, [JSON.stringify(row), 'CP']).catch(() => null);
+        INSERT INTO registrasi_new_seluruh_cabang (
+          data_registrasi, cabang, email, full_name, dob, gender, phone, program, 
+          address, previous_program, selected_program, school, grade, parent_email, 
+          emergency_contact_name, emergency_contact_phone, source, agreement
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      `, [
+        JSON.stringify(row), 'CP', email_address, full_name, dob, gender, contact_whatsapp, program, 
+        address, pernah_ikut_program, program_dipilih, nama_sekolah, kelas_peserta, parents_email, 
+        emergency_contact_person, emergency_contact_number, tahu_smlone_dari, i_agree_doc
+      ]).catch(() => null);
 
       insertedCount++;
     }
