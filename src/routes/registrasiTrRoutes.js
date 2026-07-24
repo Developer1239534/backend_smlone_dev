@@ -44,6 +44,58 @@ const getVal = (obj, keys) => {
   return '';
 };
 
+// POST (Create single registration)
+router.post('/', async (req, res) => {
+  try {
+    let data = req.body;
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(400).json({ success: false, message: 'Data registrasi tidak boleh kosong.' });
+    }
+    const timestamp_str = getVal(data, ['timestamp']) || new Date().toLocaleString('id-ID');
+    const email_address = getVal(data, ['email address', 'email_address', 'email', 'parentEmail']) || '';
+    const full_name = getVal(data, ['full name', 'full_name', 'name', 'fullName']) || 'Peserta Baru';
+
+    const dob = getVal(data, ['date of birth', 'dob', 'tanggal lahir']) || '';
+    const gender = getVal(data, ['gender', 'jenis kelamin']) || '';
+    const address = getVal(data, ['address', 'alamat']) || '';
+    const contact_whatsapp = getVal(data, ['contact', 'whatsapp', 'phone', 'mobileNumber']) || '';
+    const program = getVal(data, ['program', 'programSelected']) || '';
+    const todays_date = getVal(data, ['todayDate', 'date']) || '';
+    const i_agree_doc = getVal(data, ['consent', 'agreement']) ? 'Setuju' : '';
+    const program_dipilih = getVal(data, ['subProgramSelected', 'program_dipilih']) || '';
+    const nama_sekolah = getVal(data, ['schoolName', 'nama_sekolah']) || '';
+    const parents_email = getVal(data, ['parentEmail', 'parents_email']) || '';
+    const emergency_contact_person = getVal(data, ['emergencyName', 'emergency_contact_person']) || '';
+    const emergency_contact_number = getVal(data, ['emergencyNumber', 'emergency_contact_number']) || '';
+    const kelas_peserta = getVal(data, ['schoolGrade', 'kelas_peserta']) || '';
+    const tahu_smlone_dari = getVal(data, ['referralSource', 'tahu_smlone_dari']) || '';
+    const referensi_teman = getVal(data, ['referralFriendName', 'referensi_teman']) || '';
+
+    const query = `
+      INSERT INTO registrasi_tr (
+        timestamp_str, email_address, full_name, dob, gender, address, contact_whatsapp, program, todays_date, i_agree_doc,
+        program_dipilih, nama_sekolah, parents_email, emergency_contact_person, emergency_contact_number, kelas_peserta, tahu_smlone_dari, referensi_teman, raw_data
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      RETURNING *
+    `;
+
+    const result = await db.query(query, [
+      timestamp_str, email_address, full_name, dob, gender, address, contact_whatsapp, program, todays_date, i_agree_doc,
+      program_dipilih, nama_sekolah, parents_email, emergency_contact_person, emergency_contact_number, kelas_peserta, tahu_smlone_dari, referensi_teman, JSON.stringify(data)
+    ]);
+
+    await db.query(`
+      INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
+      VALUES ($1, $2)
+    `, [JSON.stringify(data), 'Tritura']).catch(() => null);
+
+    res.status(201).json({ success: true, message: 'Berhasil menyimpan data registrasi Tritura.', data: result.rows[0] });
+  } catch (error) {
+    console.error('Error in registrasi_tr POST:', error);
+    res.status(500).json({ success: false, message: 'Gagal menyimpan data.', error: error.message });
+  }
+});
+
 // POST (Create / Push from n8n / Admin)
 router.post('/push', async (req, res) => {
   try {
@@ -175,14 +227,11 @@ router.post('/push', async (req, res) => {
         terhubung_ig, raw_data
       ]);
 
-      try {
-        await db.query(`
-          INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
-          VALUES ($1, $2)
-        `, [JSON.stringify(row), 'Tritura']);
-      } catch (err) {
-        console.error('Dual insert error for Tritura:', err.message);
-      }
+      // Dual-insert into registrasi_new_seluruh_cabang
+      await db.query(`
+        INSERT INTO registrasi_new_seluruh_cabang (data_registrasi, cabang)
+        VALUES ($1, $2)
+      `, [JSON.stringify(row), 'Tritura']).catch(() => null);
 
       insertedCount++;
     }
