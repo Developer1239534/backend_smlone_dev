@@ -96,11 +96,12 @@ const parseRegistrasiData = (row) => {
 // POST endpoint: Handle new form submission from public registration form
 router.post('/', async (req, res) => {
   try {
-    let data = req.body;
-    if (!data || Object.keys(data).length === 0) {
+    let rawBody = req.body;
+    if (!rawBody || (Array.isArray(rawBody) && rawBody.length === 0)) {
       return res.status(400).json({ success: false, message: 'Data registrasi tidak boleh kosong.' });
     }
 
+    const data = Array.isArray(rawBody) ? rawBody[0] : rawBody;
     const cabang = data['cabang'] || data['Cabang'] || data['branch'] || data['branchSelected'] || data['Pilihan Cabang'] || 'Cemara';
 
     if (!data['Timestamp'] && !data['timestamp'] && !data['todayDate']) {
