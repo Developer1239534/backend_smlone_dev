@@ -166,8 +166,8 @@ router.post('/', async (req, res) => {
       data: mapRowToFrontend(result.rows[0])
     });
   } catch (error) {
-    console.error('Error creating cleaned trainee:', error);
-    res.status(500).json({ success: false, message: 'Terjadi kesalahan saat menyimpan data.' });
+    console.error('Error saat menyimpan trainee:', error);
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan saat menyimpan data.', error: error.message, stack: error.stack });
   }
 });
 
