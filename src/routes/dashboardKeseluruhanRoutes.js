@@ -141,7 +141,10 @@ router.post('/', async (req, res) => {
     }
 
     for (const key of Object.keys(updates)) {
-      const dbCol = fieldMapping[key];
+      // Normalize key (e.g. "Date of Birth" -> "date_of_birth", "CABANG ID" -> "cabang_id", "Cleaned Program" -> "cleaned_program")
+      const normalizedKey = key.toLowerCase().trim().replace(/ /g, '_');
+      
+      const dbCol = fieldMapping[key] || fieldMapping[normalizedKey] || (allowedColumns.includes(normalizedKey) ? normalizedKey : null);
       if (dbCol && allowedColumns.includes(dbCol) && !columns.includes(dbCol)) {
         columns.push(dbCol);
         placeholders.push(`$${index}`);
@@ -219,7 +222,10 @@ router.put('/:id', async (req, res) => {
     let index = 1;
 
     for (const key of Object.keys(updates)) {
-      const dbCol = fieldMapping[key];
+      // Normalize key (e.g. "Date of Birth" -> "date_of_birth", "CABANG ID" -> "cabang_id", "Cleaned Program" -> "cleaned_program")
+      const normalizedKey = key.toLowerCase().trim().replace(/ /g, '_');
+      
+      const dbCol = fieldMapping[key] || fieldMapping[normalizedKey] || (allowedColumns.includes(normalizedKey) ? normalizedKey : null);
       if (dbCol && allowedColumns.includes(dbCol)) {
         setQuery.push(`${dbCol} = $${index}`);
         values.push(updates[key]);
