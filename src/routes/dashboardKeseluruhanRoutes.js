@@ -82,7 +82,7 @@ router.post('/', async (req, res) => {
 
   try {
     const allowedColumns = [
-      'name', 'gender', 'date_of_birth', 'nama_sekolah', 'cleaned_program', 'membership', 
+      'id', 'name', 'gender', 'date_of_birth', 'nama_sekolah', 'cleaned_program', 'membership', 
       'expiry_date', 'cabang_id', 'first_enroll', 'class', 'house', 'level', 'house_role', 
       'cabang_kelas', 'newest_grade', 'trainee_homeroom', 'screening_test', 'draft_grade', 
       'prev_grade', 'ajy_by_class', 'last_real_stage'
@@ -181,7 +181,7 @@ router.put('/:id', async (req, res) => {
 
   try {
     const allowedColumns = [
-      'name', 'gender', 'date_of_birth', 'nama_sekolah', 'cleaned_program', 'membership', 
+      'id', 'name', 'gender', 'date_of_birth', 'nama_sekolah', 'cleaned_program', 'membership', 
       'expiry_date', 'cabang_id', 'first_enroll', 'class', 'house', 'level', 'house_role', 
       'cabang_kelas', 'newest_grade', 'trainee_homeroom', 'screening_test', 'draft_grade', 
       'prev_grade', 'ajy_by_class', 'last_real_stage'
