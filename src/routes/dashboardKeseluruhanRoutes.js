@@ -19,7 +19,7 @@ const mapRowToFrontend = (row) => {
     cabang_id: row.cabang_id,
     class_branch: row.cabang_kelas || row.cabang_id,
     branch: row.cabang_id,
-    class: row.class,
+    class: row.ajy_by_class || row.class,
     house: row.house,
     level: row.level,
     house_role: row.house_role,
@@ -53,6 +53,7 @@ router.get('/', async (req, res) => {
     
     // Normalization mapping for CP and Tritura
     if (param === 'TR') param = 'TRITURA';
+    if (param === 'CP') param = 'TIMOR';
     
     const result = await db.query(query, [param]);
     
@@ -126,6 +127,7 @@ router.post('/', async (req, res) => {
     if (cabang_id) {
       let branchVal = cabang_id.toUpperCase().trim();
       if (branchVal === 'TR') branchVal = 'TRITURA';
+      if (branchVal === 'CP') branchVal = 'TIMOR';
       
       columns.push('cabang_id');
       placeholders.push(`$${index}`);
