@@ -2,6 +2,43 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
+function parseToValidDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+  const str = dateStr.trim();
+  if (!str || str === '-' || str.toLowerCase() === 'null') return null;
+
+  const monthMap = {
+    januari: '01', jan: '01',
+    februari: '02', feb: '02',
+    maret: '03', mar: '03',
+    april: '04', apr: '04',
+    mei: '05',
+    juni: '06', jun: '06',
+    juli: '07', jul: '07',
+    agustus: '08', agu: '08', ags: '08',
+    september: '09', sep: '09',
+    oktober: '10', okt: '10',
+    november: '11', nov: '11',
+    desember: '12', des: '12'
+  };
+
+  const indoMatch = str.match(/^(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})$/);
+  if (indoMatch) {
+    const day = indoMatch[1].padStart(2, '0');
+    const monthName = indoMatch[2].toLowerCase();
+    const year = indoMatch[3];
+    const month = monthMap[monthName];
+    if (month) return `${year}-${month}-${day}`;
+  }
+
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().split('T')[0];
+  }
+
+  return null;
+}
+
 // POST /api/webhook/portal-trainee - Receive & Upsert data from n8n
 router.post('/', async (req, res) => {
   try {
@@ -39,7 +76,9 @@ router.post('/', async (req, res) => {
         last_life_project
       } = item;
 
-      if (!trainee_id) {
+      const validTraineeId = trainee_id || item.ID || item.id;
+
+      if (!validTraineeId || String(validTraineeId).trim() === '') {
         errors.push({ item, error: 'trainee_id wajib diisi' });
         continue;
       }
@@ -85,35 +124,35 @@ router.post('/', async (req, res) => {
       `;
 
       const params = [
-        name || null,
-        trainee_id,
-        program || null,
-        className || item.class_name || null,
-        level || null,
-        membership_expired_date || null,
-        latest_speaking_project || null,
-        weekly_report_url || null,
-        referral_code || null,
-        progress_video_url || null,
-        gender || null,
-        date_of_birth || null,
-        school_name || null,
-        branch_id || null,
-        first_enroll || null,
-        newest_grade || null,
-        trainee_homeroom || null,
-        screening_test_url || null,
-        speaking_project_to_next_level || null,
-        last_life_project_date || null,
-        last_life_project || null
+        name || item.Name || null,
+        String(validTraineeId).trim(),
+        program || item.Program || null,
+        className || item.class_name || item.CLASS || null,
+        level || item.Level || null,
+        parseToValidDate(membership_expired_date || item['Membership Expired Date']),
+        latest_speaking_project || item['Latest Speaking Project'] || null,
+        weekly_report_url || item['Weekly Report'] || null,
+        referral_code || item['Referral Code'] || null,
+        progress_video_url || item['Progres Video'] || null,
+        gender || item.Gender || null,
+        parseToValidDate(date_of_birth || item['Date of Birth'] || item['Tanggal Lahir']),
+        school_name || item['School Name'] || item['Nama Sekolah'] || null,
+        branch_id || item['Branch ID'] || item['Cabang'] || null,
+        parseToValidDate(first_enroll || item['First Enroll']),
+        newest_grade || item['Newest Grade'] || null,
+        trainee_homeroom || item['Trainee Homeroom'] || null,
+        screening_test_url || item['Screening Test'] || null,
+        speaking_project_to_next_level || item['Speaking Project to Next Level'] || null,
+        parseToValidDate(last_life_project_date || item['Last Life Project Date']),
+        last_life_project || item['Last Life Project'] || null
       ];
 
       try {
         await db.query(query, params);
         successCount++;
       } catch (err) {
-        console.error(`[n8n Webhook Error for ${trainee_id}]:`, err.message);
-        errors.push({ trainee_id, error: err.message });
+        console.error(`[n8n Webhook Error for ${validTraineeId}]:`, err.message);
+        errors.push({ trainee_id: validTraineeId, error: err.message });
       }
     }
 
