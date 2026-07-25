@@ -17,7 +17,8 @@ router.use(async (req, res, next) => {
 
     const updatedRecords = [];
 
-    for (const item of itemsToProcess) {
+    for (let idx = 0; idx < itemsToProcess.length; idx++) {
+      const item = itemsToProcess[idx];
       const id = String(item.id || item.trainee_id || '').trim();
       const name = String(item.nama_trainee || item.name || item.trainee_name || '').trim();
       const status = item.status || 'Active';
@@ -27,7 +28,7 @@ router.use(async (req, res, next) => {
       const branch = item.branch || item.cabang || 'TIMOR';
       const totalGold = parseInt(item.total_gold || item.total_gold_periode || item.gp_month || '0') || 0;
       const kategori = item.kategori || item.junior_youth || 'Junior';
-      const rank = parseInt(item.rank || '0') || 0;
+      let rank = parseInt(item.rank || '0') || (idx + 1);
 
       if (!id || !name || id === 'ID' || id === '2' || id === '5' || id === '6') continue;
 
@@ -63,6 +64,21 @@ router.use(async (req, res, next) => {
 
       updatedRecords.push(result.rows[0]);
     }
+
+    // Auto-fix any 0 or null ranks in database
+    await db.query(`
+      WITH ranked AS (
+        SELECT id, ROW_NUMBER() OVER (
+          PARTITION BY kategori, branch 
+          ORDER BY total_gold_periode DESC, nama_trainee ASC
+        ) AS calculated_rank
+        FROM goldpoint_trainee
+      )
+      UPDATE goldpoint_trainee g
+      SET rank = r.calculated_rank
+      FROM ranked r
+      WHERE g.id = r.id AND (g.rank IS NULL OR g.rank = 0);
+    `).catch(() => null);
 
     return res.json({
       success: true,
