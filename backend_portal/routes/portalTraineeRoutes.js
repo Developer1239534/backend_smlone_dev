@@ -1,19 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db/neonClient');
+const readOnlyMiddleware = require('../middleware/readOnlyMiddleware');
+const db = require('../../src/db/neonClient');
 
-// Enforce Read-Only access on all routes
-router.use((req, res, next) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
-    return res.status(405).json({
-      success: false,
-      message: 'Akses Ditolak: API Portal Trainee hanya bersifat READ-ONLY (Hanya dapat dilihat).'
-    });
-  }
-  next();
-});
+// Enforce Read-Only Access
+router.use(readOnlyMiddleware);
 
-// GET /api/portal-trainee - Read-only: Get list of portal trainees with search, filter & pagination
+// GET / - Read-only list of portal trainees
 router.get('/', async (req, res) => {
   try {
     const { search, branch_id, level, program, class: classFilter, page = 1, limit = 20 } = req.query;
@@ -94,7 +87,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/portal-trainee/stats - Read-only summary statistics
+// GET /stats/summary - Summary Statistics
 router.get('/stats/summary', async (req, res) => {
   try {
     const totalRes = await db.query(`SELECT COUNT(*) FROM portal_trainee`);
@@ -122,7 +115,7 @@ router.get('/stats/summary', async (req, res) => {
   }
 });
 
-// GET /api/portal-trainee/:id - Read-only: Get single trainee by ID or trainee_id
+// GET /:id - Single trainee detail by ID or trainee_id
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
