@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../src/db/neonClient');
 
-// GET /api/portal-trainee - Read-only: Get list of portal trainees (supports search, branch, level, program, pagination)
+// GET /api/portal-trainee - Read-only: Get list of portal trainees
 router.get('/', async (req, res) => {
   try {
-    const { search, branch, level, program, page = 1, limit = 20 } = req.query;
+    const { search, branch_id, level, program, class: classFilter, page = 1, limit = 20 } = req.query;
 
     let query = `SELECT * FROM portal_trainee`;
     const conditions = [];
@@ -13,12 +13,12 @@ router.get('/', async (req, res) => {
 
     if (search) {
       params.push(`%${search}%`);
-      conditions.push(`(full_name ILIKE $${params.length} OR trainee_id ILIKE $${params.length} OR student_id ILIKE $${params.length})`);
+      conditions.push(`(name ILIKE $${params.length} OR trainee_id ILIKE $${params.length})`);
     }
 
-    if (branch) {
-      params.push(branch);
-      conditions.push(`branch ILIKE $${params.length}`);
+    if (branch_id) {
+      params.push(branch_id);
+      conditions.push(`branch_id ILIKE $${params.length}`);
     }
 
     if (level) {
@@ -29,6 +29,11 @@ router.get('/', async (req, res) => {
     if (program) {
       params.push(program);
       conditions.push(`program ILIKE $${params.length}`);
+    }
+
+    if (classFilter) {
+      params.push(classFilter);
+      conditions.push(`class ILIKE $${params.length}`);
     }
 
     if (conditions.length > 0) {
@@ -49,7 +54,7 @@ router.get('/', async (req, res) => {
 
     const result = await db.query(query, params);
 
-    // Get total count for pagination metadata
+    // Total count for pagination
     let countQuery = `SELECT COUNT(*) FROM portal_trainee`;
     if (conditions.length > 0) {
       countQuery += ` WHERE ` + conditions.join(' AND ');
@@ -77,14 +82,14 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/portal-trainee/:id - Read-only: Get single trainee by ID, trainee_id, or student_id
+// GET /api/portal-trainee/:id - Read-only: Get single trainee by ID or trainee_id
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const isNumeric = /^\d+$/.test(id);
     const query = isNumeric
-      ? `SELECT * FROM portal_trainee WHERE id = $1 OR trainee_id = $2 OR student_id = $2`
-      : `SELECT * FROM portal_trainee WHERE trainee_id = $1 OR student_id = $1`;
+      ? `SELECT * FROM portal_trainee WHERE id = $1 OR trainee_id = $2`
+      : `SELECT * FROM portal_trainee WHERE trainee_id = $1`;
 
     const params = isNumeric ? [parseInt(id, 10), id] : [id];
     const result = await db.query(query, params);
