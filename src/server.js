@@ -27,6 +27,7 @@ const registrasiNewRoutes = require('./routes/registrasiNewRoutes');
 const dashboardKeseluruhanRoutes = require('./routes/dashboardKeseluruhanRoutes');
 const smlFeedbackRoutes = require('./routes/smlFeedbackRoutes');
 const portalTraineeRoutes = require('./routes/portalTraineeRoutes');
+const portalTraineeWebhookRoutes = require('./routes/portalTraineeWebhookRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -377,6 +378,14 @@ app.use('/api/webhook/registrasi-new', (req, res, next) => {
   }
   next();
 }, registrasiNewRoutes);
+
+app.use('/api/webhook/portal-trainee', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, portalTraineeWebhookRoutes);
 
 
 
