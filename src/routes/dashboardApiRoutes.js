@@ -1480,4 +1480,113 @@ router.get('/myby-coin/:trainee_id', async (req, res) => {
   }
 });
 
+// GET & POST /goldpoint-trainee
+router.get('/goldpoint-trainee', async (req, res) => {
+  try {
+    const { branch, category, search, limit = 1000 } = req.query;
+    let queryText = 'SELECT * FROM goldpoint_trainee WHERE 1=1';
+    const params = [];
+    let paramIdx = 1;
+
+    if (branch && branch !== 'ALL') {
+      queryText += ` AND (UPPER(branch) = UPPER($${paramIdx}) OR UPPER(branch) LIKE UPPER($${paramIdx}))`;
+      params.push(branch);
+      paramIdx++;
+    }
+    if (category && category !== 'ALL') {
+      queryText += ` AND UPPER(kategori) = UPPER($${paramIdx})`;
+      params.push(category);
+      paramIdx++;
+    }
+    if (search) {
+      queryText += ` AND (nama_trainee ILIKE $${paramIdx} OR id ILIKE $${paramIdx})`;
+      params.push(`%${search}%`);
+      paramIdx++;
+    }
+
+    queryText += ` ORDER BY total_gold_periode DESC, nama_trainee ASC LIMIT $${paramIdx}`;
+    params.push(limit);
+
+    const result = await db.query(queryText, params);
+    res.json({
+      success: true,
+      total: result.rows.length,
+      data: result.rows.map((row, idx) => ({
+        ...row,
+        trainee_name: row.nama_trainee,
+        house_sml: row.house,
+        cabang: row.branch,
+        junior_youth: row.kategori,
+        rank: row.rank || (idx + 1)
+      }))
+    });
+  } catch (err) {
+    console.error('Error fetching goldpoint_trainee:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.post('/goldpoint-trainee', async (req, res) => {
+  try {
+    let itemsToProcess = [];
+    if (Array.isArray(req.body)) {
+      itemsToProcess = req.body;
+    } else if (req.body && Array.isArray(req.body.daftar_siswa)) {
+      itemsToProcess = req.body.daftar_siswa;
+    } else if (req.body) {
+      itemsToProcess = [req.body];
+    }
+
+    const updatedRecords = [];
+
+    for (const item of itemsToProcess) {
+      const id = String(item.id || item.trainee_id || '').trim();
+      const name = String(item.nama_trainee || item.name || item.trainee_name || '').trim();
+      const status = item.status || 'Active';
+      const level = item.level || 'Sergeant';
+      const house = item.house || item.house_sml || 'House of Thenova';
+      const className = item.class || item.nama_kelas || 'Gladwell';
+      const branch = item.branch || item.cabang || 'TIMOR';
+      const totalGold = parseInt(item.total_gold || item.total_gold_periode || item.gp_month || '0') || 0;
+      const kategori = item.kategori || item.junior_youth || 'Junior';
+      const rank = parseInt(item.rank || '0') || 0;
+
+      if (!id || !name || id === 'ID' || id === '2' || id === '5' || id === '6') continue;
+
+      const queryText = `
+        INSERT INTO goldpoint_trainee 
+          (id, nama_trainee, status, level, house, class, branch, total_gold_periode, gp_month, kategori, rank, updated_at)
+        VALUES 
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+        ON CONFLICT (id) 
+        DO UPDATE SET
+          nama_trainee = EXCLUDED.nama_trainee,
+          status = EXCLUDED.status,
+          level = EXCLUDED.level,
+          house = EXCLUDED.house,
+          class = EXCLUDED.class,
+          branch = EXCLUDED.branch,
+          total_gold_periode = EXCLUDED.total_gold_periode,
+          gp_month = EXCLUDED.gp_month,
+          kategori = EXCLUDED.kategori,
+          rank = EXCLUDED.rank,
+          updated_at = NOW()
+        RETURNING *;
+      `;
+
+      const result = await db.query(queryText, [id, name, status, level, house, className, branch, totalGold, totalGold, kategori, rank]);
+      updatedRecords.push(result.rows[0]);
+    }
+
+    res.json({
+      success: true,
+      count: updatedRecords.length,
+      data: updatedRecords
+    });
+  } catch (err) {
+    console.error('Error upserting goldpoint_trainee:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

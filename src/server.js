@@ -29,6 +29,7 @@ const smlFeedbackRoutes = require('./routes/smlFeedbackRoutes');
 const portalTraineeRoutes = require('./routes/portalTraineeRoutes');
 const portalTraineeWebhookRoutes = require('./routes/portalTraineeWebhookRoutes');
 const portalAuthRoutes = require('./routes/portalAuthRoutes');
+const goldpointTraineeRoutes = require('./routes/goldpointTraineeRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -321,6 +322,12 @@ app.get('/api/health', (req, res) => {
 });
 
 // Routes
+app.use('/api/goldpoint-trainee', goldpointTraineeRoutes);
+app.use('/api/goldpoint_trainee', goldpointTraineeRoutes);
+app.use('/api/admin/goldpoint-trainee', goldpointTraineeRoutes);
+app.use('/api/admin/goldpoint_trainee', goldpointTraineeRoutes);
+app.use('/api/dashboard/goldpoint-trainee', goldpointTraineeRoutes);
+app.use('/api/dashboard/goldpoint_trainee', goldpointTraineeRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/portal-trainee', portalTraineeRoutes);
 app.use('/api/auth/trainee', portalAuthRoutes);
