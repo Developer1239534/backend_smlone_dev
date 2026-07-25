@@ -163,6 +163,18 @@ router.post('/', async (req, res) => {
 
       try {
         await db.query(query, params);
+        
+        // Auto-provision default login account (SML + trainee_id)
+        const cleanId = String(validTraineeId).trim();
+        const defaultPassword = `SML${cleanId}`;
+        const bcrypt = require('bcryptjs');
+        const hash = await bcrypt.hash(defaultPassword, 10);
+        await db.query(`
+          INSERT INTO login_trainee (student_id, password, plain_password)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (student_id) DO NOTHING
+        `, [cleanId, hash, defaultPassword]).catch(() => {});
+
         successCount++;
       } catch (err) {
         console.error(`[n8n Webhook Error for ${validTraineeId}]:`, err.message);

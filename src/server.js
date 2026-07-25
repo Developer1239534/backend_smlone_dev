@@ -28,6 +28,7 @@ const dashboardKeseluruhanRoutes = require('./routes/dashboardKeseluruhanRoutes'
 const smlFeedbackRoutes = require('./routes/smlFeedbackRoutes');
 const portalTraineeRoutes = require('./routes/portalTraineeRoutes');
 const portalTraineeWebhookRoutes = require('./routes/portalTraineeWebhookRoutes');
+const portalAuthRoutes = require('./routes/portalAuthRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -241,6 +242,21 @@ const helmet = require('helmet');
       CREATE INDEX IF NOT EXISTS idx_portal_trainee_branch_id ON portal_trainee(branch_id);
     `);
 
+    // Create login_trainee table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS login_trainee (
+        id BIGSERIAL PRIMARY KEY,
+        student_id VARCHAR(50) UNIQUE NOT NULL REFERENCES portal_trainee(trainee_id) ON DELETE CASCADE ON UPDATE CASCADE,
+        password VARCHAR(255) NOT NULL,
+        plain_password VARCHAR(255),
+        reset_token VARCHAR(255),
+        reset_token_expires TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_login_trainee_student_id ON login_trainee(student_id);
+    `);
+
     console.log('✅ Database schema updated successfully.');
   } catch (err) {
     console.error('❌ Error checking/updating database schema:', err.message);
@@ -307,6 +323,7 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/quiz', quizRoutes);
 app.use('/api/portal-trainee', portalTraineeRoutes);
+app.use('/api/auth/trainee', portalAuthRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
