@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-function parseToValidDate(dateStr) {
-  if (!dateStr || typeof dateStr !== 'string') return null;
-  const str = dateStr.trim();
+function parseToValidDate(val) {
+  if (!val) return null;
+  const str = String(val).trim();
   if (!str || str === '-' || str.toLowerCase() === 'null') return null;
 
   const monthMap = {
@@ -39,27 +39,20 @@ function parseToValidDate(dateStr) {
   return null;
 }
 
-// Robust multi-alias value retriever with case-insensitive and normalized key matching
-function getValue(item, aliases) {
+// Case-insensitive & whitespace-trimmed key lookup helper
+function getValue(item, keys) {
   if (!item || typeof item !== 'object') return null;
-  
-  // 1. Direct exact key match
-  for (const alias of aliases) {
-    if (item[alias] !== undefined && item[alias] !== null && String(item[alias]).trim() !== '') {
-      return item[alias];
+  const normalizedMap = {};
+  for (const k of Object.keys(item)) {
+    normalizedMap[k.trim().toLowerCase()] = item[k];
+  }
+  for (const key of keys) {
+    const targetKey = key.trim().toLowerCase();
+    const val = normalizedMap[targetKey];
+    if (val !== undefined && val !== null && String(val).trim() !== '') {
+      return val;
     }
   }
-
-  // 2. Normalized key match (ignores spaces, underscores, case)
-  const itemKeys = Object.keys(item);
-  for (const alias of aliases) {
-    const normAlias = alias.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const foundKey = itemKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === normAlias);
-    if (foundKey && item[foundKey] !== undefined && item[foundKey] !== null && String(item[foundKey]).trim() !== '') {
-      return item[foundKey];
-    }
-  }
-
   return null;
 }
 
@@ -76,33 +69,33 @@ router.post('/', async (req, res) => {
     const errors = [];
 
     for (const item of payload) {
-      const trainee_id = getValue(item, ['trainee_id', 'ID', 'id', 'Trainee ID', 'ID Trainee']);
+      const validTraineeId = getValue(item, ['trainee_id', 'id', 'trainee id', 'student_id']);
 
-      if (!trainee_id) {
-        errors.push({ item, error: 'trainee_id wajib diisi' });
+      if (!validTraineeId) {
+        errors.push({ item, error: 'trainee_id / ID wajib diisi' });
         continue;
       }
 
-      const name = getValue(item, ['name', 'Name', 'full_name', 'Nama', 'Nama Lengkap', 'Nama Trainee']);
-      const program = getValue(item, ['program', 'Program']);
-      const className = getValue(item, ['class', 'CLASS', 'Class', 'class_name', 'Kelas']);
-      const level = getValue(item, ['level', 'Level', 'Tingkat']);
-      const membership_expired_date = parseToValidDate(getValue(item, ['membership_expired_date', 'Membership Expired Date', 'Membership Expired', 'Expired Date', 'Tanggal Berakhir Membership']));
-      const latest_speaking_project = getValue(item, ['latest_speaking_project', 'Latest Speaking Project', 'Last Speaking Project', 'Speaking Project Terakhir', 'Speaking Project']);
-      const weekly_report_url = getValue(item, ['weekly_report_url', 'Weekly Report', 'Weekly Report Link', 'Weekly Report URL', 'Report Link']);
-      const referral_code = getValue(item, ['referral_code', 'Referral Code', 'Kode Referral']);
-      const progress_video_url = getValue(item, ['progress_video_url', 'Progres Video', 'Progress Video', 'Progress Video URL']);
-      const gender = getValue(item, ['gender', 'Gender', 'Jenis Kelamin']);
-      const date_of_birth = parseToValidDate(getValue(item, ['date_of_birth', 'Date of Birth', 'DOB', 'Tanggal Lahir']));
-      const school_name = getValue(item, ['school_name', 'School Name', 'Nama Sekolah', 'Sekolah']);
-      const branch_id = getValue(item, ['branch_id', 'Branch ID', 'Branch', 'Cabang', 'Cabang ID']);
-      const first_enroll = parseToValidDate(getValue(item, ['first_enroll', 'First Enroll', 'First Enroll Date', 'Tanggal Bergabung', 'Joined Date']));
-      const newest_grade = getValue(item, ['newest_grade', 'Newest Grade', 'Grade', 'Kelas Terbaru']);
-      const trainee_homeroom = getValue(item, ['trainee_homeroom', 'Trainee Homeroom', 'Homeroom', 'Wali Kelas']);
-      const screening_test_url = getValue(item, ['screening_test_url', 'Screening Test', 'Screening Test Link', 'Screening Test URL']);
-      const speaking_project_to_next_level = getValue(item, ['speaking_project_to_next_level', 'Speaking Project to Next Level', 'Target Speaking Project']);
-      const last_life_project_date = parseToValidDate(getValue(item, ['last_life_project_date', 'Last Life Project Date', 'Life Project Date', 'Tanggal Last Life Project']));
-      const last_life_project = getValue(item, ['last_life_project', 'Last Life Project', 'Project Life Terakhir', 'Life Project']);
+      const name = getValue(item, ['name', 'nama']);
+      const program = getValue(item, ['program']);
+      const className = getValue(item, ['class', 'class_name', 'class name']);
+      const level = getValue(item, ['level']);
+      const membership_expired_date = parseToValidDate(getValue(item, ['membership_expired_date', 'membership expired date', 'membership_expiry']));
+      const latest_speaking_project = getValue(item, ['latest_speaking_project', 'latest speaking project']);
+      const weekly_report_url = getValue(item, ['weekly_report_url', 'weekly report']);
+      const referral_code = getValue(item, ['referral_code', 'referral code']);
+      const progress_video_url = getValue(item, ['progress_video_url', 'progres video', 'progress video']);
+      const gender = getValue(item, ['gender', 'jenis kelamin']);
+      const date_of_birth = parseToValidDate(getValue(item, ['date_of_birth', 'date of birth', 'tanggal lahir', 'dob']));
+      const school_name = getValue(item, ['school_name', 'nama sekolah', 'school name', 'school']);
+      const branch_id = getValue(item, ['branch_id', 'cabang id', 'branch id', 'branch', 'cabang']);
+      const first_enroll = parseToValidDate(getValue(item, ['first_enroll', 'first enroll', 'joined_since']));
+      const newest_grade = getValue(item, ['newest_grade', 'newest grade', 'grade']);
+      const trainee_homeroom = getValue(item, ['trainee_homeroom', 'trainee homeroom', 'homeroom']);
+      const screening_test_url = getValue(item, ['screening_test_url', 'screening test']);
+      const speaking_project_to_next_level = getValue(item, ['speaking_project_to_next_level', 'speaking project to next level']);
+      const last_life_project_date = parseToValidDate(getValue(item, ['last_life_project_date', 'last life project date']));
+      const last_life_project = getValue(item, ['last_life_project', 'last life project']);
 
       const query = `
         INSERT INTO portal_trainee (
@@ -146,7 +139,7 @@ router.post('/', async (req, res) => {
 
       const params = [
         name,
-        String(trainee_id).trim(),
+        String(validTraineeId).trim(),
         program,
         className,
         level,
@@ -172,8 +165,8 @@ router.post('/', async (req, res) => {
         await db.query(query, params);
         successCount++;
       } catch (err) {
-        console.error(`[n8n Webhook Error for ${trainee_id}]:`, err.message);
-        errors.push({ trainee_id, error: err.message });
+        console.error(`[n8n Webhook Error for ${validTraineeId}]:`, err.message);
+        errors.push({ trainee_id: validTraineeId, error: err.message });
       }
     }
 
