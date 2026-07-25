@@ -39,6 +39,30 @@ function parseToValidDate(dateStr) {
   return null;
 }
 
+// Robust multi-alias value retriever with case-insensitive and normalized key matching
+function getValue(item, aliases) {
+  if (!item || typeof item !== 'object') return null;
+  
+  // 1. Direct exact key match
+  for (const alias of aliases) {
+    if (item[alias] !== undefined && item[alias] !== null && String(item[alias]).trim() !== '') {
+      return item[alias];
+    }
+  }
+
+  // 2. Normalized key match (ignores spaces, underscores, case)
+  const itemKeys = Object.keys(item);
+  for (const alias of aliases) {
+    const normAlias = alias.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const foundKey = itemKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === normAlias);
+    if (foundKey && item[foundKey] !== undefined && item[foundKey] !== null && String(item[foundKey]).trim() !== '') {
+      return item[foundKey];
+    }
+  }
+
+  return null;
+}
+
 // POST /api/webhook/portal-trainee - Receive & Upsert data from n8n
 router.post('/', async (req, res) => {
   try {
@@ -52,36 +76,33 @@ router.post('/', async (req, res) => {
     const errors = [];
 
     for (const item of payload) {
-      const {
-        name,
-        trainee_id,
-        program,
-        class: className,
-        level,
-        membership_expired_date,
-        latest_speaking_project,
-        weekly_report_url,
-        referral_code,
-        progress_video_url,
-        gender,
-        date_of_birth,
-        school_name,
-        branch_id,
-        first_enroll,
-        newest_grade,
-        trainee_homeroom,
-        screening_test_url,
-        speaking_project_to_next_level,
-        last_life_project_date,
-        last_life_project
-      } = item;
+      const trainee_id = getValue(item, ['trainee_id', 'ID', 'id', 'Trainee ID', 'ID Trainee']);
 
-      const validTraineeId = trainee_id || item.ID || item.id;
-
-      if (!validTraineeId || String(validTraineeId).trim() === '') {
+      if (!trainee_id) {
         errors.push({ item, error: 'trainee_id wajib diisi' });
         continue;
       }
+
+      const name = getValue(item, ['name', 'Name', 'full_name', 'Nama', 'Nama Lengkap', 'Nama Trainee']);
+      const program = getValue(item, ['program', 'Program']);
+      const className = getValue(item, ['class', 'CLASS', 'Class', 'class_name', 'Kelas']);
+      const level = getValue(item, ['level', 'Level', 'Tingkat']);
+      const membership_expired_date = parseToValidDate(getValue(item, ['membership_expired_date', 'Membership Expired Date', 'Membership Expired', 'Expired Date', 'Tanggal Berakhir Membership']));
+      const latest_speaking_project = getValue(item, ['latest_speaking_project', 'Latest Speaking Project', 'Last Speaking Project', 'Speaking Project Terakhir', 'Speaking Project']);
+      const weekly_report_url = getValue(item, ['weekly_report_url', 'Weekly Report', 'Weekly Report Link', 'Weekly Report URL', 'Report Link']);
+      const referral_code = getValue(item, ['referral_code', 'Referral Code', 'Kode Referral']);
+      const progress_video_url = getValue(item, ['progress_video_url', 'Progres Video', 'Progress Video', 'Progress Video URL']);
+      const gender = getValue(item, ['gender', 'Gender', 'Jenis Kelamin']);
+      const date_of_birth = parseToValidDate(getValue(item, ['date_of_birth', 'Date of Birth', 'DOB', 'Tanggal Lahir']));
+      const school_name = getValue(item, ['school_name', 'School Name', 'Nama Sekolah', 'Sekolah']);
+      const branch_id = getValue(item, ['branch_id', 'Branch ID', 'Branch', 'Cabang', 'Cabang ID']);
+      const first_enroll = parseToValidDate(getValue(item, ['first_enroll', 'First Enroll', 'First Enroll Date', 'Tanggal Bergabung', 'Joined Date']));
+      const newest_grade = getValue(item, ['newest_grade', 'Newest Grade', 'Grade', 'Kelas Terbaru']);
+      const trainee_homeroom = getValue(item, ['trainee_homeroom', 'Trainee Homeroom', 'Homeroom', 'Wali Kelas']);
+      const screening_test_url = getValue(item, ['screening_test_url', 'Screening Test', 'Screening Test Link', 'Screening Test URL']);
+      const speaking_project_to_next_level = getValue(item, ['speaking_project_to_next_level', 'Speaking Project to Next Level', 'Target Speaking Project']);
+      const last_life_project_date = parseToValidDate(getValue(item, ['last_life_project_date', 'Last Life Project Date', 'Life Project Date', 'Tanggal Last Life Project']));
+      const last_life_project = getValue(item, ['last_life_project', 'Last Life Project', 'Project Life Terakhir', 'Life Project']);
 
       const query = `
         INSERT INTO portal_trainee (
@@ -124,35 +145,35 @@ router.post('/', async (req, res) => {
       `;
 
       const params = [
-        name || item.Name || null,
-        String(validTraineeId).trim(),
-        program || item.Program || null,
-        className || item.class_name || item.CLASS || null,
-        level || item.Level || null,
-        parseToValidDate(membership_expired_date || item['Membership Expired Date']),
-        latest_speaking_project || item['Latest Speaking Project'] || null,
-        weekly_report_url || item['Weekly Report'] || null,
-        referral_code || item['Referral Code'] || null,
-        progress_video_url || item['Progres Video'] || null,
-        gender || item.Gender || null,
-        parseToValidDate(date_of_birth || item['Date of Birth'] || item['Tanggal Lahir']),
-        school_name || item['School Name'] || item['Nama Sekolah'] || null,
-        branch_id || item['Branch ID'] || item['Cabang'] || null,
-        parseToValidDate(first_enroll || item['First Enroll']),
-        newest_grade || item['Newest Grade'] || null,
-        trainee_homeroom || item['Trainee Homeroom'] || null,
-        screening_test_url || item['Screening Test'] || null,
-        speaking_project_to_next_level || item['Speaking Project to Next Level'] || null,
-        parseToValidDate(last_life_project_date || item['Last Life Project Date']),
-        last_life_project || item['Last Life Project'] || null
+        name,
+        String(trainee_id).trim(),
+        program,
+        className,
+        level,
+        membership_expired_date,
+        latest_speaking_project,
+        weekly_report_url,
+        referral_code,
+        progress_video_url,
+        gender,
+        date_of_birth,
+        school_name,
+        branch_id,
+        first_enroll,
+        newest_grade,
+        trainee_homeroom,
+        screening_test_url,
+        speaking_project_to_next_level,
+        last_life_project_date,
+        last_life_project
       ];
 
       try {
         await db.query(query, params);
         successCount++;
       } catch (err) {
-        console.error(`[n8n Webhook Error for ${validTraineeId}]:`, err.message);
-        errors.push({ trainee_id: validTraineeId, error: err.message });
+        console.error(`[n8n Webhook Error for ${trainee_id}]:`, err.message);
+        errors.push({ trainee_id, error: err.message });
       }
     }
 
