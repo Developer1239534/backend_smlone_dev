@@ -3,10 +3,11 @@ const path = require('path');
 const { Client } = require('ssh2');
 
 const config = {
-  host: '72.62.2.160',
+  host: '187.127.206.193',
   port: 22,
   username: 'root',
-  password: 'SmlOneDev2026'
+  password: '(6PQBskHxl2Ahc;.',
+  readyTimeout: 30000
 };
 
 const REMOTE_DIR = '/var/www/backend-smlone';
@@ -21,6 +22,9 @@ function connectSSH() {
         .on('error', reject)
         .connect({
           ...config,
+          privateKey: fs.existsSync('C:\\Users\\ASUS ROG\\.ssh\\id_ed25519') 
+            ? fs.readFileSync('C:\\Users\\ASUS ROG\\.ssh\\id_ed25519') 
+            : undefined,
           tryKeyboard: true
         });
   });
