@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
       query += ` WHERE ` + conditions.join(' AND ');
     }
 
-    query += ` ORDER BY id ASC`;
+    query += ` ORDER BY trainee_id ASC`;
 
     // Pagination
     const pageNum = parseInt(page, 10) || 1;
@@ -115,17 +115,11 @@ router.get('/stats/summary', async (req, res) => {
   }
 });
 
-// GET /:id - Single trainee detail by ID or trainee_id
+// GET /:id - Single trainee detail by trainee_id
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const isNumeric = /^\d+$/.test(id);
-    const query = isNumeric
-      ? `SELECT * FROM portal_trainee WHERE id = $1 OR trainee_id = $2`
-      : `SELECT * FROM portal_trainee WHERE trainee_id = $1`;
-
-    const params = isNumeric ? [parseInt(id, 10), id] : [id];
-    const result = await db.query(query, params);
+    const result = await db.query(`SELECT * FROM portal_trainee WHERE trainee_id = $1`, [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({

@@ -214,9 +214,8 @@ const helmet = require('helmet');
     // Create portal_trainee table
     await db.query(`
       CREATE TABLE IF NOT EXISTS portal_trainee (
-        id BIGSERIAL PRIMARY KEY,
+        trainee_id VARCHAR(50) PRIMARY KEY,
         name VARCHAR(255),
-        trainee_id VARCHAR(50),
         program VARCHAR(100),
         class VARCHAR(100),
         level VARCHAR(100),
@@ -239,7 +238,6 @@ const helmet = require('helmet');
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-      CREATE INDEX IF NOT EXISTS idx_portal_trainee_trainee_id ON portal_trainee(trainee_id);
       CREATE INDEX IF NOT EXISTS idx_portal_trainee_branch_id ON portal_trainee(branch_id);
     `);
 
