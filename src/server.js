@@ -224,6 +224,8 @@ const helmet = require('helmet');
         membership_expired_date DATE,
         latest_speaking_project VARCHAR(255),
         weekly_report_url TEXT,
+        quarterly_report_url TEXT,
+        real_stage_report_url TEXT,
         referral_code VARCHAR(100),
         progress_video_url TEXT,
         gender VARCHAR(20),
@@ -240,6 +242,8 @@ const helmet = require('helmet');
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE portal_trainee ADD COLUMN IF NOT EXISTS quarterly_report_url TEXT;
+      ALTER TABLE portal_trainee ADD COLUMN IF NOT EXISTS real_stage_report_url TEXT;
       CREATE INDEX IF NOT EXISTS idx_portal_trainee_branch_id ON portal_trainee(branch_id);
     `);
 
@@ -271,9 +275,9 @@ const path = require('path');
 
 app.use(helmet({ crossOriginResourcePolicy: false })); // allow static images cross-origin
 app.use(cors({
-  origin: true,
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cache-Control', 'Pragma', 'x-api-key'],
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));

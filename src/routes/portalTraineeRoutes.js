@@ -104,6 +104,29 @@ router.use((req, res, next) => {
   next();
 });
 
+// Helper to ensure report URLs return pure null when missing or invalid
+const sanitizeReportUrl = (val) => {
+  if (!val) return null;
+  const str = String(val).trim();
+  if (str === '' || str.toLowerCase() === 'null' || str.toLowerCase() === 'undefined' || str === '-' || str === '{}' || str === '[]') {
+    return null;
+  }
+  if (!str.startsWith('http')) return null;
+  return str;
+};
+
+const sanitizeTraineeRecord = (row) => {
+  if (!row) return row;
+  return {
+    ...row,
+    screening_test_url: sanitizeReportUrl(row.screening_test_url),
+    quarterly_report_url: sanitizeReportUrl(row.quarterly_report_url),
+    weekly_report_url: sanitizeReportUrl(row.weekly_report_url),
+    real_stage_report_url: sanitizeReportUrl(row.real_stage_report_url),
+    progress_video_url: sanitizeReportUrl(row.progress_video_url)
+  };
+};
+
 // GET /api/portal-trainee - Read-only: Get list of portal trainees
 router.get('/', async (req, res) => {
   try {
@@ -155,6 +178,7 @@ router.get('/', async (req, res) => {
     query += ` OFFSET $${params.length}`;
 
     const result = await db.query(query, params);
+    const sanitizedData = result.rows.map(sanitizeTraineeRecord);
 
     // Total count query
     let countQuery = `SELECT COUNT(*) FROM portal_trainee`;
@@ -167,7 +191,7 @@ router.get('/', async (req, res) => {
     res.json({
       success: true,
       read_only: true,
-      data: result.rows,
+      data: sanitizedData,
       pagination: {
         total: totalItems,
         page: pageNum,
@@ -226,10 +250,12 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    const sanitizedTrainee = sanitizeTraineeRecord(result.rows[0]);
+
     res.json({
       success: true,
       read_only: true,
-      data: result.rows[0]
+      data: sanitizedTrainee
     });
   } catch (error) {
     console.error('[PortalTrainee] Fetch single error:', error);
@@ -242,3 +268,4 @@ router.get('/:id', async (req, res) => {
 });
 
 module.exports = router;
+
