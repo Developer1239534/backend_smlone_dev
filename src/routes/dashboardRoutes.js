@@ -140,6 +140,14 @@ router.get('/:id', async (req, res) => {
     trainee.cabang = trainee.cabang_id || trainee.cabang || '';
     trainee.junior_youth = trainee.cleaned_program || trainee.junior_youth || '';
 
+    const sanitizeUrl = (val) => {
+      if (!val) return null;
+      const str = String(val).trim();
+      if (str === '' || str.toLowerCase() === 'null' || str.toLowerCase() === 'undefined' || str === '-' || str === '{}' || str === '[]') return null;
+      if (!str.startsWith('http')) return null;
+      return str;
+    };
+
     // Fetch real stage reports if available
     const rsRes = await db.query(
       'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
@@ -153,13 +161,18 @@ router.get('/:id', async (req, res) => {
     };
     const sortedRS = rsRes.rows.sort((a, b) => parseRealStagePeriod(b.periode) - parseRealStagePeriod(a.periode));
 
-    trainee.real_stage = sortedRS[0]?.url || null;
+    const latestRsUrl = sortedRS[0]?.url ? sanitizeUrl(sortedRS[0].url) : null;
+    const screeningTestUrl = sanitizeUrl(trainee.screening_test || trainee.screening_test_url);
+
+    trainee.screening_test = screeningTestUrl;
+    trainee.screening_test_url = screeningTestUrl;
+    trainee.screeningTest = screeningTestUrl;
+    trainee.real_stage = latestRsUrl;
     trainee.real_stages = sortedRS;
-    trainee.realStage = sortedRS[0]?.url || null;
+    trainee.realStage = latestRsUrl;
     trainee.realStages = sortedRS;
-    trainee.real_stage_report = sortedRS[0]?.url || null;
-    trainee.realStageReport = sortedRS[0]?.url || null;
-    trainee.screeningTest = trainee.screening_test;
+    trainee.real_stage_report = latestRsUrl;
+    trainee.realStageReport = latestRsUrl;
 
     res.json({
       success: true,
@@ -172,4 +185,5 @@ router.get('/:id', async (req, res) => {
 });
 
 module.exports = router;
+
 

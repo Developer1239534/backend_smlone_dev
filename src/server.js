@@ -275,9 +275,9 @@ const path = require('path');
 
 app.use(helmet({ crossOriginResourcePolicy: false })); // allow static images cross-origin
 app.use(cors({
-  origin: true,
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cache-Control', 'Pragma', 'x-api-key'],
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));
