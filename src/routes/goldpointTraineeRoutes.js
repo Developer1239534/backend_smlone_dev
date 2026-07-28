@@ -4,22 +4,20 @@ const db = require('../db/neonClient');
 
 const VALID_CLASSES = new Set([
   'Alexandrite', 'Almeria', 'Amber', 'Amethyst', 'Aristotle', 'Asheville',
-  'Athens', 'Atlanta', 'Auckland', 'Avalon', 'Azurite', 'Beryl', 'Cairo',
-  'Camelot', 'Canfield', 'Clinton (Fri 3-5)', 'DaVinci', 'Dale (Sat 4-6)',
-  'Denver', 'Diamond', 'Doyle (Sat 1-3)', 'Duloc', 'Einstein', 'Eldorado',
-  'Emerald', 'Galileo (Wed 4-6)', 'Gandhi', 'Gates (Sat 10-12)', 'Gladwell',
-  'Graham', 'Grande (Thu 4-6 PM)', 'Hogwarts', 'Jade', 'Kiyosaki (Sat 4-6)',
-  'Lincoln', 'Mandela', 'Marley', 'Maxwell', 'Millman (Sat 1-3)', 'Narnia',
-  'Neverland', 'Newton (Tue 4-6)', 'Obsidian', 'Pearl', 'Plato', 'Quartz',
-  'Robbins (Sat 1-3)', 'Ruby', 'Sapphire', 'Sherwood Forest', 'Sigmund',
-  'Socrates', 'Spielberg (Sat 4-6)', 'Topaz', 'Tracy (Sat 4-6)', 'Whomville',
-  'Winfrey (Thursday 4-6)', 'Wonderland', 'Ziglar (Sat 4-6)'
+  'Athens', 'Atlanta', 'Atlantis', 'Auckland', 'Avalon', 'Azurite', 'Beryl',
+  'Cairo', 'Camelot', 'Canfield', 'Clinton', 'DaVinci', 'Dale', 'Denver',
+  'Diamond', 'Doyle', 'Duloc', 'Einstein', 'Eldorado', 'Emerald', 'Galileo',
+  'Gandhi', 'Gates', 'Gladwell', 'Graham', 'Grande', 'Hogwarts', 'Jade',
+  'Kiyosaki', 'Lincoln', 'Mandela', 'Marley', 'Maxwell', 'Millman', 'Narnia',
+  'Neverland', 'Newton', 'Obsidian', 'Pearl', 'Plato', 'Quartz', 'Robbins',
+  'Ruby', 'Sapphire', 'Sherwood Forest', 'Sigmund', 'Socrates', 'Spielberg',
+  'Topaz', 'Tracy', 'Whomville', 'Winfrey', 'Wonderland', 'Ziglar'
 ]);
 
 function sanitizeClass(className) {
   if (!className) return 'Gladwell';
-  const trimmed = String(className).trim();
-  if (VALID_CLASSES.has(trimmed)) return trimmed;
+  let cleaned = String(className).replace(/\s*\(.*?\)/g, '').trim();
+  if (VALID_CLASSES.has(cleaned)) return cleaned;
   return 'Gladwell';
 }
 
