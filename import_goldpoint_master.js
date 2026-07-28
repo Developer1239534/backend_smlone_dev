@@ -4,20 +4,36 @@ const db = require('./src/db/neonClient');
 const rawText = fs.readFileSync(__dirname + '/raw_goldpoint_input.txt', 'utf8');
 
 async function run() {
-  const lines = rawText.split(/\r?\n/);
+  // 1. Ensure goldpoint_trainee table exists
+  console.log('Ensuring goldpoint_trainee table exists...');
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS goldpoint_trainee (
+      id VARCHAR PRIMARY KEY,
+      nama_trainee VARCHAR,
+      status VARCHAR,
+      level VARCHAR,
+      house VARCHAR,
+      class VARCHAR,
+      branch VARCHAR,
+      total_gold_periode INT DEFAULT 0,
+      gp_month INT DEFAULT 0,
+      kategori VARCHAR,
+      rank INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
 
-  // Map to store unique trainee records by ID (or array of all entries)
+  const lines = rawText.split(/\r?\n/);
   const traineesMap = new Map();
 
   for (const line of lines) {
     if (!line.trim()) continue;
     const cols = line.split('\t');
 
-    // Scan cols in chunks of 10 or find all occurrences of ID
     for (let c = 0; c < cols.length; c++) {
       const val = cols[c].trim();
       if (/^\d+$/.test(val) && val.length >= 2 && val.length <= 10 && val !== '25' && val !== '26' && val !== '28' && val !== '31') {
-        // Check if next column looks like a name
         if (c + 1 < cols.length && cols[c + 1].trim() && cols[c + 1].trim().toUpperCase() !== 'NAMA TRAINEE') {
           const id = val;
           const nama_trainee = cols[c + 1].trim();
@@ -34,7 +50,6 @@ async function run() {
           const rank = parseInt(rankStr, 10) || 0;
 
           if (nama_trainee && !nama_trainee.toLowerCase().includes('top 25') && !nama_trainee.toLowerCase().includes('nama trainee')) {
-            // Store or update if total_gold_periode is higher/present
             if (!traineesMap.has(id) || total_gold_periode > (traineesMap.get(id).total_gold_periode || 0)) {
               traineesMap.set(id, {
                 id,
@@ -86,7 +101,7 @@ async function run() {
       rec.branch, rec.total_gold_periode, rec.gp_month, rec.kategori, rec.rank
     ]);
 
-    // Connect & Sync with portal_trainee table
+    // Connect & Sync with portal_trainee table without deleting anything
     await db.query(`
       UPDATE portal_trainee 
       SET name = $2, house = $3, class = $4, branch_id = $5, level = $6
@@ -111,11 +126,11 @@ async function run() {
     WHERE g.id = r.id AND (g.rank IS NULL OR g.rank = 0);
   `).catch(() => null);
 
-  console.log(`Successfully upserted ${upsertedCount} trainees into goldpoint_trainee table & synced with portal_trainee.`);
+  console.log(`Successfully restored ${upsertedCount} trainees into goldpoint_trainee table and synced with portal_trainee.`);
   process.exit(0);
 }
 
 run().catch(err => {
-  console.error('Error importing gold point data:', err);
+  console.error('Error restoring gold point data:', err);
   process.exit(1);
 });
