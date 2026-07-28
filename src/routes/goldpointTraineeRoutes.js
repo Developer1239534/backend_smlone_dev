@@ -80,7 +80,9 @@ router.get('/', async (req, res) => {
         COALESCE(rank, 0) AS rank,
         updated_at
       FROM portal_trainee
-      WHERE 1=1
+      WHERE name IS NOT NULL 
+        AND TRIM(name) != '' 
+        AND LOWER(TRIM(name)) NOT IN ('trainee', 'youth', 'junior')
     `;
     const queryParams = [];
     let paramIndex = 1;
@@ -107,16 +109,18 @@ router.get('/', async (req, res) => {
     const result = await db.query(queryText, queryParams);
 
     // Format and sanitize class names & dynamic ranks
-    const formattedData = result.rows.map((row, idx) => {
-      const cleanClass = sanitizeClass(row.class);
-      return {
-        ...row,
-        class: cleanClass,
-        class_name: cleanClass,
-        nama_kelas: cleanClass,
-        rank: row.rank > 0 ? row.rank : (parseInt(offset) + idx + 1)
-      };
-    });
+    const formattedData = result.rows
+      .filter(row => row.nama_trainee && row.nama_trainee.trim().length > 0)
+      .map((row, idx) => {
+        const cleanClass = sanitizeClass(row.class);
+        return {
+          ...row,
+          class: cleanClass,
+          class_name: cleanClass,
+          nama_kelas: cleanClass,
+          rank: row.rank > 0 ? row.rank : (parseInt(offset) + idx + 1)
+        };
+      });
 
     return sendResponse(res, 200, {
       success: true,
@@ -160,7 +164,7 @@ router.get('/:id', async (req, res) => {
         COALESCE(rank, 0) AS rank,
         updated_at
       FROM portal_trainee 
-      WHERE trainee_id = $1
+      WHERE trainee_id = $1 AND name IS NOT NULL AND TRIM(name) != ''
     `, [id]);
 
     if (result.rows.length === 0) {
