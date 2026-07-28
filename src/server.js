@@ -409,6 +409,11 @@ app.use('/admin/sml-feedback', verifyToken, smlFeedbackRoutes);
 app.use('/api/admin', verifyToken, adminRoutes);
 app.use('/admin', verifyToken, adminRoutes);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
+
