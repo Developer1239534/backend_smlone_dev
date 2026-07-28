@@ -1,35 +1,18 @@
 const db = require('./src/db/neonClient');
 
-async function main() {
-  const cols = await db.query(
-    "SELECT column_name FROM information_schema.columns WHERE table_name = 'portal_trainee'"
-  );
-  console.log('=== KOLOM portal_trainee ===');
-  cols.rows.forEach(r => console.log(' -', r.column_name));
+async function check() {
+  const res = await db.query(`SELECT trainee_id, name, date_of_birth, branch_id FROM portal_trainee ORDER BY trainee_id LIMIT 1000`);
+  console.log(`Total records in portal_trainee: ${res.rows.length}`);
+  
+  const invalidIds = res.rows.filter(r => !r.trainee_id.match(/^\d+$/));
+  console.log(`Invalid IDs count: ${invalidIds.length}`);
+  if (invalidIds.length > 0) {
+    console.log(`Sample invalid IDs:`, invalidIds.slice(0, 20));
+  }
 
-  const counts = await db.query(`
-    SELECT 
-      COUNT(*) as total,
-      COUNT(progress_video_url) as video,
-      COUNT(quarterly_report_url) as quarterly,
-      COUNT(real_stage_report_url) as realstage,
-      COUNT(referral_code) as referral
-    FROM portal_trainee
-  `);
-  console.log('\n=== COUNT PER KOLOM ===');
-  console.table(counts.rows);
-
-  const sample = await db.query(`
-    SELECT trainee_id, branch_id,
-      CASE WHEN progress_video_url IS NOT NULL THEN 'ADA' ELSE 'NULL' END as video,
-      CASE WHEN quarterly_report_url IS NOT NULL THEN 'ADA' ELSE 'NULL' END as quarterly,
-      CASE WHEN real_stage_report_url IS NOT NULL THEN 'ADA' ELSE 'NULL' END as realstage,
-      CASE WHEN referral_code IS NOT NULL THEN 'ADA' ELSE 'NULL' END as referral
-    FROM portal_trainee
-    LIMIT 10
-  `);
-  console.log('\n=== SAMPLE 10 BARIS ===');
-  console.table(sample.rows);
+  // Also check if there are non-digit IDs or date strings in trainee_id column
+  const dateLikeIds = res.rows.filter(r => r.trainee_id.includes('/') || r.trainee_id.includes('-') || isNaN(parseInt(r.trainee_id, 10)));
+  console.log(`Date-like or non-numeric IDs:`, dateLikeIds);
 }
 
-main().catch(console.error);
+check().catch(console.error);
