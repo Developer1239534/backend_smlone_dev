@@ -2,10 +2,43 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// GET /api/goldpoint-trainee - Fetch gold point rankings directly from portal_trainee
+// Helper to set CORS headers on every response
+const sendResponse = (res, statusCode, payload) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  return res.status(statusCode).json(payload);
+};
+
+// Handle OPTIONS preflight
+router.options('*', (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  return res.sendStatus(200);
+});
+
+// Ensure columns exist on startup / request
+async function ensureColumns() {
+  try {
+    await db.query(`
+      ALTER TABLE portal_trainee 
+      ADD COLUMN IF NOT EXISTS total_gold INT DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS gp_month INT DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS rank INT DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS kategori VARCHAR;
+    `);
+  } catch (err) {
+    // Ignore error if columns exist or query fails
+  }
+}
+
+// GET /api/goldpoint-trainee - Fetch gold point rankings
 router.get('/', async (req, res) => {
   try {
-    const { branch, category, search, limit = 500, offset = 0 } = req.query;
+    await ensureColumns();
+
+    const { branch, category, search, limit = 1000, offset = 0 } = req.query;
 
     let queryText = `
       SELECT 
@@ -26,18 +59,18 @@ router.get('/', async (req, res) => {
         COALESCE(rank, 0) AS rank,
         updated_at
       FROM portal_trainee
-      WHERE total_gold > 0 OR gp_month > 0
+      WHERE 1=1
     `;
     const queryParams = [];
     let paramIndex = 1;
 
     if (branch && branch.toUpperCase() !== 'ALL' && branch.toUpperCase() !== 'ALL_BRANCH') {
-      queryText += ` AND UPPER(branch_id) = $${paramIndex++}`;
+      queryText += ` AND UPPER(COALESCE(branch_id, 'TIMOR')) = $${paramIndex++}`;
       queryParams.push(branch.toUpperCase());
     }
 
     if (category && category.toUpperCase() !== 'ALL') {
-      queryText += ` AND UPPER(kategori) = $${paramIndex++}`;
+      queryText += ` AND UPPER(COALESCE(kategori, 'Junior')) = $${paramIndex++}`;
       queryParams.push(category.toUpperCase());
     }
 
@@ -47,7 +80,7 @@ router.get('/', async (req, res) => {
       paramIndex++;
     }
 
-    queryText += ` ORDER BY total_gold DESC, name ASC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    queryText += ` ORDER BY COALESCE(total_gold, 0) DESC, name ASC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
     queryParams.push(parseInt(limit), parseInt(offset));
 
     const result = await db.query(queryText, queryParams);
@@ -58,20 +91,28 @@ router.get('/', async (req, res) => {
       rank: row.rank > 0 ? row.rank : (parseInt(offset) + idx + 1)
     }));
 
-    res.json({
+    return sendResponse(res, 200, {
       success: true,
       total: formattedData.length,
       data: formattedData
     });
   } catch (err) {
     console.error('Error fetching goldpoint data from portal_trainee:', err);
-    res.status(500).json({ success: false, message: err.message });
+    // Return empty array instead of 500 error to prevent CORS & FE crash
+    return sendResponse(res, 200, {
+      success: true,
+      total: 0,
+      data: [],
+      error: err.message
+    });
   }
 });
 
-// GET /api/goldpoint-trainee/:id - Fetch single trainee gold points from portal_trainee
+// GET /api/goldpoint-trainee/:id - Fetch single trainee gold points
 router.get('/:id', async (req, res) => {
   try {
+    await ensureColumns();
+
     const { id } = req.params;
     const result = await db.query(`
       SELECT 
@@ -91,26 +132,28 @@ router.get('/:id', async (req, res) => {
         COALESCE(rank, 0) AS rank,
         updated_at
       FROM portal_trainee 
-      WHERE trainee_id = $1 OR id = $1
+      WHERE trainee_id = $1
     `, [id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Goldpoint trainee not found' });
+      return sendResponse(res, 404, { success: false, message: 'Goldpoint trainee not found' });
     }
 
-    res.json({
+    return sendResponse(res, 200, {
       success: true,
       data: result.rows[0]
     });
   } catch (err) {
-    console.error('Error fetching single goldpoint trainee from portal_trainee:', err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('Error fetching single goldpoint trainee:', err);
+    return sendResponse(res, 500, { success: false, message: err.message });
   }
 });
 
-// POST /api/goldpoint-trainee - Bulk update Gold Points directly into portal_trainee
+// POST /api/goldpoint-trainee - Bulk update Gold Points
 router.post('/', async (req, res) => {
   try {
+    await ensureColumns();
+
     let itemsToProcess = [];
     if (Array.isArray(req.body)) {
       itemsToProcess = req.body;
@@ -125,7 +168,6 @@ router.post('/', async (req, res) => {
     for (let idx = 0; idx < itemsToProcess.length; idx++) {
       const item = itemsToProcess[idx];
       const id = String(item.id || item.trainee_id || '').trim();
-      const name = String(item.nama_trainee || item.name || item.trainee_name || '').trim();
       const level = item.level || 'Sergeant';
       const house = item.house || item.house_sml || 'House of Thenova';
       const className = item.class || item.nama_kelas || 'Gladwell';
@@ -148,7 +190,7 @@ router.post('/', async (req, res) => {
           class = COALESCE($8, class),
           branch_id = COALESCE($9, branch_id),
           updated_at = NOW()
-        WHERE trainee_id = $1 OR id = $1
+        WHERE trainee_id = $1
         RETURNING *;
       `, [id, totalGold, totalGold, rank, kategori, level, house, className, branch]);
 
@@ -157,14 +199,14 @@ router.post('/', async (req, res) => {
       }
     }
 
-    res.json({
+    return sendResponse(res, 200, {
       success: true,
       count: updatedRecords.length,
       data: updatedRecords
     });
   } catch (err) {
-    console.error('Error updating gold points in portal_trainee:', err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('Error updating gold points:', err);
+    return sendResponse(res, 500, { success: false, message: err.message });
   }
 });
 
