@@ -68,6 +68,8 @@ router.get('/', async (req, res) => {
         COALESCE(level, 'Sergeant') AS level,
         COALESCE(house, 'House of Thenova') AS house,
         COALESCE(class, 'Gladwell') AS class,
+        COALESCE(class, 'Gladwell') AS class_name,
+        COALESCE(class, 'Gladwell') AS nama_kelas,
         COALESCE(branch_id, 'TIMOR') AS branch,
         COALESCE(branch_id, 'TIMOR') AS cabang,
         COALESCE(total_gold, 0) AS total_gold_periode,
@@ -105,11 +107,16 @@ router.get('/', async (req, res) => {
     const result = await db.query(queryText, queryParams);
 
     // Format and sanitize class names & dynamic ranks
-    const formattedData = result.rows.map((row, idx) => ({
-      ...row,
-      class: sanitizeClass(row.class),
-      rank: row.rank > 0 ? row.rank : (parseInt(offset) + idx + 1)
-    }));
+    const formattedData = result.rows.map((row, idx) => {
+      const cleanClass = sanitizeClass(row.class);
+      return {
+        ...row,
+        class: cleanClass,
+        class_name: cleanClass,
+        nama_kelas: cleanClass,
+        rank: row.rank > 0 ? row.rank : (parseInt(offset) + idx + 1)
+      };
+    });
 
     return sendResponse(res, 200, {
       success: true,
@@ -141,6 +148,8 @@ router.get('/:id', async (req, res) => {
         COALESCE(level, 'Sergeant') AS level,
         COALESCE(house, 'House of Thenova') AS house,
         COALESCE(class, 'Gladwell') AS class,
+        COALESCE(class, 'Gladwell') AS class_name,
+        COALESCE(class, 'Gladwell') AS nama_kelas,
         COALESCE(branch_id, 'TIMOR') AS branch,
         COALESCE(branch_id, 'TIMOR') AS cabang,
         COALESCE(total_gold, 0) AS total_gold_periode,
@@ -159,7 +168,10 @@ router.get('/:id', async (req, res) => {
     }
 
     const row = result.rows[0];
-    row.class = sanitizeClass(row.class);
+    const cleanClass = sanitizeClass(row.class);
+    row.class = cleanClass;
+    row.class_name = cleanClass;
+    row.nama_kelas = cleanClass;
 
     return sendResponse(res, 200, {
       success: true,
@@ -192,7 +204,7 @@ router.post('/', async (req, res) => {
       const id = String(item.id || item.trainee_id || '').trim();
       const level = item.level || 'Sergeant';
       const house = item.house || item.house_sml || 'House of Thenova';
-      const className = sanitizeClass(item.class || item.nama_kelas || 'Gladwell');
+      const className = sanitizeClass(item.class || item.nama_kelas || item.class_name || 'Gladwell');
       const branch = item.branch || item.cabang || 'TIMOR';
       const totalGold = parseInt(item.total_gold || item.total_gold_periode || item.gp_month || '0') || 0;
       const kategori = item.kategori || item.junior_youth || 'Junior';
