@@ -2,6 +2,27 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
+const VALID_CLASSES = new Set([
+  'Alexandrite', 'Almeria', 'Amber', 'Amethyst', 'Aristotle', 'Asheville',
+  'Athens', 'Atlanta', 'Auckland', 'Avalon', 'Azurite', 'Beryl', 'Cairo',
+  'Camelot', 'Canfield', 'Clinton (Fri 3-5)', 'DaVinci', 'Dale (Sat 4-6)',
+  'Denver', 'Diamond', 'Doyle (Sat 1-3)', 'Duloc', 'Einstein', 'Eldorado',
+  'Emerald', 'Galileo (Wed 4-6)', 'Gandhi', 'Gates (Sat 10-12)', 'Gladwell',
+  'Graham', 'Grande (Thu 4-6 PM)', 'Hogwarts', 'Jade', 'Kiyosaki (Sat 4-6)',
+  'Lincoln', 'Mandela', 'Marley', 'Maxwell', 'Millman (Sat 1-3)', 'Narnia',
+  'Neverland', 'Newton (Tue 4-6)', 'Obsidian', 'Pearl', 'Plato', 'Quartz',
+  'Robbins (Sat 1-3)', 'Ruby', 'Sapphire', 'Sherwood Forest', 'Sigmund',
+  'Socrates', 'Spielberg (Sat 4-6)', 'Topaz', 'Tracy (Sat 4-6)', 'Whomville',
+  'Winfrey (Thursday 4-6)', 'Wonderland', 'Ziglar (Sat 4-6)'
+]);
+
+function sanitizeClass(className) {
+  if (!className) return 'Gladwell';
+  const trimmed = String(className).trim();
+  if (VALID_CLASSES.has(trimmed)) return trimmed;
+  return 'Gladwell';
+}
+
 // Helper to set CORS headers on every response
 const sendResponse = (res, statusCode, payload) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -85,9 +106,10 @@ router.get('/', async (req, res) => {
 
     const result = await db.query(queryText, queryParams);
 
-    // Calculate dynamic ranks
+    // Format and sanitize class names & dynamic ranks
     const formattedData = result.rows.map((row, idx) => ({
       ...row,
+      class: sanitizeClass(row.class),
       rank: row.rank > 0 ? row.rank : (parseInt(offset) + idx + 1)
     }));
 
@@ -98,7 +120,6 @@ router.get('/', async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching goldpoint data from portal_trainee:', err);
-    // Return empty array instead of 500 error to prevent CORS & FE crash
     return sendResponse(res, 200, {
       success: true,
       total: 0,
@@ -139,9 +160,12 @@ router.get('/:id', async (req, res) => {
       return sendResponse(res, 404, { success: false, message: 'Goldpoint trainee not found' });
     }
 
+    const row = result.rows[0];
+    row.class = sanitizeClass(row.class);
+
     return sendResponse(res, 200, {
       success: true,
-      data: result.rows[0]
+      data: row
     });
   } catch (err) {
     console.error('Error fetching single goldpoint trainee:', err);
@@ -170,7 +194,7 @@ router.post('/', async (req, res) => {
       const id = String(item.id || item.trainee_id || '').trim();
       const level = item.level || 'Sergeant';
       const house = item.house || item.house_sml || 'House of Thenova';
-      const className = item.class || item.nama_kelas || 'Gladwell';
+      const className = sanitizeClass(item.class || item.nama_kelas || 'Gladwell');
       const branch = item.branch || item.cabang || 'TIMOR';
       const totalGold = parseInt(item.total_gold || item.total_gold_periode || item.gp_month || '0') || 0;
       const kategori = item.kategori || item.junior_youth || 'Junior';
