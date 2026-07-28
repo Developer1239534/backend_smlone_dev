@@ -72,6 +72,11 @@ router.post('/submit', async (req, res) => {
     }
 
     // Map option to House
+    // A = Thenova (Curiosity & Innovation)
+    // B = Havaria (Empathy & People)
+    // C = Reverion (Integrity & Character)
+    // D = Quorion (Precision & Excellence)
+    // E = Creanova (Originality & Creativity)
     const houseMap = {
       'A': 'Thenova',
       'B': 'Havaria',
