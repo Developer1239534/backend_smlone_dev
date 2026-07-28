@@ -288,37 +288,10 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 
 app.set('trust proxy', 1);
 
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 150,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Terlalu banyak permintaan dari IP Anda. Silakan coba lagi setelah 15 menit.'
-  }
-});
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Terlalu banyak percobaan masuk/daftar. Silakan coba lagi setelah 15 menit.'
-  }
-});
-
-
+// Rate limiting disabled by request to prevent 429 (Too Many Requests) errors
 app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/webhook') || req.path.startsWith('/dashboard-keseluruhan')) {
-    return next(); // Bypass limiter for n8n webhooks and bulk syncs
-  }
-  return generalLimiter(req, res, next);
+  return next();
 });
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
 
 // Health check
 app.get('/api/health', (req, res) => {
