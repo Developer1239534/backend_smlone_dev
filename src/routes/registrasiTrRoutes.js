@@ -5,11 +5,63 @@ const db = require('../db/neonClient');
 // GET all (Admin & Webhook)
 router.get('/', async (req, res) => {
   try {
-    const savedData = await db.query('SELECT * FROM registrasi_tr ORDER BY created_at DESC');
+    const savedData = await db.query("SELECT * FROM data_dashboard_keseluruhan WHERE UPPER(cabang_id) = 'TRITURA' ORDER BY created_at DESC");
+    
+    const mapped = savedData.rows.map(row => {
+      return {
+        id: row.id,
+        email_address: row.parent_email || '',
+        full_name: row.name,
+        dob: row.date_of_birth,
+        gender: row.gender,
+        address: row.nama_sekolah || '',
+        contact_whatsapp: '',
+        program: row.cleaned_program,
+        todays_date: row.first_enroll,
+        i_agree_doc: 'Setuju',
+        program_dipilih: row.cleaned_program,
+        nama_sekolah: row.nama_sekolah,
+        parents_email: row.parent_email || '',
+        emergency_contact_person: row.trainee_homeroom || '',
+        emergency_contact_number: '',
+        kelas_peserta: row.newest_grade,
+        tahu_smlone_dari: '',
+        referensi_teman: '',
+        ig_mama: '',
+        ig_papa: '',
+        ig_anak: '',
+        timestamp_str: row.first_enroll || '',
+        created_at: row.created_at,
+        raw_data: {
+          ID: row.id,
+          Name: row.name,
+          Gender: row.gender,
+          'Date of Birth': row.date_of_birth,
+          School: row.nama_sekolah,
+          CLASS: row.class,
+          'CABANG ID': 'Tritura',
+          'Cleaned Program': row.cleaned_program,
+          MEMBERSHIP: row.membership,
+          'EXPIRY DATE': row.expiry_date,
+          Level: row.level,
+          'House Role': row.house_role,
+          House: row.house,
+          'CABANG KELAS': row.cabang_kelas || 'Tritura',
+          'NEWEST GRADE': row.newest_grade,
+          'Trainee Homeroom': row.trainee_homeroom,
+          'Screening Test': row.screening_test,
+          'Draft Grade': row.draft_grade,
+          'Prev Grade': row.prev_grade,
+          'A/J/Y by Class': row.ajy_by_class,
+          'Last Real Stage': row.last_real_stage
+        }
+      };
+    });
+
     res.json({
       success: true,
       message: 'Berhasil mengambil data registrasi TR.',
-      data: savedData.rows
+      data: mapped
     });
   } catch (error) {
     console.error('Error fetching registrasi_tr:', error.message);
