@@ -310,6 +310,9 @@ app.use('/api/portal-trainee', portalTraineeRoutes);
 app.use('/api/auth/trainee', portalAuthRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin/login', authRoutes);
+app.use('/admin/login', authRoutes);
+app.use('/api/admin/auth/login', authRoutes);
 app.use('/api/students', studentRoutes);
 // Custom Dashboard & Contact Endpoints
 app.use('/api/dashboard', dashboardApiRoutes);
@@ -341,6 +344,10 @@ app.use('/api/admin/registrasi-cp', verifyToken, registrasiCpRoutes);
 app.use('/admin/registrasi-cp', verifyToken, registrasiCpRoutes);
 app.use('/api/admin/registrasi-tr', verifyToken, registrasiTrRoutes);
 app.use('/admin/registrasi-tr', verifyToken, registrasiTrRoutes);
+app.use('/api/admin/registrasi-new', verifyToken, registrasiNewRoutes);
+app.use('/admin/registrasi-new', verifyToken, registrasiNewRoutes);
+app.use('/api/admin/registrasi-new-seluruh-cabang', verifyToken, registrasiNewRoutes);
+app.use('/admin/registrasi-new-seluruh-cabang', verifyToken, registrasiNewRoutes);
 
 
 

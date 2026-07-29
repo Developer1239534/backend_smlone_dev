@@ -6,13 +6,7 @@ const db = require('../db/neonClient');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'smlone_secret_key_12345';
 
-// GET /api/auth/login
-router.get('/login', (req, res) => {
-  res.json({ success: true, message: 'Admin Auth Login endpoint is active. Send POST request to login.' });
-});
-
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
+const adminLoginHandler = async (req, res) => {
   console.log('[Admin Auth Login] Request Body:', req.body);
   const { username, password } = req.body;
 
@@ -63,6 +57,18 @@ router.post('/login', async (req, res) => {
     console.error('[Admin Auth Login Error]:', err.message);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan server saat login.' });
   }
+};
+
+// GET /api/auth/login or /api/admin/login
+router.get('/login', (req, res) => {
+  res.json({ success: true, message: 'Admin Auth Login endpoint is active. Send POST request to login.' });
 });
+router.get('/', (req, res) => {
+  res.json({ success: true, message: 'Admin Auth Login endpoint is active. Send POST request to login.' });
+});
+
+// POST endpoints
+router.post('/login', adminLoginHandler);
+router.post('/', adminLoginHandler);
 
 module.exports = router;
