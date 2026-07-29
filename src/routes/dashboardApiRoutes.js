@@ -243,12 +243,15 @@ router.get('/progress/:id', async (req, res) => {
   const trainee = await getTraineeOrError(req.params.id, res);
   if (!trainee) return;
 
+  const ptRes = await db.query('SELECT speaking_project_to_next_level FROM portal_trainee WHERE trainee_id = $1', [trainee.id]);
+  const progressPercent = ptRes.rows[0]?.speaking_project_to_next_level || null;
+
   res.json({
     success: true,
     data: {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
-      progress_ke_next_level: null,
+      progress_ke_next_level: progressPercent,
       progress_video: trainee.progress_video
     }
   });
