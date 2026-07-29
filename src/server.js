@@ -30,6 +30,7 @@ const portalTraineeRoutes = require('./routes/portalTraineeRoutes');
 const portalTraineeWebhookRoutes = require('./routes/portalTraineeWebhookRoutes');
 const portalAuthRoutes = require('./routes/portalAuthRoutes');
 const goldpointTraineeRoutes = require('./routes/goldpointTraineeRoutes');
+const requestRoutes = require('./routes/requestRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -415,6 +416,10 @@ app.use('/api/admin/sml-feedback', verifyToken, smlFeedbackRoutes);
 app.use('/admin/sml-feedback', verifyToken, smlFeedbackRoutes);
 app.use('/api/admin', verifyToken, adminRoutes);
 app.use('/admin', verifyToken, adminRoutes);
+
+// Request Fitur Endpoints
+app.use('/api/request', requestRoutes);
+app.use('/api/admin/request', verifyToken, requestRoutes);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
