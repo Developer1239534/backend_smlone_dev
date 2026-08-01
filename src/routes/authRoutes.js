@@ -15,7 +15,7 @@ const adminLoginHandler = async (req, res) => {
   }
 
   try {
-    const result = await db.query('SELECT * FROM admin_akun WHERE username = $1', [username]);
+    const result = await db.query('SELECT * FROM admin_akun WHERE username = $1 OR email = $1', [username]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Akun admin tidak ditemukan.' });
