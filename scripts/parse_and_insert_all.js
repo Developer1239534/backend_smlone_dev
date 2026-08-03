@@ -34,10 +34,16 @@ function parseCustomDate(str) {
 }
 
 async function run() {
-  console.log('🚀 Reading user prompt text...');
-  const content = fs.readFileSync(path.join(__dirname, 'full_user_prompt.txt'), 'utf8');
+  console.log('🚀 Re-importing dataset into login_portal_fix (without screening_test)...');
+  
+  // Read prompt file
+  const promptPath = path.join(__dirname, 'full_user_prompt.txt');
+  if (!fs.existsSync(promptPath)) {
+    console.error('File not found:', promptPath);
+    process.exit(1);
+  }
+  let text = fs.readFileSync(promptPath, 'utf8');
 
-  let text = content;
   if (text.includes('<USER_REQUEST>')) text = text.split('<USER_REQUEST>')[1];
   if (text.includes('</USER_REQUEST>')) text = text.split('</USER_REQUEST>')[0];
 
@@ -99,7 +105,6 @@ async function run() {
     let cabang_kelas = null;
     let newest_grade = null;
     let trainee_homeroom = null;
-    let screening_test = null;
     let draft_grade = null;
     let prev_grade = null;
     let ajy_by_class = null;
@@ -125,7 +130,7 @@ async function run() {
       } else if (['Youth', 'Junior', 'Apprentice'].includes(val)) {
         ajy_by_class = val;
       } else if (val.startsWith('http') || val.includes('drive.google.com')) {
-        screening_test = val;
+        continue;
       } else if (val.includes('Program') || val.includes('Professionals')) {
         if (val === 'Junior/Youth Program') {
           cleaned_program = 'Core/Orator Society';
@@ -144,7 +149,7 @@ async function run() {
         } else if (['Agustina', 'Ghaitsa', 'Muly', 'Loita', 'Rizky', 'Nabilah'].includes(val)) {
           trainee_homeroom = val;
         } else {
-          if (!className && (val.includes('(') || val.includes('Class') || ['Einstein', 'Dale', 'Clinton', 'Millman', 'Kiyosaki', 'Winfrey', 'Doyle', 'Spielberg', 'Ziglar', 'Tracy', 'Robbins', 'Gladwell', 'Mandela', 'DaVinci', 'Newton', 'Maxwell', 'Sigmund', 'Obsidian', 'Ruby', 'Sapphire', 'Jade', 'Alexandrite', 'Topaz', 'Pearl', 'Amber', 'Hogwarts', 'Wonderland', 'Neverland', 'Whomville', 'Camelot', 'Narnia', 'Denver', 'Lincoln', 'Graham', 'Asheville', 'Canfield', 'Beryl'].some(c => val.includes(c)))) {
+          if (!className && (val.includes('(') || val.includes('Class') || ['Einstein', 'Dale', 'Clinton', 'Millman', 'Kiyosaki', 'Winfrey', 'Doyle', 'Spielberg', 'Ziglar', 'Tracy', 'Robbins', 'Gladwell', 'Mandela', 'DaVinci', 'Newton', 'Maxwell', 'Sigmund', 'Obsidian', 'Ruby', 'Sapphire', 'Jade', 'Alexandrite', 'Topaz', 'Pearl', 'Amber', 'Hogwarts', 'Wonderland', 'Neverland', 'Whomville', 'Camelot', 'Narnia', 'Denver', 'Lincoln', 'Graham', 'Asheville', 'Canfield', 'Beryl', 'Cairo', 'Auckland', 'Atlanta', 'Eldorado', 'Sherwood Forest', 'Athens', 'Almeria', 'Quartz', 'Diamond', 'Emerald', 'Azurite', 'Duloc', 'Atlantis', 'Plato', 'Socrates'].some(c => val.includes(c)))) {
             className = val;
           } else if (!nama_sekolah && val.length > 2) {
             nama_sekolah = val;
@@ -163,13 +168,13 @@ async function run() {
     rowMap.set(id, {
       id, name, password, gender, date_of_birth, nama_sekolah, cleaned_program,
       membership, expiry_date, cabang_id, first_enroll, className, house, level,
-      house_role, cabang_kelas, newest_grade, trainee_homeroom, screening_test,
+      house_role, cabang_kelas, newest_grade, trainee_homeroom,
       draft_grade, prev_grade, ajy_by_class, last_real_stage
     });
   }
 
   const uniqueRows = Array.from(rowMap.values());
-  console.log(`🚀 Executing fast BATCH UPSERT for ${uniqueRows.length} unique records...`);
+  console.log(`🚀 Executing BATCH UPSERT for ${uniqueRows.length} unique records...`);
 
   const BATCH_SIZE = 100;
   for (let i = 0; i < uniqueRows.length; i += BATCH_SIZE) {
@@ -178,15 +183,15 @@ async function run() {
     const params = [];
 
     chunk.forEach((row, idx) => {
-      const offset = idx * 23;
-      const placeholders = Array.from({ length: 23 }, (_, pIdx) => `$${offset + pIdx + 1}`).join(', ');
+      const offset = idx * 22;
+      const placeholders = Array.from({ length: 22 }, (_, pIdx) => `$${offset + pIdx + 1}`).join(', ');
       valuePlaceholders.push(`(${placeholders}, NOW())`);
 
       params.push(
         row.id, row.name, row.password, row.gender, row.date_of_birth, row.nama_sekolah,
         row.cleaned_program, row.membership, row.expiry_date, row.cabang_id, row.first_enroll,
         row.className, row.house, row.level, row.house_role, row.cabang_kelas, row.newest_grade,
-        row.trainee_homeroom, row.screening_test, row.draft_grade, row.prev_grade,
+        row.trainee_homeroom, row.draft_grade, row.prev_grade,
         row.ajy_by_class, row.last_real_stage
       );
     });
@@ -195,7 +200,7 @@ async function run() {
       INSERT INTO login_portal_fix (
         id, name, password, gender, date_of_birth, nama_sekolah, cleaned_program,
         membership, expiry_date, cabang_id, first_enroll, class, house, level,
-        house_role, cabang_kelas, newest_grade, trainee_homeroom, screening_test,
+        house_role, cabang_kelas, newest_grade, trainee_homeroom,
         draft_grade, prev_grade, ajy_by_class, last_real_stage, updated_at
       ) VALUES ${valuePlaceholders.join(', ')}
       ON CONFLICT (id) DO UPDATE SET
@@ -216,7 +221,6 @@ async function run() {
         cabang_kelas = EXCLUDED.cabang_kelas,
         newest_grade = EXCLUDED.newest_grade,
         trainee_homeroom = EXCLUDED.trainee_homeroom,
-        screening_test = EXCLUDED.screening_test,
         draft_grade = EXCLUDED.draft_grade,
         prev_grade = EXCLUDED.prev_grade,
         ajy_by_class = EXCLUDED.ajy_by_class,
@@ -228,15 +232,13 @@ async function run() {
     console.log(`  ✓ Inserted batch ${Math.floor(i / BATCH_SIZE) + 1} / ${Math.ceil(uniqueRows.length / BATCH_SIZE)} (${chunk.length} rows)`);
   }
 
-  console.log('🎉 Fast batch import finished!');
+  console.log('🎉 Re-import finished!');
 
-  // Check total row count in DB
   const countRes = await db.query('SELECT COUNT(*) FROM login_portal_fix');
   console.log('📊 Total rows in `login_portal_fix` table:', countRes.rows[0].count);
 
-  // Print sample inserted rows
-  const samples = await db.query('SELECT id, name, password, cleaned_program, gender, date_of_birth, class, house, membership FROM login_portal_fix ORDER BY id ASC LIMIT 5');
-  console.log('🔍 Sample inserted records:', samples.rows);
+  const activeRes = await db.query("SELECT COUNT(*) FROM login_portal_fix WHERE membership ILIKE 'Active%'");
+  console.log('📊 Active membership count:', activeRes.rows[0].count);
 
   process.exit(0);
 }
