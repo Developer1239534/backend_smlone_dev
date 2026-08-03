@@ -35,6 +35,7 @@ const portalAuthRoutes = require('./routes/portalAuthRoutes');
 const tabelLoginTraineeRoutes = require('./routes/tabelLoginTraineeRoutes');
 const goldpointTraineeRoutes = require('./routes/goldpointTraineeRoutes');
 const profileTraineeRoutes = require('./routes/profileTraineeRoutes');
+const loginPortalFixRoutes = require('./routes/loginPortalFixRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
@@ -444,6 +445,10 @@ app.use('/api/tabel-login-trainee', tabelLoginTraineeRoutes);
 app.use('/api/tabel_login_trainee', tabelLoginTraineeRoutes);
 app.use('/tabel-login-trainee', tabelLoginTraineeRoutes);
 app.use('/api/admin/tabel-login-trainee', tabelLoginTraineeRoutes);
+app.use('/api/login-portal-fix', loginPortalFixRoutes);
+app.use('/api/login_portal_fix', loginPortalFixRoutes);
+app.use('/login-portal-fix', loginPortalFixRoutes);
+app.use('/api/admin/login-portal-fix', loginPortalFixRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/login', authRoutes);
