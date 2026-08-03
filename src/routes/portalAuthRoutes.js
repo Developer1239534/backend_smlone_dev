@@ -12,7 +12,7 @@ async function getOrCreateTraineeAccount(studentId) {
 
   // Check existing login account
   const accountRes = await db.query(
-    'SELECT * FROM login_trainee WHERE LOWER(student_id) = LOWER($1)',
+    'SELECT id, student_id, password, plain_password FROM login_trainee WHERE LOWER(student_id) = LOWER($1)',
     [cleanId]
   );
 

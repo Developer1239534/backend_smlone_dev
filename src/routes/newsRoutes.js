@@ -3,12 +3,16 @@ const router = express.Router();
 const db = require('../db/neonClient');
 const verifyToken = require('../middleware/authMiddleware');
 
+const { invalidateCache } = require('../middleware/cacheMiddleware');
+
 // ========================================================
 // PUBLIC GET (Portal & Admin)
 // ========================================================
 router.get('/', async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM news_announcements ORDER BY id DESC');
+    const result = await db.query(
+      'SELECT id, category, title, date_string, time_string, description, contacts, image_url, created_at FROM news_announcements ORDER BY id DESC'
+    );
     res.json({ success: true, data: result.rows });
   } catch (err) {
     console.error('[News API] GET News error:', err.message);
@@ -166,6 +170,7 @@ router.post('/', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [category, title, date_string, time_string, description, contacts, image_url]
     );
+    invalidateCache('/api/news');
     res.status(201).json({ success: true, message: 'Berita berhasil ditambahkan.', data: result.rows[0] });
   } catch (err) {
     console.error('[News API] POST News error:', err.message);
@@ -194,6 +199,7 @@ router.put('/:id', verifyToken, async (req, res) => {
        WHERE id = $8 RETURNING *`,
       [category, title, date_string, time_string, description, contacts, image_url, id]
     );
+    invalidateCache('/api/news');
     res.json({ success: true, message: 'Berita berhasil diperbarui.', data: result.rows[0] });
   } catch (err) {
     console.error('[News API] PUT News error:', err.message);
@@ -205,10 +211,11 @@ router.put('/:id', verifyToken, async (req, res) => {
 router.delete('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await db.query('DELETE FROM news_announcements WHERE id = $1 RETURNING *', [id]);
+    const result = await db.query('DELETE FROM news_announcements WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Berita tidak ditemukan.' });
     }
+    invalidateCache('/api/news');
     res.json({ success: true, message: 'Berita berhasil dihapus.', data: result.rows[0] });
   } catch (err) {
     console.error('[News API] DELETE News error:', err.message);

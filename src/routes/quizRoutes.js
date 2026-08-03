@@ -88,7 +88,7 @@ router.post('/submit', async (req, res) => {
     const assignedHouseId = houseMap[dominantOption];
 
     // Get House Details
-    const houseResult = await pool.query('SELECT * FROM houses WHERE id = $1', [assignedHouseId]);
+    const houseResult = await pool.query('SELECT id, name, description, core_value FROM houses WHERE id = $1', [assignedHouseId]);
     const houseDetails = houseResult.rows[0];
 
     // Transaction to insert history and update trainee profile
@@ -128,7 +128,8 @@ router.post('/submit', async (req, res) => {
 router.get('/backend-history', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT qh.*, dt.trainee_name, h.name as house_name, h.core_value as house_core_value
+      `SELECT qh.id, qh.student_id, qh.assigned_house, qh.scores, qh.submitted_at, 
+              dt.trainee_name, h.name as house_name, h.core_value as house_core_value
        FROM quiz_history qh
        LEFT JOIN dashboard_trainne dt ON qh.student_id = dt.id
        LEFT JOIN houses h ON qh.assigned_house = h.id
@@ -153,7 +154,8 @@ router.get('/backend-history/:studentId', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT qh.*, dt.trainee_name, h.name as house_name, h.description as house_description, h.core_value as house_core_value
+      `SELECT qh.id, qh.student_id, qh.assigned_house, qh.scores, qh.submitted_at, 
+              dt.trainee_name, h.name as house_name, h.description as house_description, h.core_value as house_core_value
        FROM quiz_history qh
        LEFT JOIN dashboard_trainne dt ON qh.student_id = dt.id
        LEFT JOIN houses h ON qh.assigned_house = h.id

@@ -165,10 +165,20 @@ router.post('/push', async (req, res) => {
   }
 });
 
-// GET endpoint: Ambil semua data dari registrasi_new_seluruh_cabang
+// GET endpoint: Ambil data dari registrasi_new_seluruh_cabang
 router.get('/', async (req, res) => {
   try {
-    const savedData = await db.query('SELECT * FROM registrasi_new_seluruh_cabang ORDER BY created_at DESC');
+    let limitClause = '';
+    const params = [];
+    if (req.query.limit || req.query.page) {
+      const limit = parseInt(req.query.limit) || 20;
+      const page = parseInt(req.query.page) || 1;
+      const offset = (page - 1) * limit;
+      limitClause = ` LIMIT $1 OFFSET $2`;
+      params.push(limit, offset);
+    }
+
+    const savedData = await db.query(`SELECT id, data_registrasi, cabang, created_at FROM registrasi_new_seluruh_cabang ORDER BY created_at DESC${limitClause}`, params);
     const mapped = savedData.rows.map(row => parseRegistrasiData(row));
 
     res.json({

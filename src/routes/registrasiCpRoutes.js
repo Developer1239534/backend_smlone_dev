@@ -70,7 +70,23 @@ const getVal = (obj, keys) => {
 // GET all (Admin & Webhook)
 router.get('/', async (req, res) => {
   try {
-    const savedData = await db.query("SELECT * FROM data_dashboard_keseluruhan WHERE UPPER(cabang_id) IN ('TIMOR', 'CP') ORDER BY created_at DESC");
+    let limitClause = '';
+    const params = [];
+    if (req.query.limit || req.query.page) {
+      const limit = parseInt(req.query.limit) || 20;
+      const page = parseInt(req.query.page) || 1;
+      const offset = (page - 1) * limit;
+      limitClause = ` LIMIT $1 OFFSET $2`;
+      params.push(limit, offset);
+    }
+    const savedData = await db.query(`
+      SELECT id, name, date_of_birth, gender, nama_sekolah, cleaned_program, first_enroll, 
+             parent_email, trainee_homeroom, newest_grade, created_at, cabang_kelas, 
+             screening_test, draft_grade, prev_grade, ajy_by_class, last_real_stage 
+      FROM data_dashboard_keseluruhan 
+      WHERE UPPER(cabang_id) IN ('TIMOR', 'CP') 
+      ORDER BY created_at DESC${limitClause}
+    `, params);
     res.json({
       success: true,
       message: 'Berhasil mengambil data registrasi CP.',

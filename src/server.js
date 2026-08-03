@@ -27,19 +27,28 @@ const registrasiNewRoutes = require('./routes/registrasiNewRoutes');
 const dashboardKeseluruhanRoutes = require('./routes/dashboardKeseluruhanRoutes');
 const smlFeedbackRoutes = require('./routes/smlFeedbackRoutes');
 const portalTraineeRoutes = require('./routes/portalTraineeRoutes');
+const portalAdminRoutes = require('./routes/portalAdminRoutes');
+const reportActivityRoutes = require('./routes/reportActivityRoutes');
+const linkReportRoutes = require('./routes/linkReportRoutes');
 const portalTraineeWebhookRoutes = require('./routes/portalTraineeWebhookRoutes');
 const portalAuthRoutes = require('./routes/portalAuthRoutes');
+const tabelLoginTraineeRoutes = require('./routes/tabelLoginTraineeRoutes');
 const goldpointTraineeRoutes = require('./routes/goldpointTraineeRoutes');
+const profileTraineeRoutes = require('./routes/profileTraineeRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
 const helmet = require('helmet');
 
+const compression = require('compression');
+const { cacheMiddleware, invalidateCache, getCacheMetrics } = require('./middleware/cacheMiddleware');
+const { getDbMetrics } = require('./db/neonClient');
+
 // Auto DB migration for new columns
 (async () => {
   try {
-    console.log('🔄 Checking database schema...');
+    console.log('🔄 Checking database schema & performance indexes...');
     // Create admin_akun table if it doesn't exist
     await db.query(`
       CREATE TABLE IF NOT EXISTS admin_akun (
@@ -79,6 +88,21 @@ const helmet = require('helmet');
     await db.query('DROP TABLE IF EXISTS dashboard_cemara CASCADE');
     await db.query('DROP TABLE IF EXISTS data_form_lama CASCADE');
     await db.query('DROP TABLE IF EXISTS sml_report CASCADE');
+
+    // Create news_announcements table if it doesn't exist
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS news_announcements (
+        id SERIAL PRIMARY KEY,
+        category VARCHAR(100),
+        title VARCHAR(255) NOT NULL,
+        date_string VARCHAR(100),
+        time_string VARCHAR(100),
+        description TEXT,
+        contacts VARCHAR(255),
+        image_url TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
     // Create registrasi_ca table
     await db.query(`
@@ -261,9 +285,73 @@ const helmet = require('helmet');
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE INDEX IF NOT EXISTS idx_login_trainee_student_id ON login_trainee(student_id);
+      CREATE INDEX IF NOT EXISTS idx_portal_trainee_class ON portal_trainee(class);
+      CREATE INDEX IF NOT EXISTS idx_portal_trainee_created_at ON portal_trainee(created_at);
+      CREATE INDEX IF NOT EXISTS idx_portal_trainee_updated_at ON portal_trainee(updated_at);
+      CREATE INDEX IF NOT EXISTS idx_registrasi_ca_created_at ON registrasi_ca(created_at);
+      CREATE INDEX IF NOT EXISTS idx_registrasi_cp_created_at ON registrasi_cp(created_at);
+      CREATE INDEX IF NOT EXISTS idx_registrasi_tr_created_at ON registrasi_tr(created_at);
     `);
 
-    console.log('✅ Database schema updated successfully.');
+    // Create portal_admin table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS portal_admin (
+        class_name VARCHAR(100),
+        day VARCHAR(50),
+        time VARCHAR(50),
+        room VARCHAR(100),
+        branch VARCHAR(100),
+        trainee_id VARCHAR(50),
+        name VARCHAR(255),
+        level VARCHAR(50),
+        newest_grade VARCHAR(50),
+        house VARCHAR(100),
+        house_role VARCHAR(100),
+        trainee_homeroom VARCHAR(100),
+        homeroom_kelas VARCHAR(100),
+        trainer VARCHAR(100),
+        membership_status VARCHAR(50),
+        membership_expired_date DATE,
+        first_enroll DATE,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_portal_admin_trainee_id ON portal_admin(trainee_id);
+      CREATE INDEX IF NOT EXISTS idx_portal_admin_branch ON portal_admin(branch);
+      CREATE INDEX IF NOT EXISTS idx_portal_admin_class_name ON portal_admin(class_name);
+
+      -- Create report_activity table
+      CREATE TABLE IF NOT EXISTS report_activity (
+        trainee_id VARCHAR(100) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        branch VARCHAR(100),
+        cleaned_program VARCHAR(255),
+        cleaned_class VARCHAR(255),
+        level VARCHAR(100),
+        speaking_project_to_next_level VARCHAR(50),
+        life_project_to_next_level VARCHAR(50),
+        last_speaking_project VARCHAR(100),
+        level_up_sp VARCHAR(100),
+        level_up_lp VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_report_activity_branch ON report_activity(branch);
+      CREATE INDEX IF NOT EXISTS idx_report_activity_cleaned_class ON report_activity(cleaned_class);
+
+      -- Create link_report table
+      CREATE TABLE IF NOT EXISTS link_report (
+        trainee_id VARCHAR(50) NOT NULL,
+        term VARCHAR(100) NOT NULL,
+        link_term TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (trainee_id, term)
+      );
+      CREATE INDEX IF NOT EXISTS idx_link_report_trainee_id ON link_report(trainee_id);
+    `);
+
+    console.log('✅ Database schema and performance indexes updated successfully.');
   } catch (err) {
     console.error('❌ Error checking/updating database schema:', err.message);
   }
@@ -274,6 +362,7 @@ const PORT = process.env.PORT || 4000;
 
 const path = require('path');
 
+app.use(compression());
 app.use(helmet({ crossOriginResourcePolicy: false })); // allow static images cross-origin
 app.use(cors({
   origin: '*',
@@ -299,6 +388,29 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'SMLONE Backend is running!' });
 });
 
+// Live Performance & Health Metrics
+app.get('/api/metrics', (req, res) => {
+  res.json({
+    success: true,
+    timestamp: new Date().toISOString(),
+    uptimeSeconds: process.uptime(),
+    cache: getCacheMetrics(),
+    database: getDbMetrics(),
+  });
+});
+
+// Global mutation auto-invalidation middleware
+app.use((req, res, next) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    const parts = req.path.split('/').filter(Boolean);
+    if (parts.length > 0) {
+      invalidateCache(`/api/${parts[0]}`);
+      invalidateCache(`/${parts[0]}`);
+    }
+  }
+  next();
+});
+
 // Routes
 app.use('/api/goldpoint-trainee', goldpointTraineeRoutes);
 app.use('/api/goldpoint_trainee', goldpointTraineeRoutes);
@@ -308,7 +420,27 @@ app.use('/api/dashboard/goldpoint-trainee', goldpointTraineeRoutes);
 app.use('/api/dashboard/goldpoint_trainee', goldpointTraineeRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/portal-trainee', portalTraineeRoutes);
+app.use('/api/portal-admin', portalAdminRoutes);
+app.use('/api/admin/portal-admin', portalAdminRoutes);
+app.use('/portal-admin', portalAdminRoutes);
+app.use('/admin/portal-admin', portalAdminRoutes);
+app.use('/api/profile-trainee', profileTraineeRoutes);
+app.use('/api/admin/profile-trainee', profileTraineeRoutes);
+app.use('/profile-trainee', profileTraineeRoutes);
+app.use('/admin/profile-trainee', profileTraineeRoutes);
+app.use('/api/report-activity', reportActivityRoutes);
+app.use('/api/admin/report-activity', reportActivityRoutes);
+app.use('/report-activity', reportActivityRoutes);
+app.use('/admin/report-activity', reportActivityRoutes);
+app.use('/api/link-report', linkReportRoutes);
+app.use('/api/admin/link-report', linkReportRoutes);
+app.use('/link-report', linkReportRoutes);
+app.use('/admin/link-report', linkReportRoutes);
 app.use('/api/auth/trainee', portalAuthRoutes);
+app.use('/api/tabel-login-trainee', tabelLoginTraineeRoutes);
+app.use('/api/tabel_login_trainee', tabelLoginTraineeRoutes);
+app.use('/tabel-login-trainee', tabelLoginTraineeRoutes);
+app.use('/api/admin/tabel-login-trainee', tabelLoginTraineeRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/login', authRoutes);
@@ -316,11 +448,11 @@ app.use('/admin/login', authRoutes);
 app.use('/api/admin/auth/login', authRoutes);
 app.use('/api/students', studentRoutes);
 // Custom Dashboard & Contact Endpoints
-app.use('/api/dashboard', dashboardApiRoutes);
-app.use('/dashboard', dashboardApiRoutes);
+app.use('/api/dashboard', cacheMiddleware(300), dashboardApiRoutes);
+app.use('/dashboard', cacheMiddleware(300), dashboardApiRoutes);
 
 // News Endpoint
-app.use('/api/news', newsRoutes);
+app.use('/api/news', cacheMiddleware(300), newsRoutes);
 
 // WhatsApp Contacts Endpoint
 app.use('/api/whatsapp', whatsappRoutes);
