@@ -269,6 +269,7 @@ const { getDbMetrics } = require('./db/neonClient');
       );
       ALTER TABLE profile_trainee ADD COLUMN IF NOT EXISTS quarterly_report_url TEXT;
       ALTER TABLE profile_trainee ADD COLUMN IF NOT EXISTS real_stage_report_url TEXT;
+      ALTER TABLE profile_trainee ADD COLUMN IF NOT EXISTS branch_id VARCHAR(50);
       CREATE INDEX IF NOT EXISTS idx_profile_trainee_branch_id ON profile_trainee(branch_id);
     `);
 
@@ -285,7 +286,7 @@ const { getDbMetrics } = require('./db/neonClient');
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE INDEX IF NOT EXISTS idx_login_trainee_student_id ON login_trainee(student_id);
-      CREATE INDEX IF NOT EXISTS idx_profile_trainee_class ON profile_trainee(class);
+      CREATE INDEX IF NOT EXISTS idx_profile_trainee_class_name ON profile_trainee(class_name);
       CREATE INDEX IF NOT EXISTS idx_profile_trainee_created_at ON profile_trainee(created_at);
       CREATE INDEX IF NOT EXISTS idx_profile_trainee_updated_at ON profile_trainee(updated_at);
       CREATE INDEX IF NOT EXISTS idx_registrasi_ca_created_at ON registrasi_ca(created_at);
