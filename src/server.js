@@ -425,6 +425,8 @@ app.use('/api/admin/portal-admin', portalAdminRoutes);
 app.use('/portal-admin', portalAdminRoutes);
 app.use('/admin/portal-admin', portalAdminRoutes);
 app.use('/api/profile-trainee', profileTraineeRoutes);
+app.use('/api/profile-trainee-full', profileTraineeRoutes);
+app.use('/api/trainee-complete-data', profileTraineeRoutes);
 app.use('/api/admin/profile-trainee', profileTraineeRoutes);
 app.use('/profile-trainee', profileTraineeRoutes);
 app.use('/admin/profile-trainee', profileTraineeRoutes);

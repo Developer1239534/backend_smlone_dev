@@ -223,6 +223,56 @@ router.get('/stats/summary', async (req, res) => {
   }
 });
 
+// Consolidated handler for complete trainee data from 4 tables using Promise.all
+const handleGetFullTraineeData = async (req, res) => {
+  const { trainee_id } = req.params;
+  const cleanId = String(trainee_id || '').trim();
+
+  try {
+    const [profileRes, loginRes, linkReportRes, reportActivityRes] = await Promise.all([
+      db.query(`SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] })),
+      db.query(`SELECT id, trainee_id, nama, created_at, updated_at FROM tabel_login_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] })),
+      db.query(`SELECT * FROM link_report WHERE LOWER(trainee_id) = LOWER($1) ORDER BY term DESC`, [cleanId]).catch(() => ({ rows: [] })),
+      db.query(`SELECT * FROM report_activity WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] }))
+    ]);
+
+    let profileData = null;
+    if (profileRes.rows.length > 0) {
+      profileData = formatProfileResponse(profileRes.rows[0]);
+    } else if (loginRes.rows.length > 0) {
+      profileData = formatProfileResponse({ trainee_id: cleanId, name: loginRes.rows[0].nama });
+    } else {
+      profileData = formatProfileResponse({ trainee_id: cleanId, name: `Trainee ${cleanId}` });
+    }
+
+    const loginData = loginRes.rows[0] || null;
+    const linkReports = linkReportRes.rows || [];
+    const reportActivities = reportActivityRes.rows || [];
+
+    return res.json({
+      success: true,
+      trainee_id: cleanId,
+      data: {
+        profile_trainee: profileData,
+        tabel_login_trainee: loginData,
+        link_report: linkReports,
+        report_activity: reportActivities
+      }
+    });
+  } catch (error) {
+    console.error('[ConsolidatedTrainee] Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data lengkap trainee',
+      error: error.message
+    });
+  }
+};
+
+router.get('/full/:trainee_id', handleGetFullTraineeData);
+router.get('/trainee-complete-data/:trainee_id', handleGetFullTraineeData);
+router.get('/profile-trainee-full/:trainee_id', handleGetFullTraineeData);
+
 // 3. GET /api/profile-trainee/:trainee_id - Fetch single trainee profile by trainee_id or student_id
 router.get('/:trainee_id', async (req, res) => {
   const { trainee_id } = req.params;
