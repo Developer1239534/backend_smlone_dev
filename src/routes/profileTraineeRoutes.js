@@ -232,9 +232,9 @@ router.get('/:trainee_id', async (req, res) => {
     let result = await db.query(`SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]);
 
     if (result.rows.length === 0) {
-      // Check tabel_login_trainee or portal_trainee as fallback
+      // Check tabel_login_trainee or profile_trainee as fallback
       const loginCheck = await db.query(`SELECT * FROM tabel_login_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] }));
-      const legacyCheck = await db.query(`SELECT * FROM portal_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] }));
+      const legacyCheck = await db.query(`SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] }));
 
       const foundName = loginCheck.rows[0]?.nama || legacyCheck.rows[0]?.name || `Trainee ${cleanId}`;
       const foundBranch = legacyCheck.rows[0]?.branch_id || legacyCheck.rows[0]?.cabang || null;

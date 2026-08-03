@@ -20,9 +20,9 @@ async function getOrCreateTraineeAccount(studentId) {
     return accountRes.rows[0];
   }
 
-  // Check if trainee exists in portal_trainee
+  // Check if trainee exists in profile_trainee
   const traineeRes = await db.query(
-    'SELECT trainee_id FROM portal_trainee WHERE LOWER(trainee_id) = LOWER($1)',
+    'SELECT trainee_id FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)',
     [cleanId]
   );
 
@@ -77,7 +77,7 @@ router.post('/login', async (req, res) => {
 
     // Fetch Trainee Profile details
     const profileRes = await db.query(
-      'SELECT * FROM portal_trainee WHERE LOWER(trainee_id) = LOWER($1)',
+      'SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)',
       [cleanStudentId]
     );
     const profile = profileRes.rows[0] || {};

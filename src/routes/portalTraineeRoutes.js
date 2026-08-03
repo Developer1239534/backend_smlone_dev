@@ -55,9 +55,9 @@ router.use(async (req, res, next) => {
 
         const result = await db.query(queryText, [id, name, status, level, house, className, branch, totalGold, totalGold, kategori, rank]);
 
-        // Connect & Sync with portal_trainee table
+        // Connect & Sync with profile_trainee table
         await db.query(`
-          UPDATE portal_trainee 
+          UPDATE profile_trainee 
           SET name = $2, house = $3, class = $4, branch_id = $5
           WHERE trainee_id = $1 OR id = $1
         `, [id, name, house, className, branch]).catch(() => null);
@@ -132,7 +132,7 @@ router.get('/', async (req, res) => {
   try {
     const { search, branch_id, level, program, class: classFilter, page = 1, limit = 20 } = req.query;
 
-    let query = `SELECT * FROM portal_trainee`;
+    let query = `SELECT * FROM profile_trainee`;
     const conditions = [];
     const params = [];
 
@@ -181,7 +181,7 @@ router.get('/', async (req, res) => {
     const sanitizedData = result.rows.map(sanitizeTraineeRecord);
 
     // Total count query
-    let countQuery = `SELECT COUNT(*) FROM portal_trainee`;
+    let countQuery = `SELECT COUNT(*) FROM profile_trainee`;
     if (conditions.length > 0) {
       countQuery += ` WHERE ` + conditions.join(' AND ');
     }
@@ -212,10 +212,10 @@ router.get('/', async (req, res) => {
 // GET /api/portal-trainee/stats/summary - Read-only summary statistics
 router.get('/stats/summary', async (req, res) => {
   try {
-    const totalRes = await db.query(`SELECT COUNT(*) FROM portal_trainee`);
-    const branchRes = await db.query(`SELECT branch_id, COUNT(*) as count FROM portal_trainee GROUP BY branch_id ORDER BY count DESC`);
-    const programRes = await db.query(`SELECT program, COUNT(*) as count FROM portal_trainee GROUP BY program ORDER BY count DESC`);
-    const levelRes = await db.query(`SELECT level, COUNT(*) as count FROM portal_trainee GROUP BY level ORDER BY count DESC`);
+    const totalRes = await db.query(`SELECT COUNT(*) FROM profile_trainee`);
+    const branchRes = await db.query(`SELECT branch_id, COUNT(*) as count FROM profile_trainee GROUP BY branch_id ORDER BY count DESC`);
+    const programRes = await db.query(`SELECT program, COUNT(*) as count FROM profile_trainee GROUP BY program ORDER BY count DESC`);
+    const levelRes = await db.query(`SELECT level, COUNT(*) as count FROM profile_trainee GROUP BY level ORDER BY count DESC`);
 
     res.json({
       success: true,
@@ -306,7 +306,7 @@ const handleGetProfileTrainee = async (req, res) => {
     );
 
     if (profileTraineeRes.rows.length === 0) {
-      // Check tabel_login_trainee or portal_trainee as fallback
+      // Check tabel_login_trainee or profile_trainee as fallback
       const loginCheck = await db.query(`SELECT * FROM tabel_login_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] }));
       const foundName = loginCheck.rows[0]?.nama || `Trainee ${cleanId}`;
 
@@ -354,7 +354,7 @@ router.get('/:id', async (req, res) => {
   const { id } = req.params;
   const cleanId = String(id || '').trim();
   try {
-    let result = await db.query(`SELECT * FROM portal_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]);
+    let result = await db.query(`SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]);
 
     if (result.rows.length === 0) {
       const ptCheck = await db.query(`SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] }));
@@ -385,7 +385,7 @@ router.get('/:id', async (req, res) => {
     sanitizedTrainee.link_reports = linkReportRes.rows;
     sanitizedTrainee.report_activity = reportActivityRes.rows[0] || null;
     sanitizedTrainee.profile_trainee = profileTraineeRes.rows[0] || null;
-    sanitizedTrainee.portal_admin = profileTraineeRes.rows[0] || null;
+    sanitizedTrainee.profile_trainee = profileTraineeRes.rows[0] || null;
 
     res.json({
       success: true,

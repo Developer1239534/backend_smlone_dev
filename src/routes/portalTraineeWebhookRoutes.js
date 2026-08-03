@@ -98,7 +98,7 @@ router.post('/', async (req, res) => {
       const last_life_project = getValue(item, ['last_life_project', 'last life project']);
 
       const query = `
-        INSERT INTO portal_trainee (
+        INSERT INTO profile_trainee (
           name, trainee_id, program, class, level,
           membership_expired_date, latest_speaking_project, weekly_report_url,
           referral_code, progress_video_url, gender, date_of_birth,

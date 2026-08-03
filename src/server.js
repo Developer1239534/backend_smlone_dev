@@ -238,9 +238,9 @@ const { getDbMetrics } = require('./db/neonClient');
 
 
 
-    // Create portal_trainee table
+    // Create profile_trainee table
     await db.query(`
-      CREATE TABLE IF NOT EXISTS portal_trainee (
+      CREATE TABLE IF NOT EXISTS profile_trainee (
         trainee_id VARCHAR(50) PRIMARY KEY,
         name VARCHAR(255),
         program VARCHAR(100),
@@ -267,16 +267,16 @@ const { getDbMetrics } = require('./db/neonClient');
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-      ALTER TABLE portal_trainee ADD COLUMN IF NOT EXISTS quarterly_report_url TEXT;
-      ALTER TABLE portal_trainee ADD COLUMN IF NOT EXISTS real_stage_report_url TEXT;
-      CREATE INDEX IF NOT EXISTS idx_portal_trainee_branch_id ON portal_trainee(branch_id);
+      ALTER TABLE profile_trainee ADD COLUMN IF NOT EXISTS quarterly_report_url TEXT;
+      ALTER TABLE profile_trainee ADD COLUMN IF NOT EXISTS real_stage_report_url TEXT;
+      CREATE INDEX IF NOT EXISTS idx_profile_trainee_branch_id ON profile_trainee(branch_id);
     `);
 
     // Create login_trainee table
     await db.query(`
       CREATE TABLE IF NOT EXISTS login_trainee (
         id BIGSERIAL PRIMARY KEY,
-        student_id VARCHAR(50) UNIQUE NOT NULL REFERENCES portal_trainee(trainee_id) ON DELETE CASCADE ON UPDATE CASCADE,
+        student_id VARCHAR(50) UNIQUE NOT NULL REFERENCES profile_trainee(trainee_id) ON DELETE CASCADE ON UPDATE CASCADE,
         password VARCHAR(255) NOT NULL,
         plain_password VARCHAR(255),
         reset_token VARCHAR(255),
@@ -285,17 +285,17 @@ const { getDbMetrics } = require('./db/neonClient');
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE INDEX IF NOT EXISTS idx_login_trainee_student_id ON login_trainee(student_id);
-      CREATE INDEX IF NOT EXISTS idx_portal_trainee_class ON portal_trainee(class);
-      CREATE INDEX IF NOT EXISTS idx_portal_trainee_created_at ON portal_trainee(created_at);
-      CREATE INDEX IF NOT EXISTS idx_portal_trainee_updated_at ON portal_trainee(updated_at);
+      CREATE INDEX IF NOT EXISTS idx_profile_trainee_class ON profile_trainee(class);
+      CREATE INDEX IF NOT EXISTS idx_profile_trainee_created_at ON profile_trainee(created_at);
+      CREATE INDEX IF NOT EXISTS idx_profile_trainee_updated_at ON profile_trainee(updated_at);
       CREATE INDEX IF NOT EXISTS idx_registrasi_ca_created_at ON registrasi_ca(created_at);
       CREATE INDEX IF NOT EXISTS idx_registrasi_cp_created_at ON registrasi_cp(created_at);
       CREATE INDEX IF NOT EXISTS idx_registrasi_tr_created_at ON registrasi_tr(created_at);
     `);
 
-    // Create portal_admin table
+    // Create profile_trainee table
     await db.query(`
-      CREATE TABLE IF NOT EXISTS portal_admin (
+      CREATE TABLE IF NOT EXISTS profile_trainee (
         class_name VARCHAR(100),
         day VARCHAR(50),
         time VARCHAR(50),
@@ -317,9 +317,9 @@ const { getDbMetrics } = require('./db/neonClient');
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-      CREATE INDEX IF NOT EXISTS idx_portal_admin_trainee_id ON portal_admin(trainee_id);
-      CREATE INDEX IF NOT EXISTS idx_portal_admin_branch ON portal_admin(branch);
-      CREATE INDEX IF NOT EXISTS idx_portal_admin_class_name ON portal_admin(class_name);
+      CREATE INDEX IF NOT EXISTS idx_profile_trainee_trainee_id ON profile_trainee(trainee_id);
+      CREATE INDEX IF NOT EXISTS idx_profile_trainee_branch ON profile_trainee(branch);
+      CREATE INDEX IF NOT EXISTS idx_profile_trainee_class_name ON profile_trainee(class_name);
 
       -- Create report_activity table
       CREATE TABLE IF NOT EXISTS report_activity (

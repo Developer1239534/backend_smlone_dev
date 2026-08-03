@@ -75,9 +75,9 @@ router.post('/goldpoint-trainee', async (req, res) => {
 
       const result = await db.query(queryText, [id, name, status, level, house, className, branch, totalGold, totalGold, kategori, rank]);
 
-      // Connect & Sync with portal_trainee table
+      // Connect & Sync with profile_trainee table
       await db.query(`
-        UPDATE portal_trainee 
+        UPDATE profile_trainee 
         SET name = $2, house = $3, class = $4, branch_id = $5
         WHERE trainee_id = $1 OR id = $1
       `, [id, name, house, className, branch]).catch(() => null);
@@ -147,7 +147,7 @@ router.post('/', async (req, res) => {
         const result = await db.query(queryText, [id, name, status, level, house, className, branch, totalGold, totalGold, kategori, rank]);
 
         await db.query(`
-          UPDATE portal_trainee 
+          UPDATE profile_trainee 
           SET name = $2, house = $3, class = $4, branch_id = $5
           WHERE trainee_id = $1 OR id = $1
         `, [id, name, house, className, branch]).catch(() => null);

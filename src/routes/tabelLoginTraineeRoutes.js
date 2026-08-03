@@ -94,9 +94,9 @@ async function getIntegratedTraineeData(traineeId) {
     [cleanId]
   );
 
-  // 4. Fetch legacy portal_trainee profile entry
+  // 4. Fetch legacy profile_trainee profile entry
   const legacyPortalTraineeRes = await db.query(
-    `SELECT * FROM portal_trainee WHERE LOWER(trainee_id) = LOWER($1)`,
+    `SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`,
     [cleanId]
   );
 
@@ -109,7 +109,7 @@ async function getIntegratedTraineeData(traineeId) {
     link_reports: linkReportRes.rows,
     report_activity: reportActivityRes.rows[0] || null,
     profile_trainee: formattedProfileData,
-    portal_admin: formattedProfileData
+    profile_trainee: formattedProfileData
   };
 }
 
@@ -195,7 +195,7 @@ router.post('/login', async (req, res) => {
     if (!account) {
       // Auto-register default SML+trainee_id password if trainee exists in system
       const integratedCheck = await getIntegratedTraineeData(cleanId);
-      if (integratedCheck.profile || integratedCheck.link_reports.length > 0 || integratedCheck.report_activity || integratedCheck.portal_admin) {
+      if (integratedCheck.profile || integratedCheck.link_reports.length > 0 || integratedCheck.report_activity || integratedCheck.profile_trainee) {
         const defaultPlain = `SML${cleanId}`;
         const defaultHash = await bcrypt.hash(defaultPlain, 6);
         const autoInsert = await db.query(
@@ -223,7 +223,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Fetch integrated data across link_report, report_activity, and portal_admin
+    // Fetch integrated data across link_report, report_activity, and profile_trainee
     const integratedData = await getIntegratedTraineeData(cleanId);
 
     const token = jwt.sign(
