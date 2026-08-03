@@ -35,6 +35,39 @@ function parseCustomDate(str) {
 
 async function run() {
   console.log('🚀 Re-importing dataset into login_portal_fix (without screening_test)...');
+
+  // Auto-create login_portal_fix table if it doesn't exist
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS login_portal_fix (
+      id VARCHAR(100) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      gender VARCHAR(50),
+      date_of_birth DATE,
+      nama_sekolah VARCHAR(255),
+      cleaned_program VARCHAR(255),
+      membership VARCHAR(100),
+      expiry_date DATE,
+      cabang_id VARCHAR(100),
+      first_enroll DATE,
+      class VARCHAR(255),
+      house VARCHAR(255),
+      level VARCHAR(50),
+      house_role VARCHAR(100),
+      cabang_kelas VARCHAR(100),
+      newest_grade VARCHAR(50),
+      trainee_homeroom VARCHAR(100),
+      draft_grade VARCHAR(50),
+      prev_grade VARCHAR(50),
+      ajy_by_class VARCHAR(50),
+      last_real_stage DATE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_login_portal_fix_membership ON login_portal_fix(membership);
+    CREATE INDEX IF NOT EXISTS idx_login_portal_fix_cabang ON login_portal_fix(cabang_id);
+  `);
+  console.log('✅ Verified login_portal_fix table exists.');
   
   // Read prompt file
   const promptPath = path.join(__dirname, 'full_user_prompt.txt');
