@@ -32,7 +32,6 @@ function formatTrainee(row) {
     cabang_kelas: cleanStr(row.cabang_kelas),
     newest_grade: cleanStr(row.newest_grade),
     trainee_homeroom: cleanStr(row.trainee_homeroom),
-    screening_test: cleanStr(row.screening_test),
     draft_grade: cleanStr(row.draft_grade),
     prev_grade: cleanStr(row.prev_grade),
     ajy_by_class: cleanStr(row.ajy_by_class),
@@ -232,9 +231,9 @@ router.post('/', async (req, res) => {
       INSERT INTO login_portal_fix (
         id, name, password, gender, date_of_birth, nama_sekolah, cleaned_program,
         membership, expiry_date, cabang_id, first_enroll, class, house, level,
-        house_role, cabang_kelas, newest_grade, trainee_homeroom, screening_test,
+        house_role, cabang_kelas, newest_grade, trainee_homeroom,
         draft_grade, prev_grade, ajy_by_class, last_real_stage, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW())
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
         password = EXCLUDED.password,
@@ -253,7 +252,6 @@ router.post('/', async (req, res) => {
         cabang_kelas = EXCLUDED.cabang_kelas,
         newest_grade = EXCLUDED.newest_grade,
         trainee_homeroom = EXCLUDED.trainee_homeroom,
-        screening_test = EXCLUDED.screening_test,
         draft_grade = EXCLUDED.draft_grade,
         prev_grade = EXCLUDED.prev_grade,
         ajy_by_class = EXCLUDED.ajy_by_class,
@@ -281,7 +279,6 @@ router.post('/', async (req, res) => {
       body.cabang_kelas || body['CABANG KELAS'] || null,
       body.newest_grade || body['NEWEST GRADE'] || null,
       body.trainee_homeroom || body['Trainee Homeroom'] || null,
-      body.screening_test || body['Screening Test'] || null,
       body.draft_grade || body['Draft Grade'] || null,
       body.prev_grade || body['Prev Grade'] || null,
       body.ajy_by_class || body['A/J/Y by Class'] || null,

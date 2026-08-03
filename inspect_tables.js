@@ -1,22 +1,14 @@
 const db = require('./src/db/neonClient');
 
-async function inspect() {
-  const tables = ['portal_trainee', 'data_dashboard_keseluruhan', 'dashboard_trainne'];
-  for (const t of tables) {
-    try {
-      const res = await db.query(`
-        SELECT column_name, data_type 
-        FROM information_schema.columns 
-        WHERE table_name = '${t}' AND table_schema = 'public'
-        ORDER BY ordinal_position
-      `);
-      console.log(`=== TABLE: ${t} (${res.rows.length} cols) ===`);
-      console.log(res.rows.map(r => `${r.column_name} (${r.data_type})`).join(', '));
-    } catch(e) {
-      console.log(`Error querying ${t}:`, e.message);
-    }
+async function inspectTables() {
+  const tablesRes = await db.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+  console.log('Tables in DB:', tablesRes.rows.map(t => t.table_name));
+
+  for (const t of tablesRes.rows.map(x => x.table_name)) {
+    const cols = await db.query(`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '${t}'`);
+    console.log(`\nColumns for table [${t}]:`);
+    console.log(cols.rows.map(c => `${c.column_name} (${c.data_type})`));
   }
-  process.exit(0);
 }
 
-inspect().catch(e => { console.error(e); process.exit(1); });
+inspectTables().catch(console.error).then(() => process.exit(0));

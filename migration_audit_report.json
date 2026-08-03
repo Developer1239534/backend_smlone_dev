@@ -1,0 +1,122 @@
+{
+  "timestamp": "2026-08-01T04:06:00.621Z",
+  "sourceProject": "ep-muddy-bar (ap-southeast-1)",
+  "destProject": "ep-aged-lake (us-east-2)",
+  "backupFile": "smlone_backup.sql",
+  "backupSizeBytes": 5627442,
+  "backupSizeMB": "5.37",
+  "restoreDurationMs": 229544,
+  "tablesMigrated": 18,
+  "totalRowsMigrated": 7406,
+  "auditResults": [
+    {
+      "table": "admin_akun",
+      "sourceRows": 13,
+      "destRows": 13,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "awards",
+      "sourceRows": 445,
+      "destRows": 445,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "dashboard_trainne",
+      "sourceRows": 586,
+      "destRows": 586,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "data_dashboard_keseluruhan",
+      "sourceRows": 1803,
+      "destRows": 1803,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "gp_month",
+      "sourceRows": 583,
+      "destRows": 583,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "houses",
+      "sourceRows": 5,
+      "destRows": 5,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "login_trainee",
+      "sourceRows": 586,
+      "destRows": 586,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "news_announcements",
+      "sourceRows": 0,
+      "destRows": 0,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "portal_trainee",
+      "sourceRows": 586,
+      "destRows": 586,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "quarterly_report",
+      "sourceRows": 244,
+      "destRows": 244,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "questions",
+      "sourceRows": 25,
+      "destRows": 25,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "quiz_history",
+      "sourceRows": 0,
+      "destRows": 0,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "real_stage",
+      "sourceRows": 217,
+      "destRows": 217,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "registrasi_ca",
+      "sourceRows": 252,
+      "destRows": 252,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "registrasi_cp",
+      "sourceRows": 705,
+      "destRows": 705,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "registrasi_new_seluruh_cabang",
+      "sourceRows": 1159,
+      "destRows": 1159,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "registrasi_tr",
+      "sourceRows": 195,
+      "destRows": 195,
+      "status": "✅ MATCH"
+    },
+    {
+      "table": "request_fitur",
+      "sourceRows": 2,
+      "destRows": 2,
+      "status": "✅ MATCH"
+    }
+  ],
+  "is100PercentMatched": true
+}
