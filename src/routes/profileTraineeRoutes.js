@@ -231,7 +231,7 @@ const handleGetFullTraineeData = async (req, res) => {
   try {
     const [profileRes, loginRes, linkReportRes, reportActivityRes] = await Promise.all([
       db.query(`SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] })),
-      db.query(`SELECT id, trainee_id, nama, created_at, updated_at FROM tabel_login_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] })),
+      db.query(`SELECT * FROM tabel_login_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] })),
       db.query(`SELECT * FROM link_report WHERE LOWER(trainee_id) = LOWER($1) ORDER BY term DESC`, [cleanId]).catch(() => ({ rows: [] })),
       db.query(`SELECT * FROM report_activity WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] }))
     ]);
@@ -274,7 +274,10 @@ router.get('/trainee-complete-data/:trainee_id', handleGetFullTraineeData);
 router.get('/profile-trainee-full/:trainee_id', handleGetFullTraineeData);
 
 // 3. GET /api/profile-trainee/:trainee_id - Fetch single trainee profile by trainee_id or student_id
-router.get('/:trainee_id', async (req, res) => {
+router.get('/:trainee_id', async (req, res, next) => {
+  if (req.baseUrl.includes('profile-trainee-full') || req.baseUrl.includes('trainee-complete-data')) {
+    return handleGetFullTraineeData(req, res);
+  }
   const { trainee_id } = req.params;
   const cleanId = String(trainee_id || '').trim();
 
