@@ -542,7 +542,7 @@ app.use('/api/registrasi-new/push', registrasiNewRoutes);
 app.use('/api_gistrasi-new', registrasiNewRoutes);
 app.use('/api_gistrasi-new/push', registrasiNewRoutes);
 app.use('/api/dashboard-keseluruhan', verifyToken, dashboardKeseluruhanRoutes);
-app.use('/api/chat', verifyToken, chatRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api/admin/gp-month', verifyToken, adminGpMonthRoutes);
 app.use('/api/admin/house-rank', verifyToken, adminHouseRankRoutes);
 app.use('/api/admin/houses', verifyToken, adminHouseRoutes);
