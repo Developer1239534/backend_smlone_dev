@@ -418,6 +418,20 @@ const { getDbMetrics } = require('./db/neonClient');
     `);
 
     console.log('✅ Database schema and performance indexes updated successfully.');
+
+    // Auto-populate report_trainee if table is empty
+    const checkCount = await db.query('SELECT COUNT(*) FROM report_trainee');
+    if (parseInt(checkCount.rows[0].count, 10) === 0) {
+      console.log('⚡ report_trainee table is empty. Auto-populating data...');
+      try {
+        const repopulateScript = path.join(__dirname, '..', 'scripts', 'repopulate_all_report_trainee.js');
+        if (require('fs').existsSync(repopulateScript)) {
+          require(repopulateScript);
+        }
+      } catch (popErr) {
+        console.error('⚠️ Auto-population failed:', popErr.message);
+      }
+    }
   } catch (err) {
     console.error('❌ Error checking/updating database schema:', err.message);
   }
