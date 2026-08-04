@@ -3,13 +3,14 @@ const path = require('path');
 const db = require('../src/db/neonClient');
 
 async function main() {
-  console.log('🚀 Seeding ALL 1,165 report_trainee records from seed_report_trainee.json...');
+  console.log('🚀 Seeding ALL report_trainee records from seed_report_trainee.json...');
 
   // 1. Ensure table schema exists
   await db.query(`
     CREATE TABLE IF NOT EXISTS report_trainee (
       id VARCHAR(50) PRIMARY KEY,
       trainee_id VARCHAR(50) NOT NULL,
+      name TEXT,
       report_title TEXT,
       link_yt TEXT,
       report_title_2 TEXT,
@@ -19,11 +20,11 @@ async function main() {
       link_to_report TEXT,
       link_reports_3 JSONB,
       report_title_4 TEXT,
-      link_to_report_4 TEXT,
       referral_code TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS name TEXT;
     ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS report_title_2 TEXT;
     ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_term TEXT;
     ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_terms JSONB;
@@ -31,7 +32,6 @@ async function main() {
     ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_to_report TEXT;
     ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_reports_3 JSONB;
     ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS report_title_4 TEXT;
-    ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_to_report_4 TEXT;
     ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS referral_code TEXT;
   `);
 
@@ -70,11 +70,12 @@ async function main() {
     const params = [];
 
     chunk.forEach((rec, idx) => {
-      const base = idx * 12;
-      valuePlaceholders.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9}, $${base + 10}, $${base + 11}, $${base + 12}, NOW())`);
+      const base = idx * 13;
+      valuePlaceholders.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9}, $${base + 10}, $${base + 11}, $${base + 12}, $${base + 13}, NOW())`);
       params.push(
         rec.id,
         rec.trainee_id || rec.id,
+        rec.name || '',
         rec.report_title || '▶️ Progress Video',
         rec.link_yt || '',
         rec.report_title_2 || '',
@@ -90,13 +91,14 @@ async function main() {
 
     const query = `
       INSERT INTO report_trainee (
-        id, trainee_id, report_title, link_yt, report_title_2, link_term, link_terms,
+        id, trainee_id, name, report_title, link_yt, report_title_2, link_term, link_terms,
         report_title_3, link_to_report, link_reports_3, report_title_4, referral_code, updated_at
       )
       VALUES ${valuePlaceholders.join(', ')}
       ON CONFLICT (id)
       DO UPDATE SET
         trainee_id = EXCLUDED.trainee_id,
+        name = EXCLUDED.name,
         report_title = EXCLUDED.report_title,
         link_yt = EXCLUDED.link_yt,
         report_title_2 = EXCLUDED.report_title_2,
@@ -114,6 +116,14 @@ async function main() {
     inserted += chunk.length;
     console.log(`Inserted/Updated batch ${Math.floor(b / BATCH_SIZE) + 1}/${Math.ceil(records.length / BATCH_SIZE)} (${inserted}/${records.length})`);
   }
+
+  // Also sync with login_portal_fix just in case
+  await queryWithRetry(`
+    UPDATE report_trainee r
+    SET name = l.name, updated_at = NOW()
+    FROM login_portal_fix l
+    WHERE LOWER(r.id::text) = LOWER(l.id::text) OR LOWER(r.trainee_id::text) = LOWER(l.id::text);
+  `);
 
   const countRes = await queryWithRetry('SELECT COUNT(*) FROM report_trainee');
   console.log(`🎉 Successfully seeded report_trainee! Total rows in database: ${countRes.rows[0].count}`);
