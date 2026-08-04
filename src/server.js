@@ -295,6 +295,7 @@ const { getDbMetrics } = require('./db/neonClient');
         cabang_kelas VARCHAR(100),
         newest_grade VARCHAR(50),
         trainee_homeroom VARCHAR(100),
+        screening_test TEXT,
         draft_grade VARCHAR(50),
         prev_grade VARCHAR(50),
         ajy_by_class VARCHAR(50),
@@ -302,6 +303,7 @@ const { getDbMetrics } = require('./db/neonClient');
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS screening_test TEXT;
       CREATE INDEX IF NOT EXISTS idx_login_portal_fix_membership ON login_portal_fix(membership);
       CREATE INDEX IF NOT EXISTS idx_login_portal_fix_cabang ON login_portal_fix(cabang_id);
     `);

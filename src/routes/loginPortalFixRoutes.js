@@ -2,40 +2,57 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// Helper to format trainee row
+// Helper to format trainee row matching exact JSON format requested
 function formatTrainee(row) {
   if (!row) return null;
-  const cleanStr = (v) => (v === null || v === undefined || v === 'null' ? '' : String(v).trim());
+  const cleanStr = (v) => (v === null || v === undefined || v === 'null' ? null : String(v).trim() || null);
   const formatDate = (v) => {
-    if (!v) return '';
+    if (!v) return null;
     if (v instanceof Date) return v.toISOString().split('T')[0];
-    return cleanStr(v);
+    const str = String(v).trim();
+    return str.length >= 5 ? str : null;
+  };
+  const parseNum = (v) => {
+    if (v === null || v === undefined || v === '') return null;
+    const num = parseInt(v, 10);
+    return isNaN(num) ? v : num;
   };
 
+  const cleanIdStr = String(row.id || '').trim();
+  const numericId = parseInt(cleanIdStr, 10);
+
   return {
-    ...row,
-    id: cleanStr(row.id),
+    // Requested exact format fields
+    id: isNaN(numericId) ? cleanIdStr : numericId,
     name: cleanStr(row.name),
-    password: cleanStr(row.password),
     gender: cleanStr(row.gender),
     date_of_birth: formatDate(row.date_of_birth),
-    nama_sekolah: cleanStr(row.nama_sekolah),
-    cleaned_program: cleanStr(row.cleaned_program),
+    school_name: cleanStr(row.nama_sekolah),
+    program: cleanStr(row.cleaned_program),
     membership: cleanStr(row.membership),
     expiry_date: formatDate(row.expiry_date),
-    cabang_id: cleanStr(row.cabang_id),
+    branch_id: cleanStr(row.cabang_id),
     first_enroll: formatDate(row.first_enroll),
     class: cleanStr(row.class),
     house: cleanStr(row.house),
     level: cleanStr(row.level),
     house_role: cleanStr(row.house_role),
-    cabang_kelas: cleanStr(row.cabang_kelas),
-    newest_grade: cleanStr(row.newest_grade),
+    class_branch: cleanStr(row.cabang_kelas),
+    newest_grade: parseNum(row.newest_grade),
     trainee_homeroom: cleanStr(row.trainee_homeroom),
-    draft_grade: cleanStr(row.draft_grade),
-    prev_grade: cleanStr(row.prev_grade),
+    screening_test: cleanStr(row.screening_test),
+    draft_grade: parseNum(row.draft_grade),
+    previous_grade: parseNum(row.prev_grade),
     ajy_by_class: cleanStr(row.ajy_by_class),
-    last_real_stage: cleanStr(row.last_real_stage)
+    last_real_stage: formatDate(row.last_real_stage),
+
+    // Backward-compatibility aliases
+    password: cleanStr(row.password) || `SML${cleanIdStr}`,
+    nama_sekolah: cleanStr(row.nama_sekolah),
+    cleaned_program: cleanStr(row.cleaned_program),
+    cabang_id: cleanStr(row.cabang_id),
+    cabang_kelas: cleanStr(row.cabang_kelas),
+    prev_grade: parseNum(row.prev_grade)
   };
 }
 

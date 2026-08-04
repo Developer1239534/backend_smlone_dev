@@ -34,7 +34,7 @@ function parseCustomDate(str) {
 }
 
 async function run() {
-  console.log('🚀 Re-importing dataset into login_portal_fix (without screening_test)...');
+  console.log('🚀 Re-importing dataset into login_portal_fix...');
 
   // Auto-create login_portal_fix table if it doesn't exist
   await db.query(`
@@ -57,6 +57,7 @@ async function run() {
       cabang_kelas VARCHAR(100),
       newest_grade VARCHAR(50),
       trainee_homeroom VARCHAR(100),
+      screening_test TEXT,
       draft_grade VARCHAR(50),
       prev_grade VARCHAR(50),
       ajy_by_class VARCHAR(50),
@@ -64,6 +65,7 @@ async function run() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS screening_test TEXT;
     CREATE INDEX IF NOT EXISTS idx_login_portal_fix_membership ON login_portal_fix(membership);
     CREATE INDEX IF NOT EXISTS idx_login_portal_fix_cabang ON login_portal_fix(cabang_id);
   `);
@@ -138,6 +140,7 @@ async function run() {
     let cabang_kelas = null;
     let newest_grade = null;
     let trainee_homeroom = null;
+    let screening_test = null;
     let draft_grade = null;
     let prev_grade = null;
     let ajy_by_class = null;
@@ -162,8 +165,12 @@ async function run() {
         house_role = val;
       } else if (['Youth', 'Junior', 'Apprentice'].includes(val)) {
         ajy_by_class = val;
-      } else if (val.startsWith('http') || val.includes('drive.google.com')) {
-        continue;
+      } else if (val.startsWith('http') || val.includes('drive.google.com') || val.includes('[http')) {
+        let cleanUrl = val.replace(/\[|\]/g, '');
+        if (cleanUrl.includes('(') && cleanUrl.includes(')')) {
+          cleanUrl = cleanUrl.split('(')[1].split(')')[0];
+        }
+        screening_test = cleanUrl.trim();
       } else if (val.includes('Program') || val.includes('Professionals')) {
         if (val === 'Junior/Youth Program') {
           cleaned_program = 'Core/Orator Society';
@@ -201,7 +208,7 @@ async function run() {
     rowMap.set(id, {
       id, name, password, gender, date_of_birth, nama_sekolah, cleaned_program,
       membership, expiry_date, cabang_id, first_enroll, className, house, level,
-      house_role, cabang_kelas, newest_grade, trainee_homeroom,
+      house_role, cabang_kelas, newest_grade, trainee_homeroom, screening_test,
       draft_grade, prev_grade, ajy_by_class, last_real_stage
     });
   }
@@ -216,15 +223,15 @@ async function run() {
     const params = [];
 
     chunk.forEach((row, idx) => {
-      const offset = idx * 22;
-      const placeholders = Array.from({ length: 22 }, (_, pIdx) => `$${offset + pIdx + 1}`).join(', ');
+      const offset = idx * 23;
+      const placeholders = Array.from({ length: 23 }, (_, pIdx) => `$${offset + pIdx + 1}`).join(', ');
       valuePlaceholders.push(`(${placeholders}, NOW())`);
 
       params.push(
         row.id, row.name, row.password, row.gender, row.date_of_birth, row.nama_sekolah,
         row.cleaned_program, row.membership, row.expiry_date, row.cabang_id, row.first_enroll,
         row.className, row.house, row.level, row.house_role, row.cabang_kelas, row.newest_grade,
-        row.trainee_homeroom, row.draft_grade, row.prev_grade,
+        row.trainee_homeroom, row.screening_test, row.draft_grade, row.prev_grade,
         row.ajy_by_class, row.last_real_stage
       );
     });
@@ -233,7 +240,7 @@ async function run() {
       INSERT INTO login_portal_fix (
         id, name, password, gender, date_of_birth, nama_sekolah, cleaned_program,
         membership, expiry_date, cabang_id, first_enroll, class, house, level,
-        house_role, cabang_kelas, newest_grade, trainee_homeroom,
+        house_role, cabang_kelas, newest_grade, trainee_homeroom, screening_test,
         draft_grade, prev_grade, ajy_by_class, last_real_stage, updated_at
       ) VALUES ${valuePlaceholders.join(', ')}
       ON CONFLICT (id) DO UPDATE SET
@@ -254,6 +261,7 @@ async function run() {
         cabang_kelas = EXCLUDED.cabang_kelas,
         newest_grade = EXCLUDED.newest_grade,
         trainee_homeroom = EXCLUDED.trainee_homeroom,
+        screening_test = EXCLUDED.screening_test,
         draft_grade = EXCLUDED.draft_grade,
         prev_grade = EXCLUDED.prev_grade,
         ajy_by_class = EXCLUDED.ajy_by_class,
