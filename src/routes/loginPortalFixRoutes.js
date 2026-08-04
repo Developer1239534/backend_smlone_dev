@@ -39,10 +39,10 @@ function formatTrainee(row) {
     name: cleanStr(row.name),
     gender: cleanStr(row.gender),
     date_of_birth: formatDate(row.date_of_birth),
-    school_name: null,
-    email: cleanStr(row.email),
-    wa_trainee: cleanStr(row.wa_trainee),
-    wa_orang_tua: cleanStr(row.wa_orang_tua),
+    school_name: cleanStr(row.nama_sekolah) || cleanStr(row.school_name) || "-",
+    email: cleanStr(row.email) || "-",
+    wa_trainee: cleanStr(row.wa_trainee) || "-",
+    wa_orang_tua: cleanStr(row.wa_orang_tua) || "-",
     program: cleanStr(row.cleaned_program),
     membership: cleanStr(row.membership),
     expiry_date: formatDate(row.expiry_date),
@@ -330,7 +330,61 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 5. DELETE /api/login-portal-fix/:id - Delete trainee record
+// 5. PUT/PATCH /api/login-portal-fix/:id - Update user-editable profile fields (school_name, wa_trainee, wa_orang_tua, email)
+const updateTraineeProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const cleanId = String(id || '').trim();
+
+    const { school_name, nama_sekolah, wa_trainee, wa_orang_tua, email, email_trainee } = req.body;
+
+    const schoolVal = school_name !== undefined ? school_name : nama_sekolah;
+    const emailVal = email !== undefined ? email : email_trainee;
+
+    const result = await db.query(
+      `UPDATE login_portal_fix SET
+        nama_sekolah = COALESCE($1, nama_sekolah),
+        wa_trainee = COALESCE($2, wa_trainee),
+        wa_orang_tua = COALESCE($3, wa_orang_tua),
+        email = COALESCE($4, email),
+        updated_at = NOW()
+       WHERE LOWER(id) = LOWER($5)
+       RETURNING *`,
+      [
+        schoolVal !== undefined ? (String(schoolVal).trim() || null) : null,
+        wa_trainee !== undefined ? (String(wa_trainee).trim() || null) : null,
+        wa_orang_tua !== undefined ? (String(wa_orang_tua).trim() || null) : null,
+        emailVal !== undefined ? (String(emailVal).trim() || null) : null,
+        cleanId
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Trainee tidak ditemukan'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Profil trainee berhasil diperbarui!',
+      data: formatTrainee(result.rows[0])
+    });
+  } catch (error) {
+    console.error('[LoginPortalFix] Update profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal memperbarui profil trainee',
+      error: error.message
+    });
+  }
+};
+
+router.put('/:id', updateTraineeProfile);
+router.patch('/:id', updateTraineeProfile);
+
+// 6. DELETE /api/login-portal-fix/:id - Delete trainee record
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
