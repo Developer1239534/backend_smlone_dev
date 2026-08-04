@@ -400,7 +400,6 @@ const { getDbMetrics } = require('./db/neonClient');
         link_to_report TEXT,
         link_reports_3 JSONB,
         report_title_4 TEXT,
-        link_to_report_4 TEXT,
         referral_code TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -412,8 +411,8 @@ const { getDbMetrics } = require('./db/neonClient');
       ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_to_report TEXT;
       ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_reports_3 JSONB;
       ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS report_title_4 TEXT;
-      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_to_report_4 TEXT;
       ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS referral_code TEXT;
+      ALTER TABLE report_trainee DROP COLUMN IF EXISTS link_to_report_4 CASCADE;
       CREATE INDEX IF NOT EXISTS idx_report_trainee_trainee_id ON report_trainee(trainee_id);
     `);
 

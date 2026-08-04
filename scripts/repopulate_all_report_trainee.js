@@ -70,8 +70,8 @@ async function main() {
     const params = [];
 
     chunk.forEach((rec, idx) => {
-      const base = idx * 13;
-      valuePlaceholders.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9}, $${base + 10}, $${base + 11}, $${base + 12}, $${base + 13}, NOW())`);
+      const base = idx * 12;
+      valuePlaceholders.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9}, $${base + 10}, $${base + 11}, $${base + 12}, NOW())`);
       params.push(
         rec.id,
         rec.trainee_id || rec.id,
@@ -84,7 +84,6 @@ async function main() {
         rec.link_to_report || '',
         rec.link_reports_3 ? JSON.stringify(rec.link_reports_3) : null,
         rec.report_title_4 || '',
-        rec.link_to_report_4 || '',
         rec.referral_code || ''
       );
     });
@@ -92,7 +91,7 @@ async function main() {
     const query = `
       INSERT INTO report_trainee (
         id, trainee_id, report_title, link_yt, report_title_2, link_term, link_terms,
-        report_title_3, link_to_report, link_reports_3, report_title_4, link_to_report_4, referral_code, updated_at
+        report_title_3, link_to_report, link_reports_3, report_title_4, referral_code, updated_at
       )
       VALUES ${valuePlaceholders.join(', ')}
       ON CONFLICT (id)
@@ -107,7 +106,6 @@ async function main() {
         link_to_report = EXCLUDED.link_to_report,
         link_reports_3 = EXCLUDED.link_reports_3,
         report_title_4 = EXCLUDED.report_title_4,
-        link_to_report_4 = EXCLUDED.link_to_report_4,
         referral_code = EXCLUDED.referral_code,
         updated_at = NOW()
     `;
