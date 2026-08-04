@@ -391,6 +391,7 @@ const { getDbMetrics } = require('./db/neonClient');
       CREATE TABLE IF NOT EXISTS report_trainee (
         id VARCHAR(50) PRIMARY KEY,
         trainee_id VARCHAR(50) NOT NULL,
+        name TEXT,
         report_title TEXT,
         link_yt TEXT,
         report_title_2 TEXT,
@@ -404,6 +405,7 @@ const { getDbMetrics } = require('./db/neonClient');
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS name TEXT;
       ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS report_title_2 TEXT;
       ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_term TEXT;
       ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_terms JSONB;
