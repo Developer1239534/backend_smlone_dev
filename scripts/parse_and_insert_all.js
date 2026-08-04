@@ -66,6 +66,10 @@ async function run() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS screening_test TEXT;
+    ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS wa_trainee VARCHAR(100);
+    ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS wa_orang_tua VARCHAR(100);
+    ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+    UPDATE login_portal_fix SET nama_sekolah = NULL;
     CREATE INDEX IF NOT EXISTS idx_login_portal_fix_membership ON login_portal_fix(membership);
     CREATE INDEX IF NOT EXISTS idx_login_portal_fix_cabang ON login_portal_fix(cabang_id);
   `);

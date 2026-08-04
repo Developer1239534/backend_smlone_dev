@@ -39,7 +39,10 @@ function formatTrainee(row) {
     name: cleanStr(row.name),
     gender: cleanStr(row.gender),
     date_of_birth: formatDate(row.date_of_birth),
-    school_name: cleanStr(row.nama_sekolah),
+    school_name: null,
+    email: cleanStr(row.email),
+    wa_trainee: cleanStr(row.wa_trainee),
+    wa_orang_tua: cleanStr(row.wa_orang_tua),
     program: cleanStr(row.cleaned_program),
     membership: cleanStr(row.membership),
     expiry_date: formatDate(row.expiry_date),
@@ -58,7 +61,7 @@ function formatTrainee(row) {
 
     // Backward-compatibility aliases
     password: cleanStr(row.password) || `SML${cleanIdStr}`,
-    nama_sekolah: cleanStr(row.nama_sekolah),
+    nama_sekolah: null,
     cleaned_program: cleanStr(row.cleaned_program),
     cabang_id: cleanStr(row.cabang_id),
     cabang_kelas: cleanStr(row.cabang_kelas)
