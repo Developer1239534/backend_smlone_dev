@@ -221,6 +221,10 @@ router.post('/login', async (req, res) => {
         report_title_3: reportTrainee ? reportTrainee.report_title_3 : null,
         link_to_report: reportTrainee ? reportTrainee.link_to_report : null,
         link_reports_3: reportTrainee ? reportTrainee.link_reports_3 : null,
+        report_title_4: reportTrainee ? reportTrainee.report_title_4 : null,
+        title_4: reportTrainee ? reportTrainee.report_title_4 : null,
+        link_to_report_4: reportTrainee ? reportTrainee.link_to_report_4 : null,
+        referral_code: reportTrainee ? reportTrainee.referral_code : null,
         report_trainee: reportTrainee
       }
     });
@@ -265,6 +269,10 @@ router.get('/:id', async (req, res) => {
         report_title_3: reportTrainee ? reportTrainee.report_title_3 : null,
         link_to_report: reportTrainee ? reportTrainee.link_to_report : null,
         link_reports_3: reportTrainee ? reportTrainee.link_reports_3 : null,
+        report_title_4: reportTrainee ? reportTrainee.report_title_4 : null,
+        title_4: reportTrainee ? reportTrainee.report_title_4 : null,
+        link_to_report_4: reportTrainee ? reportTrainee.link_to_report_4 : null,
+        referral_code: reportTrainee ? reportTrainee.referral_code : null,
         report_trainee: reportTrainee
       }
     });
