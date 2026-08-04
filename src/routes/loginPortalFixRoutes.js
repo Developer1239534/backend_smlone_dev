@@ -106,7 +106,7 @@ router.get('/', async (req, res) => {
       query += ` WHERE ` + conditions.join(' AND ');
     }
 
-    query += ` ORDER BY id ASC`;
+    query += ` ORDER BY NULLIF(regexp_replace(id, '\\D', '', 'g'), '')::bigint ASC, id ASC`;
 
     if (all === 'true' || all === '1' || limit === '0') {
       const result = await db.query(query, params);

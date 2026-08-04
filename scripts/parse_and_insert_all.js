@@ -69,7 +69,7 @@ async function run() {
     ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS wa_trainee VARCHAR(100);
     ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS wa_orang_tua VARCHAR(100);
     ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS email VARCHAR(255);
-    UPDATE login_portal_fix SET nama_sekolah = NULL;
+    DELETE FROM login_portal_fix WHERE NULLIF(regexp_replace(id, '\\D', '', 'g'), '')::bigint < 20 OR name IN ('Ghaitsa', 'Rizky', 'Junior', 'Youth', 'Muly', 'Agustina', 'Loita', 'Nabilah');
     CREATE INDEX IF NOT EXISTS idx_login_portal_fix_membership ON login_portal_fix(membership);
     CREATE INDEX IF NOT EXISTS idx_login_portal_fix_cabang ON login_portal_fix(cabang_id);
   `);
