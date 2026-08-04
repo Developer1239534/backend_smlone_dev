@@ -53,8 +53,6 @@ function formatTrainee(row) {
     newest_grade: numericGrade,
     trainee_homeroom: cleanStr(row.trainee_homeroom),
     screening_test: cleanStr(row.screening_test),
-    draft_grade: parseNum(row.draft_grade) || numericGrade,
-    previous_grade: parseNum(row.prev_grade) || numericGrade,
     ajy_by_class: cleanStr(row.ajy_by_class),
     last_real_stage: formatDate(row.last_real_stage),
 
@@ -63,8 +61,7 @@ function formatTrainee(row) {
     nama_sekolah: cleanStr(row.nama_sekolah),
     cleaned_program: cleanStr(row.cleaned_program),
     cabang_id: cleanStr(row.cabang_id),
-    cabang_kelas: cleanStr(row.cabang_kelas),
-    prev_grade: parseNum(row.prev_grade) || numericGrade
+    cabang_kelas: cleanStr(row.cabang_kelas)
   };
 }
 
