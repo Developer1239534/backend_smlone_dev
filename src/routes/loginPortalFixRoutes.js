@@ -218,6 +218,9 @@ router.post('/login', async (req, res) => {
         report_title_2: reportTrainee ? reportTrainee.report_title_2 : null,
         link_term: reportTrainee ? reportTrainee.link_term : null,
         link_terms: reportTrainee ? reportTrainee.link_terms : null,
+        report_title_3: reportTrainee ? reportTrainee.report_title_3 : null,
+        link_to_report: reportTrainee ? reportTrainee.link_to_report : null,
+        link_reports_3: reportTrainee ? reportTrainee.link_reports_3 : null,
         report_trainee: reportTrainee
       }
     });
@@ -259,6 +262,9 @@ router.get('/:id', async (req, res) => {
         report_title_2: reportTrainee ? reportTrainee.report_title_2 : null,
         link_term: reportTrainee ? reportTrainee.link_term : null,
         link_terms: reportTrainee ? reportTrainee.link_terms : null,
+        report_title_3: reportTrainee ? reportTrainee.report_title_3 : null,
+        link_to_report: reportTrainee ? reportTrainee.link_to_report : null,
+        link_reports_3: reportTrainee ? reportTrainee.link_reports_3 : null,
         report_trainee: reportTrainee
       }
     });
