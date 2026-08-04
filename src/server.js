@@ -34,6 +34,7 @@ const portalTraineeWebhookRoutes = require('./routes/portalTraineeWebhookRoutes'
 const portalAuthRoutes = require('./routes/portalAuthRoutes');
 const tabelLoginTraineeRoutes = require('./routes/tabelLoginTraineeRoutes');
 const goldpointTraineeRoutes = require('./routes/goldpointTraineeRoutes');
+const profileTraineeRoutes = require('./routes/profileTraineeRoutes');
 const loginPortalFixRoutes = require('./routes/loginPortalFixRoutes');
 const reportTraineeRoutes = require('./routes/reportTraineeRoutes');
 const requestRoutes = require('./routes/requestRoutes');
