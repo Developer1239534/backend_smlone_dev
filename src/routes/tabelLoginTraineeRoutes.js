@@ -94,9 +94,9 @@ async function getIntegratedTraineeData(traineeId) {
     [cleanId]
   );
 
-  // 4. Fetch legacy profile_trainee profile entry
-  const legacyPortalTraineeRes = await db.query(
-    `SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`,
+  // 4. Fetch report_trainee entry (YouTube progress video link)
+  const reportTraineeRes = await db.query(
+    `SELECT * FROM report_trainee WHERE id = $1 OR trainee_id = $1`,
     [cleanId]
   );
 
@@ -105,10 +105,10 @@ async function getIntegratedTraineeData(traineeId) {
 
   return {
     trainee_id: cleanId,
-    profile: formattedProfileData || legacyPortalTraineeRes.rows[0] || null,
+    profile: formattedProfileData || null,
     link_reports: linkReportRes.rows,
     report_activity: reportActivityRes.rows[0] || null,
-    profile_trainee: formattedProfileData,
+    report_trainee: reportTraineeRes.rows[0] || null,
     profile_trainee: formattedProfileData
   };
 }

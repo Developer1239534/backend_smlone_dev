@@ -205,10 +205,18 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const reportTraineeRes = await db.query(`SELECT * FROM report_trainee WHERE id = $1 OR trainee_id = $1`, [cleanId]);
+    const reportTrainee = reportTraineeRes.rows[0] || null;
+
     res.json({
       success: true,
       message: 'Login berhasil!',
-      data: formatTrainee(trainee)
+      data: {
+        ...formatTrainee(trainee),
+        report_title: reportTrainee ? reportTrainee.report_title : null,
+        link_yt: reportTrainee ? reportTrainee.link_yt : null,
+        report_trainee: reportTrainee
+      }
     });
   } catch (error) {
     console.error('[LoginPortalFix] Login error:', error);
@@ -235,9 +243,18 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    const trainee = result.rows[0];
+    const reportTraineeRes = await db.query(`SELECT * FROM report_trainee WHERE id = $1 OR trainee_id = $1`, [cleanId]);
+    const reportTrainee = reportTraineeRes.rows[0] || null;
+
     res.json({
       success: true,
-      data: formatTrainee(result.rows[0])
+      data: {
+        ...formatTrainee(trainee),
+        report_title: reportTrainee ? reportTrainee.report_title : null,
+        link_yt: reportTrainee ? reportTrainee.link_yt : null,
+        report_trainee: reportTrainee
+      }
     });
   } catch (error) {
     console.error('[LoginPortalFix] Fetch single error:', error);

@@ -34,8 +34,8 @@ const portalTraineeWebhookRoutes = require('./routes/portalTraineeWebhookRoutes'
 const portalAuthRoutes = require('./routes/portalAuthRoutes');
 const tabelLoginTraineeRoutes = require('./routes/tabelLoginTraineeRoutes');
 const goldpointTraineeRoutes = require('./routes/goldpointTraineeRoutes');
-const profileTraineeRoutes = require('./routes/profileTraineeRoutes');
 const loginPortalFixRoutes = require('./routes/loginPortalFixRoutes');
+const reportTraineeRoutes = require('./routes/reportTraineeRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
@@ -385,6 +385,17 @@ const { getDbMetrics } = require('./db/neonClient');
         PRIMARY KEY (trainee_id, term)
       );
       CREATE INDEX IF NOT EXISTS idx_link_report_trainee_id ON link_report(trainee_id);
+
+      -- Create report_trainee table
+      CREATE TABLE IF NOT EXISTS report_trainee (
+        id VARCHAR(50) PRIMARY KEY,
+        trainee_id VARCHAR(50) NOT NULL,
+        report_title TEXT,
+        link_yt TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_report_trainee_trainee_id ON report_trainee(trainee_id);
     `);
 
     console.log('✅ Database schema and performance indexes updated successfully.');
@@ -483,6 +494,11 @@ app.use('/api/login-portal-fix', loginPortalFixRoutes);
 app.use('/api/login_portal_fix', loginPortalFixRoutes);
 app.use('/login-portal-fix', loginPortalFixRoutes);
 app.use('/api/admin/login-portal-fix', loginPortalFixRoutes);
+app.use('/api/report-trainee', reportTraineeRoutes);
+app.use('/api/report_trainee', reportTraineeRoutes);
+app.use('/report-trainee', reportTraineeRoutes);
+app.use('/report_trainee', reportTraineeRoutes);
+app.use('/api/admin/report-trainee', reportTraineeRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/login', authRoutes);
