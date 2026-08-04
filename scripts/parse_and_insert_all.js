@@ -182,10 +182,17 @@ async function run() {
         if (parsedDt) {
           datesFound.push(parsedDt);
         } else if (/^\d{1,2}$/.test(val)) {
-          if (!level) level = val;
-          else if (!newest_grade) newest_grade = val;
-          else if (!draft_grade) draft_grade = val;
-          else if (!prev_grade) prev_grade = val;
+          // If homeroom or screening_test already captured, subsequent numbers are draft_grade then prev_grade
+          if (trainee_homeroom || screening_test) {
+            if (!draft_grade) draft_grade = val;
+            else if (!prev_grade) prev_grade = val;
+          } else {
+            // Before homeroom: level then newest_grade
+            if (!level) level = val;
+            else if (!newest_grade) newest_grade = val;
+            else if (!draft_grade) draft_grade = val;
+            else if (!prev_grade) prev_grade = val;
+          }
         } else if (['Agustina', 'Ghaitsa', 'Muly', 'Loita', 'Rizky', 'Nabilah'].includes(val)) {
           trainee_homeroom = val;
         } else {
@@ -202,6 +209,11 @@ async function run() {
     if (datesFound.length > 1) expiry_date = datesFound[1];
     if (datesFound.length > 2) first_enroll = datesFound[2];
     if (datesFound.length > 3) last_real_stage = datesFound[3];
+
+    // Fallbacks for grade alignment
+    if (!newest_grade) newest_grade = draft_grade || level;
+    if (!draft_grade) draft_grade = newest_grade || level;
+    if (!prev_grade) prev_grade = draft_grade;
 
     const password = `SML${id}`;
 
