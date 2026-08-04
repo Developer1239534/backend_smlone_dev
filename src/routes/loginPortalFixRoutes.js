@@ -20,8 +20,18 @@ function formatTrainee(row) {
 
   const cleanIdStr = String(row.id || '').trim();
   const numericId = parseInt(cleanIdStr, 10);
-  const roleOrLevel = cleanStr(row.house_role) || cleanStr(row.level);
-  const numericGrade = parseNum(row.newest_grade) || parseNum(row.draft_grade) || parseNum(row.level);
+
+  // If level is a numeric string matching newest_grade/draft_grade, it belongs to grade, not level.
+  let levelVal = cleanStr(row.level);
+  let houseRoleVal = cleanStr(row.house_role);
+
+  if (levelVal && /^\d+$/.test(levelVal) && houseRoleVal) {
+    // In spreadsheet column 13 (Level), role string like 'General' / 'Sergeant' was entered.
+    levelVal = houseRoleVal;
+    houseRoleVal = null;
+  }
+
+  const numericGrade = parseNum(row.newest_grade) || parseNum(row.draft_grade);
 
   return {
     // Requested exact format fields
@@ -37,8 +47,8 @@ function formatTrainee(row) {
     first_enroll: formatDate(row.first_enroll),
     class: cleanStr(row.class),
     house: cleanStr(row.house),
-    level: cleanStr(row.level) || roleOrLevel,
-    house_role: cleanStr(row.house_role) || roleOrLevel,
+    level: levelVal,
+    house_role: houseRoleVal,
     class_branch: cleanStr(row.cabang_kelas),
     newest_grade: numericGrade,
     trainee_homeroom: cleanStr(row.trainee_homeroom),
