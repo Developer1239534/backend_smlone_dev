@@ -159,10 +159,11 @@ router.get('/', async (req, res) => {
 // 2. POST /api/login-portal-fix/login - Login authentication
 router.post('/login', async (req, res) => {
   try {
-    const { id, student_id, password } = req.body;
-    const cleanId = String(id || student_id || '').trim();
+    const { id, student_id, password, ID, StudentID } = req.body;
+    const rawId = id || student_id || ID || StudentID || '';
+    const cleanId = String(rawId).trim();
 
-    if (!cleanId || !password) {
+    if (!cleanId || password === undefined || password === null || String(password).trim() === '') {
       return res.status(400).json({
         success: false,
         message: 'ID / Student ID dan Password wajib diisi'
@@ -180,12 +181,37 @@ router.post('/login', async (req, res) => {
 
     const trainee = result.rows[0];
     const cleanPassword = String(password).trim();
+    const storedPassword = String(trainee.password || '').trim();
     const expectedDefault = `SML${cleanId}`;
 
-    if (cleanPassword !== trainee.password && cleanPassword !== expectedDefault) {
+    let isMatch = false;
+
+    // 1. Direct equality check (case-insensitive)
+    if (cleanPassword.toLowerCase() === storedPassword.toLowerCase()) {
+      isMatch = true;
+    }
+    // 2. Default SML + ID (case-insensitive, e.g. "sml60", "SML60")
+    else if (cleanPassword.toLowerCase() === expectedDefault.toLowerCase()) {
+      isMatch = true;
+    }
+    // 3. Just numeric ID match (e.g. user typed "60" for ID "60")
+    else if (cleanPassword === cleanId) {
+      isMatch = true;
+    }
+    // 4. Bcrypt hash check (if password was hashed)
+    else if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$')) {
+      const bcrypt = require('bcryptjs');
+      try {
+        isMatch = await bcrypt.compare(cleanPassword, storedPassword);
+      } catch (err) {
+        isMatch = false;
+      }
+    }
+
+    if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Password salah'
+        message: `Password salah. Password default adalah ${expectedDefault} atau ID Anda (${cleanId}).`
       });
     }
 
