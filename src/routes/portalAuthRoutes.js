@@ -58,17 +58,16 @@ router.post('/login', async (req, res) => {
     const expectedDefault = `SML${cleanStudentId}`;
 
     let isMatch = false;
-    if (cleanPassword.toLowerCase() === storedPassword.toLowerCase()) isMatch = true;
-    else if (cleanPassword.toLowerCase() === expectedDefault.toLowerCase()) isMatch = true;
-    else if (cleanPassword === cleanStudentId) isMatch = true;
-    else if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$')) {
+    if (cleanPassword === storedPassword || cleanPassword === expectedDefault) {
+      isMatch = true;
+    } else if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$')) {
       isMatch = await bcrypt.compare(cleanPassword, storedPassword).catch(() => false);
     }
 
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: `Password salah. Password default adalah ${expectedDefault} atau ID Anda (${cleanStudentId}).`
+        message: `Password salah. Format password yang benar adalah ${expectedDefault}`
       });
     }
 

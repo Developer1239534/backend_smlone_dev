@@ -186,20 +186,10 @@ router.post('/login', async (req, res) => {
 
     let isMatch = false;
 
-    // 1. Direct equality check (case-insensitive)
-    if (cleanPassword.toLowerCase() === storedPassword.toLowerCase()) {
+    // Strict Uppercase SML+ID or exact stored password
+    if (cleanPassword === storedPassword || cleanPassword === expectedDefault) {
       isMatch = true;
-    }
-    // 2. Default SML + ID (case-insensitive, e.g. "sml60", "SML60")
-    else if (cleanPassword.toLowerCase() === expectedDefault.toLowerCase()) {
-      isMatch = true;
-    }
-    // 3. Just numeric ID match (e.g. user typed "60" for ID "60")
-    else if (cleanPassword === cleanId) {
-      isMatch = true;
-    }
-    // 4. Bcrypt hash check (if password was hashed)
-    else if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$')) {
+    } else if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$')) {
       const bcrypt = require('bcryptjs');
       try {
         isMatch = await bcrypt.compare(cleanPassword, storedPassword);
@@ -211,7 +201,7 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: `Password salah. Password default adalah ${expectedDefault} atau ID Anda (${cleanId}).`
+        message: `Password salah. Format password yang benar adalah SML${cleanId}`
       });
     }
 
