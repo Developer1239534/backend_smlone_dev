@@ -80,9 +80,18 @@ async function run() {
   let text = fs.readFileSync(promptPath, 'utf8');
 
   if (text.includes('<USER_REQUEST>')) text = text.split('<USER_REQUEST>')[1];
-  if (text.includes('</USER_REQUEST>')) text = text.split('</USER_REQUEST>')[0];
-
-  const lines = text.split('\n').map(l => l.trim());
+  const rawLines = text.split('\n');
+  const lines = [];
+  for (const rawLine of rawLines) {
+    if (rawLine.includes('\t')) {
+      const cells = rawLine.split('\t').map(c => c.trim());
+      for (const cell of cells) {
+        lines.push(cell);
+      }
+    } else {
+      lines.push(rawLine.trim());
+    }
+  }
 
   function isStudentName(str) {
     if (!str || str.length < 2) return false;
