@@ -84,25 +84,32 @@ async function run() {
 
   const lines = text.split('\n').map(l => l.trim());
 
-  let startIndex = 0;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes('ID') && lines[i].includes('Name') && lines[i].includes('Gender')) {
-      startIndex = i + 1;
-      break;
-    }
+  function isStudentName(str) {
+    if (!str || str.length < 2) return false;
+    if (/^\d+$/.test(str)) return false;
+    if (str.startsWith('http') || str.startsWith('[http')) return false;
+    if (str.startsWith('House of ')) return false;
+    if (['Male', 'Female', 'TIMOR', 'CEMARA', 'TRITURA'].includes(str)) return false;
+    if (str.startsWith('Active') || str.startsWith('Expired')) return false;
+    if (['Sergeant', 'General', 'Lt. Colonel', 'Colonel', 'Lt. General', 'Private', 'Apprentice'].includes(str)) return false;
+    if (['Youth', 'Junior', 'Apprentice'].includes(str)) return false;
+    if (['Agustina', 'Ghaitsa', 'Muly', 'Loita', 'Rizky', 'Nabilah'].includes(str)) return false;
+    if (str.includes('Program') || str.includes('Professionals')) return false;
+    if (parseCustomDate(str) !== null) return false;
+    return true;
   }
 
   const records = [];
   let currentBlock = [];
 
-  for (let i = startIndex; i < lines.length; i++) {
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (!line) continue;
 
     const isId = /^\d+$/.test(line);
-    const nextIsName = i + 1 < lines.length && lines[i + 1] && !/^\d+$/.test(lines[i + 1]) && !lines[i + 1].startsWith('http');
+    const nextLine = i + 1 < lines.length ? lines[i + 1] : null;
 
-    if (isId && nextIsName) {
+    if (isId && isStudentName(nextLine)) {
       if (currentBlock.length > 0) {
         records.push(currentBlock);
       }
@@ -217,12 +224,43 @@ async function run() {
 
     const password = `SML${id}`;
 
-    rowMap.set(id, {
+    const newRecord = {
       id, name, password, gender, date_of_birth, nama_sekolah, cleaned_program,
       membership, expiry_date, cabang_id, first_enroll, className, house, level,
       house_role, cabang_kelas, newest_grade, trainee_homeroom, screening_test,
       draft_grade, prev_grade, ajy_by_class, last_real_stage
-    });
+    };
+
+    if (rowMap.has(id)) {
+      const existing = rowMap.get(id);
+      rowMap.set(id, {
+        id,
+        name: newRecord.name || existing.name,
+        password: existing.password || newRecord.password,
+        gender: newRecord.gender || existing.gender,
+        date_of_birth: newRecord.date_of_birth || existing.date_of_birth,
+        nama_sekolah: newRecord.nama_sekolah || existing.nama_sekolah,
+        cleaned_program: newRecord.cleaned_program || existing.cleaned_program,
+        membership: newRecord.membership || existing.membership,
+        expiry_date: newRecord.expiry_date || existing.expiry_date,
+        cabang_id: newRecord.cabang_id || existing.cabang_id,
+        first_enroll: newRecord.first_enroll || existing.first_enroll,
+        className: newRecord.className || existing.className,
+        house: newRecord.house || existing.house,
+        level: newRecord.level || existing.level,
+        house_role: newRecord.house_role || existing.house_role,
+        cabang_kelas: newRecord.cabang_kelas || existing.cabang_kelas,
+        newest_grade: newRecord.newest_grade || existing.newest_grade,
+        trainee_homeroom: newRecord.trainee_homeroom || existing.trainee_homeroom,
+        screening_test: newRecord.screening_test || existing.screening_test,
+        draft_grade: newRecord.draft_grade || existing.draft_grade,
+        prev_grade: newRecord.prev_grade || existing.prev_grade,
+        ajy_by_class: newRecord.ajy_by_class || existing.ajy_by_class,
+        last_real_stage: newRecord.last_real_stage || existing.last_real_stage
+      });
+    } else {
+      rowMap.set(id, newRecord);
+    }
   }
 
   const uniqueRows = Array.from(rowMap.values());
