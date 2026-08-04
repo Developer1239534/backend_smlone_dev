@@ -393,9 +393,27 @@ const { getDbMetrics } = require('./db/neonClient');
         trainee_id VARCHAR(50) NOT NULL,
         report_title TEXT,
         link_yt TEXT,
+        report_title_2 TEXT,
+        link_term TEXT,
+        link_terms JSONB,
+        report_title_3 TEXT,
+        link_to_report TEXT,
+        link_reports_3 JSONB,
+        report_title_4 TEXT,
+        link_to_report_4 TEXT,
+        referral_code TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS report_title_2 TEXT;
+      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_term TEXT;
+      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_terms JSONB;
+      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS report_title_3 TEXT;
+      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_to_report TEXT;
+      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_reports_3 JSONB;
+      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS report_title_4 TEXT;
+      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS link_to_report_4 TEXT;
+      ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS referral_code TEXT;
       CREATE INDEX IF NOT EXISTS idx_report_trainee_trainee_id ON report_trainee(trainee_id);
     `);
 
