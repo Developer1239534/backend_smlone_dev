@@ -20,6 +20,8 @@ function formatTrainee(row) {
 
   const cleanIdStr = String(row.id || '').trim();
   const numericId = parseInt(cleanIdStr, 10);
+  const roleOrLevel = cleanStr(row.house_role) || cleanStr(row.level);
+  const numericGrade = parseNum(row.newest_grade) || parseNum(row.draft_grade) || parseNum(row.level);
 
   return {
     // Requested exact format fields
@@ -35,14 +37,14 @@ function formatTrainee(row) {
     first_enroll: formatDate(row.first_enroll),
     class: cleanStr(row.class),
     house: cleanStr(row.house),
-    level: cleanStr(row.level),
-    house_role: cleanStr(row.house_role),
+    level: cleanStr(row.level) || roleOrLevel,
+    house_role: cleanStr(row.house_role) || roleOrLevel,
     class_branch: cleanStr(row.cabang_kelas),
-    newest_grade: parseNum(row.newest_grade),
+    newest_grade: numericGrade,
     trainee_homeroom: cleanStr(row.trainee_homeroom),
     screening_test: cleanStr(row.screening_test),
-    draft_grade: parseNum(row.draft_grade),
-    previous_grade: parseNum(row.prev_grade),
+    draft_grade: parseNum(row.draft_grade) || numericGrade,
+    previous_grade: parseNum(row.prev_grade) || numericGrade,
     ajy_by_class: cleanStr(row.ajy_by_class),
     last_real_stage: formatDate(row.last_real_stage),
 
@@ -52,7 +54,7 @@ function formatTrainee(row) {
     cleaned_program: cleanStr(row.cleaned_program),
     cabang_id: cleanStr(row.cabang_id),
     cabang_kelas: cleanStr(row.cabang_kelas),
-    prev_grade: parseNum(row.prev_grade)
+    prev_grade: parseNum(row.prev_grade) || numericGrade
   };
 }
 
@@ -339,4 +341,5 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+router.formatTrainee = formatTrainee;
 module.exports = router;
