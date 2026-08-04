@@ -6,6 +6,10 @@ async function main() {
   console.log('🚀 Extracting report_title_3 and link_to_report data...');
 
   const logPath = 'C:\\Users\\ASUS ROG\\.gemini\\antigravity\\brain\\9beb73e7-e676-4eaa-a35f-bc916c6c9b49\\.system_generated\\logs\\transcript_full.jsonl';
+  if (!fs.existsSync(logPath)) {
+    console.log('ℹ️ Local transcript log not found (running on remote server). Using seed_report_trainee.json instead.');
+    return;
+  }
   const lines = fs.readFileSync(logPath, 'utf8').split('\n').filter(Boolean);
   
   let lastUserMsg = '';
