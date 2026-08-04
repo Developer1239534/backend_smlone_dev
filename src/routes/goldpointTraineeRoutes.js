@@ -138,7 +138,7 @@ router.get('/:id', async (req, res) => {
     await ensureColumns();
 
     const { id } = req.params;
-    const result = await db.query(`
+    let result = await db.query(`
       SELECT 
         trainee_id AS id,
         name AS nama_trainee,
@@ -160,6 +160,31 @@ router.get('/:id', async (req, res) => {
       FROM profile_trainee 
       WHERE trainee_id = $1 AND name IS NOT NULL AND TRIM(name) != ''
     `, [id]);
+
+    if (result.rows.length === 0) {
+      result = await db.query(`
+        SELECT 
+          id,
+          name AS nama_trainee,
+          name AS trainee_name,
+          COALESCE(level, 'Sergeant') AS level,
+          COALESCE(house, 'House of Creanova') AS house,
+          COALESCE(class, 'Gladwell') AS class,
+          COALESCE(class, 'Gladwell') AS class_name,
+          COALESCE(class, 'Gladwell') AS nama_kelas,
+          COALESCE(cabang_id, 'TIMOR') AS branch,
+          COALESCE(cabang_id, 'TIMOR') AS cabang,
+          0 AS total_gold_periode,
+          0 AS gp_month,
+          0 AS total_gold,
+          COALESCE(ajy_by_class, 'Junior') AS kategori,
+          COALESCE(ajy_by_class, 'Junior') AS junior_youth,
+          0 AS rank,
+          updated_at
+        FROM login_portal_fix 
+        WHERE id = $1
+      `, [id]);
+    }
 
     if (result.rows.length === 0) {
       return sendResponse(res, 404, { success: false, message: 'Goldpoint trainee not found' });
