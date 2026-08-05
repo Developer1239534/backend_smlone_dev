@@ -40,6 +40,7 @@ const reportTraineeRoutes = require('./routes/reportTraineeRoutes');
 const goldPointRankingRoutes = require('./routes/goldPointRankingRoutes');
 const rankingHouseRoutes = require('./routes/rankingHouseRoutes');
 const goldPoinSetahunRoutes = require('./routes/goldPoinSetahunRoutes');
+const reportTraineeDataRoutes = require('./routes/reportTraineeDataRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
@@ -329,6 +330,22 @@ const { getDbMetrics } = require('./db/neonClient');
       );
       CREATE INDEX IF NOT EXISTS idx_gold_poin_setahun_trainee_id ON gold_poin_setahun(trainee_id);
       CREATE INDEX IF NOT EXISTS idx_gold_poin_setahun_date_string ON gold_poin_setahun(date_string);
+
+      -- Create report_trainee_data table
+      CREATE TABLE IF NOT EXISTS report_trainee_data (
+        id SERIAL PRIMARY KEY,
+        trainee_id VARCHAR(100) NOT NULL UNIQUE,
+        name VARCHAR(255) NOT NULL,
+        latest_speaking_project VARCHAR(255),
+        speaking_project_to_next_level VARCHAR(50),
+        last_speaker_date VARCHAR(100),
+        last_life_project_date VARCHAR(100),
+        last_life_project TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_report_trainee_data_trainee_id ON report_trainee_data(trainee_id);
+      CREATE INDEX IF NOT EXISTS idx_report_trainee_data_name ON report_trainee_data(name);
     `);
 
     console.log('✅ Database schema and performance indexes updated successfully.');
@@ -483,6 +500,11 @@ app.use('/api/gold_point_yearly', goldPoinSetahunRoutes);
 app.use('/gold-poin-setahun', goldPoinSetahunRoutes);
 app.use('/gold-point-setahun', goldPoinSetahunRoutes);
 app.use('/gold-points-tahunan', goldPoinSetahunRoutes);
+
+app.use('/api/report-trainee-data', reportTraineeDataRoutes);
+app.use('/api/report_trainee_data', reportTraineeDataRoutes);
+app.use('/report-trainee-data', reportTraineeDataRoutes);
+app.use('/report_trainee_data', reportTraineeDataRoutes);
 
 app.use('/api/goldpoint-trainee', goldPointRankingRoutes);
 app.use('/api/goldpoint_trainee', goldPointRankingRoutes);
