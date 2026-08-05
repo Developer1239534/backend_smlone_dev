@@ -2,9 +2,30 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// GET /api/gold-point-ranking - List with filter, search, pagination
+// GET /api/gold-point-rankings - List with filter, search, pagination
 router.get('/', async (req, res) => {
   try {
+    // Ensure table exists fallback
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS gold_point_rankings (
+        id SERIAL PRIMARY KEY,
+        period VARCHAR(100) NOT NULL,
+        category VARCHAR(100) NOT NULL,
+        program VARCHAR(100) NOT NULL,
+        trainee_id VARCHAR(255) NOT NULL,
+        trainee_name VARCHAR(255),
+        membership_status VARCHAR(100),
+        level VARCHAR(100),
+        house VARCHAR(100),
+        class_name VARCHAR(255),
+        branch VARCHAR(100),
+        total_gold INT DEFAULT 0,
+        ranking INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `).catch(() => null);
+
     const { period, branch, program, trainee_id, search, page = 1, limit = 100 } = req.query;
 
     let query = `SELECT * FROM gold_point_rankings`;
