@@ -38,6 +38,7 @@ const profileTraineeRoutes = require('./routes/profileTraineeRoutes');
 const loginPortalFixRoutes = require('./routes/loginPortalFixRoutes');
 const reportTraineeRoutes = require('./routes/reportTraineeRoutes');
 const goldPointRankingRoutes = require('./routes/goldPointRankingRoutes');
+const rankingHouseRoutes = require('./routes/rankingHouseRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
@@ -440,6 +441,31 @@ const { getDbMetrics } = require('./db/neonClient');
       );
       CREATE INDEX IF NOT EXISTS idx_gold_point_rankings_trainee_id ON gold_point_rankings(trainee_id);
       CREATE INDEX IF NOT EXISTS idx_gold_point_rankings_period ON gold_point_rankings(period);
+
+      -- Create ranking_house & ranking_houses tables
+      CREATE TABLE IF NOT EXISTS ranking_house (
+        id SERIAL PRIMARY KEY,
+        house VARCHAR(255) NOT NULL,
+        total_gold_house INT DEFAULT 0,
+        rank INT,
+        class_name VARCHAR(255),
+        cabang VARCHAR(255),
+        program VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS ranking_houses (
+        id SERIAL PRIMARY KEY,
+        house VARCHAR(255) NOT NULL,
+        total_gold_house INT DEFAULT 0,
+        rank INT,
+        class_name VARCHAR(255),
+        cabang VARCHAR(255),
+        program VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     console.log('✅ Database schema and performance indexes updated successfully.');
@@ -568,6 +594,21 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use('/api/ranking-house', rankingHouseRoutes);
+app.use('/api/ranking_house', rankingHouseRoutes);
+app.use('/api/ranking-houses', rankingHouseRoutes);
+app.use('/api/ranking_houses', rankingHouseRoutes);
+app.use('/api/house-rankings', rankingHouseRoutes);
+app.use('/api/house-ranking', rankingHouseRoutes);
+app.use('/api/house_rankings', rankingHouseRoutes);
+app.use('/api/house_ranking', rankingHouseRoutes);
+app.use('/api/admin/ranking-house', rankingHouseRoutes);
+app.use('/api/admin/ranking_house', rankingHouseRoutes);
+app.use('/ranking-house', rankingHouseRoutes);
+app.use('/ranking_house', rankingHouseRoutes);
+app.use('/ranking-houses', rankingHouseRoutes);
+app.use('/ranking_houses', rankingHouseRoutes);
+
 app.use('/api/goldpoint-trainee', goldPointRankingRoutes);
 app.use('/api/goldpoint_trainee', goldPointRankingRoutes);
 app.use('/api/admin/goldpoint-trainee', goldPointRankingRoutes);
