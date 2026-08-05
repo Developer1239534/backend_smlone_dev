@@ -37,6 +37,7 @@ const goldpointTraineeRoutes = require('./routes/goldpointTraineeRoutes');
 const profileTraineeRoutes = require('./routes/profileTraineeRoutes');
 const loginPortalFixRoutes = require('./routes/loginPortalFixRoutes');
 const reportTraineeRoutes = require('./routes/reportTraineeRoutes');
+const goldPointRankingRoutes = require('./routes/goldPointRankingRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
@@ -416,6 +417,26 @@ const { getDbMetrics } = require('./db/neonClient');
       ALTER TABLE report_trainee ADD COLUMN IF NOT EXISTS referral_code TEXT;
       ALTER TABLE report_trainee DROP COLUMN IF EXISTS link_to_report_4 CASCADE;
       CREATE INDEX IF NOT EXISTS idx_report_trainee_trainee_id ON report_trainee(trainee_id);
+
+      -- Create gold_point_ranking table
+      CREATE TABLE IF NOT EXISTS gold_point_ranking (
+        id SERIAL PRIMARY KEY,
+        period VARCHAR(100),
+        trainee_id VARCHAR(255),
+        trainee_name VARCHAR(255),
+        membership_status VARCHAR(100),
+        level VARCHAR(100),
+        house VARCHAR(100),
+        class_name VARCHAR(255),
+        branch VARCHAR(100),
+        program VARCHAR(255),
+        total_gold INT DEFAULT 0,
+        ranking INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_gold_point_ranking_trainee_id ON gold_point_ranking(trainee_id);
+      CREATE INDEX IF NOT EXISTS idx_gold_point_ranking_period ON gold_point_ranking(period);
     `);
 
     console.log('✅ Database schema and performance indexes updated successfully.');
@@ -499,6 +520,10 @@ app.use('/api/admin/goldpoint-trainee', goldpointTraineeRoutes);
 app.use('/api/admin/goldpoint_trainee', goldpointTraineeRoutes);
 app.use('/api/dashboard/goldpoint-trainee', goldpointTraineeRoutes);
 app.use('/api/dashboard/goldpoint_trainee', goldpointTraineeRoutes);
+app.use('/api/gold-point-ranking', goldPointRankingRoutes);
+app.use('/api/gold_point_ranking', goldPointRankingRoutes);
+app.use('/api/admin/gold-point-ranking', goldPointRankingRoutes);
+app.use('/gold-point-ranking', goldPointRankingRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/portal-trainee', portalTraineeRoutes);
 app.use('/api/portal-admin', portalAdminRoutes);
