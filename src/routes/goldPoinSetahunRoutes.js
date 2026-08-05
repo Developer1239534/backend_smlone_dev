@@ -119,7 +119,7 @@ router.get('/', async (req, res) => {
         aggQuery += ` WHERE ` + aggConditions.join(' AND ');
       }
 
-      aggQuery += ` GROUP BY trainee_id ORDER BY total_gold DESC, trainee_id ASC`;
+      aggQuery += ` GROUP BY trainee_id ORDER BY (CASE WHEN SUM(total_gold) = 0 THEN 1 ELSE 0 END) ASC, total_gold DESC, trainee_id ASC`;
 
       const aggResult = await db.query(aggQuery, aggParams);
       return res.json({
@@ -162,7 +162,7 @@ router.get('/', async (req, res) => {
       query += ` WHERE ` + conditions.join(' AND ');
     }
 
-    query += ` ORDER BY id ASC`;
+    query += ` ORDER BY (CASE WHEN total_gold = 0 THEN 1 ELSE 0 END) ASC, total_gold DESC, id ASC`;
 
     let countQuery = `SELECT COUNT(*) FROM gold_poin_setahun` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : '');
     const countRes = await db.query(countQuery, params);
