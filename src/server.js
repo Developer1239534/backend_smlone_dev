@@ -91,6 +91,7 @@ const { getDbMetrics } = require('./db/neonClient');
     await db.query('DROP TABLE IF EXISTS dashboard_cemara CASCADE');
     await db.query('DROP TABLE IF EXISTS data_form_lama CASCADE');
     await db.query('DROP TABLE IF EXISTS sml_report CASCADE');
+    await db.query('DROP TABLE IF EXISTS gold_point_ranking CASCADE');
 
     // Create news_announcements table if it doesn't exist
     await db.query(`
