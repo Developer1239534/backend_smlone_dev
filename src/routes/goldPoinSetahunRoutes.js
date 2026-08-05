@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
+const fs = require('fs');
+const path = require('path');
 
 const PERIOD_START = '1 Jan 2026';
 const PERIOD_END = '31 Dec 2026';
 
-// Helper to ensure table exists
-async function ensureTable() {
+// Helper to ensure table exists & auto-seed if empty
+async function ensureTableAndSeed() {
   await db.query(`
     CREATE TABLE IF NOT EXISTS gold_poin_setahun (
       id SERIAL PRIMARY KEY,
@@ -22,12 +24,69 @@ async function ensureTable() {
     CREATE INDEX IF NOT EXISTS idx_gold_poin_setahun_trainee_id ON gold_poin_setahun(trainee_id);
     CREATE INDEX IF NOT EXISTS idx_gold_poin_setahun_date_string ON gold_poin_setahun(date_string);
   `).catch(() => null);
+
+  const check = await db.query('SELECT COUNT(*) FROM gold_poin_setahun');
+  const count = parseInt(check.rows[0].count, 10);
+
+  if (count === 0) {
+    console.log('⚡ gold_poin_setahun table is empty. Auto-seeding 8,887 records...');
+    try {
+      let seedRows = [];
+      const p1 = path.join(__dirname, 'seed_gold_poin_setahun.json');
+      const p2 = path.join(__dirname, '..', '..', 'scripts', 'seed_gold_poin_setahun.json');
+      const p3 = path.join(__dirname, '..', 'db', 'seed_gold_poin_setahun.json');
+
+      if (fs.existsSync(p1)) {
+        seedRows = JSON.parse(fs.readFileSync(p1, 'utf8'));
+      } else if (fs.existsSync(p2)) {
+        seedRows = JSON.parse(fs.readFileSync(p2, 'utf8'));
+      } else if (fs.existsSync(p3)) {
+        seedRows = JSON.parse(fs.readFileSync(p3, 'utf8'));
+      }
+
+      if (Array.isArray(seedRows) && seedRows.length > 0) {
+        // Fetch trainee name map
+        const nameMap = {};
+        try {
+          const nameRes = await db.query('SELECT trainee_id, name FROM profile_trainee UNION SELECT id as trainee_id, name FROM login_portal_fix');
+          nameRes.rows.forEach(r => {
+            if (r.trainee_id && r.name) nameMap[r.trainee_id.trim()] = r.name.trim();
+          });
+        } catch (e) {
+          console.log('Name map fetch warning:', e.message);
+        }
+
+        const BATCH_SIZE = 500;
+        for (let i = 0; i < seedRows.length; i += BATCH_SIZE) {
+          const chunk = seedRows.slice(i, i + BATCH_SIZE);
+          const placeholders = [];
+          const values = [];
+          let idx = 1;
+
+          chunk.forEach(r => {
+            const studentName = nameMap[r.trainee_id] || r.student_name || r.trainee_id;
+            placeholders.push(`($${idx}, $${idx+1}, $${idx+2}, $${idx+3}, $${idx+4}, $${idx+5})`);
+            values.push(PERIOD_START, PERIOD_END, r.trainee_id, studentName, r.date_string, r.total_gold || 0);
+            idx += 6;
+          });
+
+          await db.query(`
+            INSERT INTO gold_poin_setahun (period_start, period_end, trainee_id, student_name, date_string, total_gold)
+            VALUES ${placeholders.join(',\n')};
+          `, values);
+        }
+        console.log(`✅ Auto-seeded ${seedRows.length} rows into gold_poin_setahun.`);
+      }
+    } catch (seedErr) {
+      console.error('❌ Auto-seed failed:', seedErr.message);
+    }
+  }
 }
 
 // GET /api/gold-poin-setahun - List yearly gold points
 router.get('/', async (req, res) => {
   try {
-    await ensureTable();
+    await ensureTableAndSeed();
 
     const { trainee_id, student_name, date_string, search, all, aggregate, page = 1, limit = 100 } = req.query;
 
@@ -154,7 +213,7 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    await ensureTable();
+    await ensureTableAndSeed();
     const result = await db.query(
       `INSERT INTO gold_poin_setahun (period_start, period_end, trainee_id, student_name, date_string, total_gold)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
@@ -174,7 +233,7 @@ router.put('/:id', async (req, res) => {
   const { trainee_id, student_name, date_string, total_gold, period_start, period_end } = req.body;
 
   try {
-    await ensureTable();
+    await ensureTableAndSeed();
     const check = await db.query('SELECT * FROM gold_poin_setahun WHERE id = $1', [id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
@@ -207,7 +266,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await ensureTable();
+    await ensureTableAndSeed();
     const result = await db.query('DELETE FROM gold_poin_setahun WHERE id = $1 RETURNING *', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
