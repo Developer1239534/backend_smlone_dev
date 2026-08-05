@@ -126,7 +126,7 @@ async function main() {
       const membership_status = cols[startCol + 2] ? cols[startCol + 2].trim() : '';
       const level = cols[startCol + 3] ? cols[startCol + 3].trim() : '';
       const house = cols[startCol + 4] ? cols[startCol + 4].trim() : '';
-      const class_name = cols[startCol + 5] ? cols[startCol + 5].trim() : '';
+      const class_name = cols[startCol + 5] ? cols[startCol + 5].replace(/\s*\(.*?\)/g, '').trim() : '';
       const branch = cols[startCol + 6] ? cols[startCol + 6].trim() : '';
       const total_gold_raw = cols[startCol + 7] ? cols[startCol + 7].trim() : '0';
       const program_raw = cols[startCol + 8] ? cols[startCol + 8].trim() : '';
