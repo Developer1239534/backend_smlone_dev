@@ -69,11 +69,19 @@ router.get('/', async (req, res) => {
     // Auto-seed if table is empty
     if (totalItems === 0 && conditions.length === 0) {
       try {
-        const fs = require('fs');
-        const path = require('path');
-        const seedPath = path.join(__dirname, '..', '..', 'scripts', 'seed_gold_point_rankings.json');
-        if (fs.existsSync(seedPath)) {
-          const rows = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+        let rows = [];
+        try {
+          rows = require('./seed_gold_point_rankings.json');
+        } catch (e1) {
+          const fs = require('fs');
+          const path = require('path');
+          const p = path.join(__dirname, '..', '..', 'scripts', 'seed_gold_point_rankings.json');
+          if (fs.existsSync(p)) {
+            rows = JSON.parse(fs.readFileSync(p, 'utf8'));
+          }
+        }
+
+        if (Array.isArray(rows) && rows.length > 0) {
           const valueRows = [];
           const queryParams = [];
           let paramIdx = 1;
