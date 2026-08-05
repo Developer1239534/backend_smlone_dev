@@ -39,6 +39,7 @@ const loginPortalFixRoutes = require('./routes/loginPortalFixRoutes');
 const reportTraineeRoutes = require('./routes/reportTraineeRoutes');
 const goldPointRankingRoutes = require('./routes/goldPointRankingRoutes');
 const rankingHouseRoutes = require('./routes/rankingHouseRoutes');
+const goldPoinSetahunRoutes = require('./routes/goldPoinSetahunRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
@@ -313,6 +314,21 @@ const { getDbMetrics } = require('./db/neonClient');
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      -- Create gold_poin_setahun table
+      CREATE TABLE IF NOT EXISTS gold_poin_setahun (
+        id SERIAL PRIMARY KEY,
+        period_start VARCHAR(100) DEFAULT '1 Jan 2026',
+        period_end VARCHAR(100) DEFAULT '31 Dec 2026',
+        trainee_id VARCHAR(100) NOT NULL,
+        student_name VARCHAR(255),
+        date_string VARCHAR(100) NOT NULL,
+        total_gold INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_gold_poin_setahun_trainee_id ON gold_poin_setahun(trainee_id);
+      CREATE INDEX IF NOT EXISTS idx_gold_poin_setahun_date_string ON gold_poin_setahun(date_string);
     `);
 
     console.log('✅ Database schema and performance indexes updated successfully.');
@@ -455,6 +471,15 @@ app.use('/ranking-house', rankingHouseRoutes);
 app.use('/ranking_house', rankingHouseRoutes);
 app.use('/ranking-houses', rankingHouseRoutes);
 app.use('/ranking_houses', rankingHouseRoutes);
+
+app.use('/api/gold-poin-setahun', goldPoinSetahunRoutes);
+app.use('/api/gold_poin_setahun', goldPoinSetahunRoutes);
+app.use('/api/gold-point-setahun', goldPoinSetahunRoutes);
+app.use('/api/gold_point_setahun', goldPoinSetahunRoutes);
+app.use('/api/gold-point-yearly', goldPoinSetahunRoutes);
+app.use('/api/gold_point_yearly', goldPoinSetahunRoutes);
+app.use('/gold-poin-setahun', goldPoinSetahunRoutes);
+app.use('/gold-point-setahun', goldPoinSetahunRoutes);
 
 app.use('/api/goldpoint-trainee', goldPointRankingRoutes);
 app.use('/api/goldpoint_trainee', goldPointRankingRoutes);
