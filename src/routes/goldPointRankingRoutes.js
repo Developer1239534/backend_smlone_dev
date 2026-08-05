@@ -63,8 +63,53 @@ router.get('/', async (req, res) => {
 
     query += ` ORDER BY ranking ASC, total_gold DESC, id ASC`;
 
-    const countResult = await db.query(`SELECT COUNT(*) FROM gold_point_rankings` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : ''), params);
-    const totalItems = parseInt(countResult.rows[0].count, 10);
+    let countResult = await db.query(`SELECT COUNT(*) FROM gold_point_rankings` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : ''), params);
+    let totalItems = parseInt(countResult.rows[0].count, 10);
+
+    // Auto-seed if table is empty
+    if (totalItems === 0 && conditions.length === 0) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const seedPath = path.join(__dirname, '..', '..', 'scripts', 'seed_gold_point_rankings.json');
+        if (fs.existsSync(seedPath)) {
+          const rows = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+          const valueRows = [];
+          const queryParams = [];
+          let paramIdx = 1;
+
+          for (const r of rows) {
+            valueRows.push(`(
+              $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+              $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+              $${paramIdx++}, $${paramIdx++}, NOW(), NOW()
+            )`);
+            queryParams.push(
+              r.period, r.category, r.program, r.trainee_id, r.trainee_name,
+              r.membership_status, r.level, r.house, r.class_name, r.branch,
+              r.total_gold, r.ranking
+            );
+          }
+
+          if (valueRows.length > 0) {
+            await db.query(`
+              INSERT INTO gold_point_rankings (
+                period, category, program, trainee_id, trainee_name,
+                membership_status, level, house, class_name, branch,
+                total_gold, ranking, created_at, updated_at
+              )
+              VALUES ${valueRows.join(',')}
+              ON CONFLICT (period, category, program, trainee_id) DO NOTHING;
+            `, queryParams);
+
+            countResult = await db.query(`SELECT COUNT(*) FROM gold_point_rankings`, params);
+            totalItems = parseInt(countResult.rows[0].count, 10);
+          }
+        }
+      } catch (seedErr) {
+        console.error('[GoldPointRanking] Auto-seed error:', seedErr);
+      }
+    }
 
     const mapRow = (r) => ({
       ...r,
