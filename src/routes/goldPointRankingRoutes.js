@@ -66,11 +66,25 @@ router.get('/', async (req, res) => {
     const countResult = await db.query(`SELECT COUNT(*) FROM gold_point_rankings` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : ''), params);
     const totalItems = parseInt(countResult.rows[0].count, 10);
 
+    const mapRow = (r) => ({
+      ...r,
+      nama_trainee: r.trainee_name,
+      class: r.class_name,
+      nama_kelas: r.class_name,
+      status: r.membership_status,
+      total_gold_periode: r.total_gold,
+      gp_month: r.total_gold,
+      rank: r.ranking,
+      kategori: r.program,
+      junior_youth: r.program
+    });
+
     if (req.query.all === 'true' || limit === '0') {
       const result = await db.query(query, params);
+      const formatted = result.rows.map(mapRow);
       return res.json({
         success: true,
-        data: result.rows,
+        data: formatted,
         total: totalItems
       });
     }
@@ -85,10 +99,11 @@ router.get('/', async (req, res) => {
     query += ` OFFSET $${params.length}`;
 
     const result = await db.query(query, params);
+    const formatted = result.rows.map(mapRow);
 
     res.json({
       success: true,
-      data: result.rows,
+      data: formatted,
       pagination: {
         total: totalItems,
         page: pageNum,

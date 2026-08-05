@@ -531,12 +531,12 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/api/goldpoint-trainee', goldpointTraineeRoutes);
-app.use('/api/goldpoint_trainee', goldpointTraineeRoutes);
-app.use('/api/admin/goldpoint-trainee', goldpointTraineeRoutes);
-app.use('/api/admin/goldpoint_trainee', goldpointTraineeRoutes);
-app.use('/api/dashboard/goldpoint-trainee', goldpointTraineeRoutes);
-app.use('/api/dashboard/goldpoint_trainee', goldpointTraineeRoutes);
+app.use('/api/goldpoint-trainee', goldPointRankingRoutes);
+app.use('/api/goldpoint_trainee', goldPointRankingRoutes);
+app.use('/api/admin/goldpoint-trainee', goldPointRankingRoutes);
+app.use('/api/admin/goldpoint_trainee', goldPointRankingRoutes);
+app.use('/api/dashboard/goldpoint-trainee', goldPointRankingRoutes);
+app.use('/api/dashboard/goldpoint_trainee', goldPointRankingRoutes);
 app.use('/api/gold-point-rankings', goldPointRankingRoutes);
 app.use('/api/gold_point_rankings', goldPointRankingRoutes);
 app.use('/api/gold-point-ranking', goldPointRankingRoutes);
