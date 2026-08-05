@@ -4,11 +4,18 @@ const db = require('../db/neonClient');
 const fs = require('fs');
 const path = require('path');
 
+const PERIOD = '7/31/2026';
+const FIRST_DATE_MONTH = '1 Jul 2026';
+const LAST_DATE_MONTH = '31 Jul 2026';
+
 // Helper to ensure table exists
 async function ensureTable() {
   await db.query(`
     CREATE TABLE IF NOT EXISTS ranking_house (
       id SERIAL PRIMARY KEY,
+      period VARCHAR(100) DEFAULT '${PERIOD}',
+      first_date_month VARCHAR(100) DEFAULT '${FIRST_DATE_MONTH}',
+      last_date_month VARCHAR(100) DEFAULT '${LAST_DATE_MONTH}',
       house VARCHAR(255) NOT NULL,
       total_gold_house INT DEFAULT 0,
       rank INT,
@@ -18,6 +25,9 @@ async function ensureTable() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    ALTER TABLE ranking_house ADD COLUMN IF NOT EXISTS period VARCHAR(100) DEFAULT '${PERIOD}';
+    ALTER TABLE ranking_house ADD COLUMN IF NOT EXISTS first_date_month VARCHAR(100) DEFAULT '${FIRST_DATE_MONTH}';
+    ALTER TABLE ranking_house ADD COLUMN IF NOT EXISTS last_date_month VARCHAR(100) DEFAULT '${LAST_DATE_MONTH}';
   `).catch(() => null);
 }
 
@@ -26,11 +36,16 @@ router.get('/', async (req, res) => {
   try {
     await ensureTable();
 
-    const { house, cabang, program, search } = req.query;
+    const { house, cabang, program, period, search } = req.query;
 
     let query = `SELECT * FROM ranking_house`;
     const conditions = [];
     const params = [];
+
+    if (period) {
+      params.push(period);
+      conditions.push(`period = $${params.length}`);
+    }
 
     if (house) {
       params.push(house);
@@ -75,22 +90,32 @@ router.get('/', async (req, res) => {
       if (Array.isArray(seedData) && seedData.length > 0) {
         for (const item of seedData) {
           await db.query(`
-            INSERT INTO ranking_house (house, total_gold_house, rank, class_name, cabang, program)
-            VALUES ($1, $2, $3, $4, $5, $6);
-          `, [item.house, item.total_gold_house, item.rank, item.class_name, item.cabang, item.program]);
+            INSERT INTO ranking_house (period, first_date_month, last_date_month, house, total_gold_house, rank, class_name, cabang, program)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+          `, [item.period || PERIOD, item.first_date_month || FIRST_DATE_MONTH, item.last_date_month || LAST_DATE_MONTH, item.house, item.total_gold_house, item.rank, item.class_name, item.cabang, item.program]);
         }
         const seeded = await db.query(`SELECT * FROM ranking_house ORDER BY rank ASC, total_gold_house DESC, id ASC`);
         return res.json({
           success: true,
           total: seeded.rows.length,
-          data: seeded.rows
+          period: PERIOD,
+          first_date_month: FIRST_DATE_MONTH,
+          last_date_month: LAST_DATE_MONTH,
+          data: seeded.rows.map(row => ({
+            ...row,
+            periode: row.period,
+            class: row.class_name,
+            branch: row.cabang,
+            total_gold: row.total_gold_house
+          }))
         });
       }
     }
 
-    // Response contains both class_name and class for frontend compatibility
+    // Response contains aliases for frontend compatibility
     const formattedData = result.rows.map(row => ({
       ...row,
+      periode: row.period,
       class: row.class_name,
       branch: row.cabang,
       total_gold: row.total_gold_house
@@ -99,6 +124,9 @@ router.get('/', async (req, res) => {
     res.json({
       success: true,
       total: formattedData.length,
+      period: PERIOD,
+      first_date_month: FIRST_DATE_MONTH,
+      last_date_month: LAST_DATE_MONTH,
       data: formattedData
     });
   } catch (err) {
@@ -109,7 +137,7 @@ router.get('/', async (req, res) => {
 
 // POST - Create new ranking_house record
 router.post('/', async (req, res) => {
-  const { house, house_name, total_gold_house, rank, class_name, class: className, cabang, branch, program } = req.body;
+  const { period, first_date_month, last_date_month, house, house_name, total_gold_house, rank, class_name, class: className, cabang, branch, program } = req.body;
   const targetHouse = house || house_name;
   const targetClass = class_name || className;
   const targetCabang = cabang || branch;
@@ -121,9 +149,9 @@ router.post('/', async (req, res) => {
   try {
     await ensureTable();
     const result = await db.query(
-      `INSERT INTO ranking_house (house, total_gold_house, rank, class_name, cabang, program)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [targetHouse, total_gold_house || 0, rank || null, targetClass || '', targetCabang || '', program || '']
+      `INSERT INTO ranking_house (period, first_date_month, last_date_month, house, total_gold_house, rank, class_name, cabang, program)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [period || PERIOD, first_date_month || FIRST_DATE_MONTH, last_date_month || LAST_DATE_MONTH, targetHouse, total_gold_house || 0, rank || null, targetClass || '', targetCabang || '', program || '']
     );
 
     const row = result.rows[0];
@@ -132,6 +160,7 @@ router.post('/', async (req, res) => {
       message: 'Ranking house entry created successfully',
       data: {
         ...row,
+        periode: row.period,
         class: row.class_name,
         branch: row.cabang,
         total_gold: row.total_gold_house
@@ -146,7 +175,7 @@ router.post('/', async (req, res) => {
 // PUT - Update ranking_house record
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { house, house_name, total_gold_house, rank, class_name, class: className, cabang, branch, program } = req.body;
+  const { period, first_date_month, last_date_month, house, house_name, total_gold_house, rank, class_name, class: className, cabang, branch, program } = req.body;
 
   try {
     await ensureTable();
@@ -156,6 +185,9 @@ router.put('/:id', async (req, res) => {
     }
 
     const existing = check.rows[0];
+    const updatedPeriod = period || existing.period;
+    const updatedFirstDate = first_date_month || existing.first_date_month;
+    const updatedLastDate = last_date_month || existing.last_date_month;
     const updatedHouse = house || house_name || existing.house;
     const updatedGold = total_gold_house !== undefined ? total_gold_house : existing.total_gold_house;
     const updatedRank = rank !== undefined ? rank : existing.rank;
@@ -165,9 +197,9 @@ router.put('/:id', async (req, res) => {
 
     const result = await db.query(
       `UPDATE ranking_house 
-       SET house = $1, total_gold_house = $2, rank = $3, class_name = $4, cabang = $5, program = $6, updated_at = NOW()
-       WHERE id = $7 RETURNING *`,
-      [updatedHouse, updatedGold, updatedRank, updatedClass, updatedCabang, updatedProgram, id]
+       SET period = $1, first_date_month = $2, last_date_month = $3, house = $4, total_gold_house = $5, rank = $6, class_name = $7, cabang = $8, program = $9, updated_at = NOW()
+       WHERE id = $10 RETURNING *`,
+      [updatedPeriod, updatedFirstDate, updatedLastDate, updatedHouse, updatedGold, updatedRank, updatedClass, updatedCabang, updatedProgram, id]
     );
 
     const row = result.rows[0];
@@ -176,6 +208,7 @@ router.put('/:id', async (req, res) => {
       message: 'Ranking house entry updated successfully',
       data: {
         ...row,
+        periode: row.period,
         class: row.class_name,
         branch: row.cabang,
         total_gold: row.total_gold_house
