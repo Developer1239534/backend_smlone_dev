@@ -463,9 +463,46 @@ const { getDbMetrics } = require('./db/neonClient');
     if (parseInt(checkGpCount.rows[0].count, 10) === 0) {
       console.log('⚡ gold_point_rankings table is empty. Auto-populating data...');
       try {
-        const repopulateGpScript = path.join(__dirname, '..', 'scripts', 'repopulate_gold_point_rankings.js');
-        if (require('fs').existsSync(repopulateGpScript)) {
-          require(repopulateGpScript);
+        let seedRows = [];
+        const seedPath1 = path.join(__dirname, 'routes', 'seed_gold_point_rankings.json');
+        const seedPath2 = path.join(__dirname, '..', 'scripts', 'seed_gold_point_rankings.json');
+        
+        if (fs.existsSync(seedPath1)) {
+          seedRows = JSON.parse(fs.readFileSync(seedPath1, 'utf8'));
+        } else if (fs.existsSync(seedPath2)) {
+          seedRows = JSON.parse(fs.readFileSync(seedPath2, 'utf8'));
+        }
+
+        if (Array.isArray(seedRows) && seedRows.length > 0) {
+          const valueRows = [];
+          const queryParams = [];
+          let paramIdx = 1;
+
+          for (const r of seedRows) {
+            valueRows.push(`(
+              $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+              $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
+              $${paramIdx++}, $${paramIdx++}, NOW(), NOW()
+            )`);
+            queryParams.push(
+              r.period, r.category, r.program, r.trainee_id, r.trainee_name,
+              r.membership_status, r.level, r.house, r.class_name, r.branch,
+              r.total_gold, r.ranking
+            );
+          }
+
+          if (valueRows.length > 0) {
+            await db.query(`
+              INSERT INTO gold_point_rankings (
+                period, category, program, trainee_id, trainee_name,
+                membership_status, level, house, class_name, branch,
+                total_gold, ranking, created_at, updated_at
+              )
+              VALUES ${valueRows.join(',')}
+              ON CONFLICT (period, category, program, trainee_id) DO NOTHING;
+            `, queryParams);
+            console.log(`✅ Auto-populated ${seedRows.length} seed rows into gold_point_rankings!`);
+          }
         }
       } catch (popErr) {
         console.error('⚠️ Auto-population gold_point_rankings failed:', popErr.message);
