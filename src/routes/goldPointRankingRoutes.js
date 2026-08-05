@@ -7,7 +7,7 @@ router.get('/', async (req, res) => {
   try {
     const { period, branch, program, trainee_id, search, page = 1, limit = 100 } = req.query;
 
-    let query = `SELECT * FROM gold_point_ranking`;
+    let query = `SELECT * FROM gold_point_rankings`;
     const conditions = [];
     const params = [];
 
@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
 
     query += ` ORDER BY ranking ASC, total_gold DESC, id ASC`;
 
-    const countResult = await db.query(`SELECT COUNT(*) FROM gold_point_ranking` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : ''), params);
+    const countResult = await db.query(`SELECT COUNT(*) FROM gold_point_rankings` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : ''), params);
     const totalItems = parseInt(countResult.rows[0].count, 10);
 
     if (req.query.all === 'true' || limit === '0') {
@@ -79,7 +79,7 @@ router.get('/', async (req, res) => {
     console.error('[GoldPointRanking] GET Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Gagal mengambil data gold_point_ranking',
+      message: 'Gagal mengambil data gold_point_rankings',
       error: error.message
     });
   }
@@ -89,7 +89,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await db.query(`SELECT * FROM gold_point_ranking WHERE id = $1`, [id]);
+    const result = await db.query(`SELECT * FROM gold_point_rankings WHERE id = $1`, [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -106,7 +106,7 @@ router.get('/:id', async (req, res) => {
     console.error('[GoldPointRanking] GET Single Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Gagal mengambil detail data gold_point_ranking',
+      message: 'Gagal mengambil detail data gold_point_rankings',
       error: error.message
     });
   }
@@ -130,7 +130,7 @@ router.post('/', async (req, res) => {
     } = req.body;
 
     const result = await db.query(`
-      INSERT INTO gold_point_ranking (
+      INSERT INTO gold_point_rankings (
         period, trainee_id, trainee_name, membership_status, level, house,
         class_name, branch, program, total_gold, ranking, created_at, updated_at
       )
@@ -152,14 +152,14 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Data gold_point_ranking berhasil ditambahkan',
+      message: 'Data gold_point_rankings berhasil ditambahkan',
       data: result.rows[0]
     });
   } catch (error) {
     console.error('[GoldPointRanking] POST Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Gagal menambahkan data gold_point_ranking',
+      message: 'Gagal menambahkan data gold_point_rankings',
       error: error.message
     });
   }
@@ -179,7 +179,7 @@ router.post('/bulk', async (req, res) => {
     const insertedRows = [];
     for (const r of records) {
       const result = await db.query(`
-        INSERT INTO gold_point_ranking (
+        INSERT INTO gold_point_rankings (
           period, trainee_id, trainee_name, membership_status, level, house,
           class_name, branch, program, total_gold, ranking, created_at, updated_at
         )
@@ -203,7 +203,7 @@ router.post('/bulk', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: `Berhasil menambahkan ${insertedRows.length} data gold_point_ranking`,
+      message: `Berhasil menambahkan ${insertedRows.length} data gold_point_rankings`,
       totalInserted: insertedRows.length,
       data: insertedRows
     });
@@ -211,7 +211,7 @@ router.post('/bulk', async (req, res) => {
     console.error('[GoldPointRanking] Bulk POST Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Gagal memproses bulk insert gold_point_ranking',
+      message: 'Gagal memproses bulk insert gold_point_rankings',
       error: error.message
     });
   }
@@ -236,7 +236,7 @@ router.put('/:id', async (req, res) => {
     } = req.body;
 
     const result = await db.query(`
-      UPDATE gold_point_ranking
+      UPDATE gold_point_rankings
       SET
         period = COALESCE($1, period),
         trainee_id = COALESCE($2, trainee_id),
@@ -270,20 +270,20 @@ router.put('/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `Data gold_point_ranking dengan ID ${id} tidak ditemukan`
+        message: `Data gold_point_rankings dengan ID ${id} tidak ditemukan`
       });
     }
 
     res.json({
       success: true,
-      message: 'Data gold_point_ranking berhasil diperbarui',
+      message: 'Data gold_point_rankings berhasil diperbarui',
       data: result.rows[0]
     });
   } catch (error) {
     console.error('[GoldPointRanking] PUT Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Gagal memperbarui data gold_point_ranking',
+      message: 'Gagal memperbarui data gold_point_rankings',
       error: error.message
     });
   }
@@ -293,7 +293,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await db.query(`DELETE FROM gold_point_ranking WHERE id = $1 RETURNING *`, [id]);
+    const result = await db.query(`DELETE FROM gold_point_rankings WHERE id = $1 RETURNING *`, [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({

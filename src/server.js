@@ -418,25 +418,27 @@ const { getDbMetrics } = require('./db/neonClient');
       ALTER TABLE report_trainee DROP COLUMN IF EXISTS link_to_report_4 CASCADE;
       CREATE INDEX IF NOT EXISTS idx_report_trainee_trainee_id ON report_trainee(trainee_id);
 
-      -- Create gold_point_ranking table
-      CREATE TABLE IF NOT EXISTS gold_point_ranking (
+      -- Create gold_point_rankings table
+      CREATE TABLE IF NOT EXISTS gold_point_rankings (
         id SERIAL PRIMARY KEY,
-        period VARCHAR(100),
-        trainee_id VARCHAR(255),
+        period VARCHAR(100) NOT NULL,
+        category VARCHAR(100) NOT NULL,
+        program VARCHAR(100) NOT NULL,
+        trainee_id VARCHAR(255) NOT NULL,
         trainee_name VARCHAR(255),
         membership_status VARCHAR(100),
         level VARCHAR(100),
         house VARCHAR(100),
         class_name VARCHAR(255),
         branch VARCHAR(100),
-        program VARCHAR(255),
         total_gold INT DEFAULT 0,
         ranking INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT unique_period_category_program_trainee UNIQUE (period, category, program, trainee_id)
       );
-      CREATE INDEX IF NOT EXISTS idx_gold_point_ranking_trainee_id ON gold_point_ranking(trainee_id);
-      CREATE INDEX IF NOT EXISTS idx_gold_point_ranking_period ON gold_point_ranking(period);
+      CREATE INDEX IF NOT EXISTS idx_gold_point_rankings_trainee_id ON gold_point_rankings(trainee_id);
+      CREATE INDEX IF NOT EXISTS idx_gold_point_rankings_period ON gold_point_rankings(period);
     `);
 
     console.log('✅ Database schema and performance indexes updated successfully.');
@@ -452,6 +454,20 @@ const { getDbMetrics } = require('./db/neonClient');
         }
       } catch (popErr) {
         console.error('⚠️ Auto-population failed:', popErr.message);
+      }
+    }
+
+    // Auto-populate gold_point_rankings if table is empty
+    const checkGpCount = await db.query('SELECT COUNT(*) FROM gold_point_rankings');
+    if (parseInt(checkGpCount.rows[0].count, 10) === 0) {
+      console.log('⚡ gold_point_rankings table is empty. Auto-populating data...');
+      try {
+        const repopulateGpScript = path.join(__dirname, '..', 'scripts', 'repopulate_gold_point_rankings.js');
+        if (require('fs').existsSync(repopulateGpScript)) {
+          require(repopulateGpScript);
+        }
+      } catch (popErr) {
+        console.error('⚠️ Auto-population gold_point_rankings failed:', popErr.message);
       }
     }
   } catch (err) {
