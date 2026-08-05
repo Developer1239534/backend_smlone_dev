@@ -476,10 +476,13 @@ app.use('/api/gold-poin-setahun', goldPoinSetahunRoutes);
 app.use('/api/gold_poin_setahun', goldPoinSetahunRoutes);
 app.use('/api/gold-point-setahun', goldPoinSetahunRoutes);
 app.use('/api/gold_point_setahun', goldPoinSetahunRoutes);
+app.use('/api/gold-points-tahunan', goldPoinSetahunRoutes);
+app.use('/api/gold_points_tahunan', goldPoinSetahunRoutes);
 app.use('/api/gold-point-yearly', goldPoinSetahunRoutes);
 app.use('/api/gold_point_yearly', goldPoinSetahunRoutes);
 app.use('/gold-poin-setahun', goldPoinSetahunRoutes);
 app.use('/gold-point-setahun', goldPoinSetahunRoutes);
+app.use('/gold-points-tahunan', goldPoinSetahunRoutes);
 
 app.use('/api/goldpoint-trainee', goldPointRankingRoutes);
 app.use('/api/goldpoint_trainee', goldPointRankingRoutes);
