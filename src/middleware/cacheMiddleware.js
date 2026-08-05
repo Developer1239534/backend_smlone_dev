@@ -90,16 +90,19 @@ const cacheMiddleware = (ttlSeconds = 300) => {
         const bodyStr = JSON.stringify(body);
         const bodySize = Buffer.byteLength(bodyStr);
 
-        memoryStore.set(key, {
-          body,
-          etag,
-          bodySize,
-          expiresAt: Date.now() + ttlSeconds * 1000,
-        });
+        const isEmptyData = body && Array.isArray(body.data) && body.data.length === 0;
+        if (!isEmptyData) {
+          memoryStore.set(key, {
+            body,
+            etag,
+            bodySize,
+            expiresAt: Date.now() + ttlSeconds * 1000,
+          });
+        }
 
         res.setHeader('Cache-Control', `public, max-age=${ttlSeconds}, must-revalidate`);
         res.setHeader('ETag', etag);
-        res.setHeader('X-Cache', 'MISS');
+        res.setHeader('X-Cache', isEmptyData ? 'BYPASS' : 'MISS');
 
         resolveInFlight({ status: res.statusCode, body, etag });
       } else {
