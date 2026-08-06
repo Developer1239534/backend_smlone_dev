@@ -104,40 +104,7 @@ const { getDbMetrics } = require('./db/neonClient');
 
 
 
-    // Create profile_trainee table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS profile_trainee (
-        trainee_id VARCHAR(50) PRIMARY KEY,
-        name VARCHAR(255),
-        program VARCHAR(100),
-        class VARCHAR(100),
-        level VARCHAR(100),
-        membership_expired_date DATE,
-        latest_speaking_project VARCHAR(255),
-        weekly_report_url TEXT,
-        quarterly_report_url TEXT,
-        real_stage_report_url TEXT,
-        referral_code VARCHAR(100),
-        progress_video_url TEXT,
-        gender VARCHAR(20),
-        date_of_birth DATE,
-        school_name VARCHAR(255),
-        branch_id VARCHAR(50),
-        first_enroll DATE,
-        newest_grade VARCHAR(100),
-        trainee_homeroom VARCHAR(100),
-        screening_test_url TEXT,
-        speaking_project_to_next_level VARCHAR(255),
-        last_life_project_date DATE,
-        last_life_project VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      ALTER TABLE profile_trainee ADD COLUMN IF NOT EXISTS quarterly_report_url TEXT;
-      ALTER TABLE profile_trainee ADD COLUMN IF NOT EXISTS real_stage_report_url TEXT;
-      ALTER TABLE profile_trainee ADD COLUMN IF NOT EXISTS branch_id VARCHAR(50);
-      CREATE INDEX IF NOT EXISTS idx_profile_trainee_branch_id ON profile_trainee(branch_id);
-    `);
+    await db.query('DROP TABLE IF EXISTS profile_trainee CASCADE');
 
     // Create login_portal_fix table if it doesn't exist
     await db.query(`
