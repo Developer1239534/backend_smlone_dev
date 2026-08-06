@@ -26,25 +26,33 @@ router.get('/', async (req, res) => {
       );
     `).catch(() => null);
 
-    const { period, branch, program, trainee_id, search, page = 1, limit = 100 } = req.query;
+    const { period, category, branch, cabang, program, kategori, junior_youth, trainee_id, search, page = 1, limit = 100 } = req.query;
 
     let query = `SELECT * FROM gold_point_rankings`;
     const conditions = [];
     const params = [];
 
+    // Filter by period
     if (period) {
       params.push(period);
       conditions.push(`period = $${params.length}`);
     }
 
-    if (branch) {
-      params.push(branch);
-      conditions.push(`branch = $${params.length}`);
+    // Filter by category / branch
+    const targetCategory = category || branch || cabang;
+    if (targetCategory && targetCategory.toUpperCase() !== 'ALL' && targetCategory.toUpperCase() !== 'ALL BRANCH') {
+      params.push(targetCategory);
+      conditions.push(`category = $${params.length}`);
+    } else if (targetCategory && (targetCategory.toUpperCase() === 'ALL BRANCH')) {
+      params.push('ALL BRANCH');
+      conditions.push(`category = $${params.length}`);
     }
 
-    if (program) {
-      params.push(program);
-      conditions.push(`program = $${params.length}`);
+    // Filter by program / junior_youth / kategori
+    const targetProgram = program || kategori || junior_youth;
+    if (targetProgram && targetProgram.toUpperCase() !== 'ALL') {
+      params.push(targetProgram);
+      conditions.push(`program ILIKE $${params.length}`);
     }
 
     if (trainee_id) {
@@ -54,7 +62,7 @@ router.get('/', async (req, res) => {
 
     if (search) {
       params.push(`%${search}%`);
-      conditions.push(`(trainee_id ILIKE $${params.length} OR trainee_name ILIKE $${params.length} OR class_name ILIKE $${params.length} OR house ILIKE $${params.length})`);
+      conditions.push(`(trainee_id ILIKE $${params.length} OR trainee_name ILIKE $${params.length} OR class_name ILIKE $${params.length} OR house ILIKE $${params.length} OR branch ILIKE $${params.length})`);
     }
 
     if (conditions.length > 0) {
