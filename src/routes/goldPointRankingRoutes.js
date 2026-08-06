@@ -182,22 +182,37 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/gold-point-ranking/:id - Single item
+// GET /api/gold-point-ranking/:id - Single item by primary key id or trainee_id
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await db.query(`SELECT * FROM gold_point_rankings WHERE id = $1`, [id]);
+    const cleanId = String(id).trim();
+    const result = await db.query(`SELECT * FROM gold_point_rankings WHERE id::text = $1 OR trainee_id = $1`, [cleanId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: `Data ranking dengan ID ${id} tidak ditemukan`
+        message: `Data ranking dengan ID ${cleanId} tidak ditemukan`
       });
     }
 
+    const r = result.rows[0];
+    const formatted = {
+      ...r,
+      nama_trainee: r.trainee_name,
+      class: r.class_name,
+      nama_kelas: r.class_name,
+      status: r.membership_status,
+      total_gold_periode: r.total_gold,
+      gp_month: r.total_gold,
+      rank: r.ranking,
+      kategori: r.program,
+      junior_youth: r.program
+    };
+
     res.json({
       success: true,
-      data: result.rows[0]
+      data: formatted
     });
   } catch (error) {
     console.error('[GoldPointRanking] GET Single Error:', error);
