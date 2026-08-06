@@ -1,7 +1,7 @@
 [
   {
     "id": "1015",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -47,7 +47,7 @@
   },
   {
     "id": "1022",
-    "class_name": "Newton (Tue 4-6)",
+    "class_name": "Newton",
     "day": "Tuesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -70,7 +70,7 @@
   },
   {
     "id": "1025",
-    "class_name": "Winfrey (Thursday 4-6)",
+    "class_name": "Winfrey",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Chesterfield",
@@ -116,7 +116,7 @@
   },
   {
     "id": "1029",
-    "class_name": "Winfrey (Thursday 4-6)",
+    "class_name": "Winfrey",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Chesterfield",
@@ -139,7 +139,7 @@
   },
   {
     "id": "1031",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -346,7 +346,7 @@
   },
   {
     "id": "1044",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -369,7 +369,7 @@
   },
   {
     "id": "1045",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -553,7 +553,7 @@
   },
   {
     "id": "1074",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -576,7 +576,7 @@
   },
   {
     "id": "1077",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -622,7 +622,7 @@
   },
   {
     "id": "1079",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -645,7 +645,7 @@
   },
   {
     "id": "1080",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -668,7 +668,7 @@
   },
   {
     "id": "1086",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -760,7 +760,7 @@
   },
   {
     "id": "1104",
-    "class_name": "Galileo (Wed 4-6)",
+    "class_name": "Galileo",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Osborne",
@@ -852,7 +852,7 @@
   },
   {
     "id": "1125",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -898,7 +898,7 @@
   },
   {
     "id": "1130",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -944,7 +944,7 @@
   },
   {
     "id": "1134",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -990,7 +990,7 @@
   },
   {
     "id": "1137",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -1220,7 +1220,7 @@
   },
   {
     "id": "1155",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -1243,7 +1243,7 @@
   },
   {
     "id": "1161",
-    "class_name": "Galileo (Wed 4-6)",
+    "class_name": "Galileo",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Osborne",
@@ -1358,7 +1358,7 @@
   },
   {
     "id": "1177",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -1565,7 +1565,7 @@
   },
   {
     "id": "1193",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -2002,7 +2002,7 @@
   },
   {
     "id": "149",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -2025,7 +2025,7 @@
   },
   {
     "id": "285",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -2048,7 +2048,7 @@
   },
   {
     "id": "429",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -2071,7 +2071,7 @@
   },
   {
     "id": "482",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -2163,7 +2163,7 @@
   },
   {
     "id": "613",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -2278,7 +2278,7 @@
   },
   {
     "id": "670",
-    "class_name": "Newton (Tue 4-6)",
+    "class_name": "Newton",
     "day": "Tuesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -2301,7 +2301,7 @@
   },
   {
     "id": "676",
-    "class_name": "Galileo (Wed 4-6)",
+    "class_name": "Galileo",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Osborne",
@@ -2347,7 +2347,7 @@
   },
   {
     "id": "680",
-    "class_name": "Galileo (Wed 4-6)",
+    "class_name": "Galileo",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Osborne",
@@ -2370,7 +2370,7 @@
   },
   {
     "id": "683",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -2393,7 +2393,7 @@
   },
   {
     "id": "686",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -2807,7 +2807,7 @@
   },
   {
     "id": "70100113",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -3612,7 +3612,7 @@
   },
   {
     "id": "716",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -3704,7 +3704,7 @@
   },
   {
     "id": "741",
-    "class_name": "Galileo (Wed 4-6)",
+    "class_name": "Galileo",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Osborne",
@@ -3727,7 +3727,7 @@
   },
   {
     "id": "745",
-    "class_name": "Galileo (Wed 4-6)",
+    "class_name": "Galileo",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Osborne",
@@ -3750,7 +3750,7 @@
   },
   {
     "id": "751",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -3819,7 +3819,7 @@
   },
   {
     "id": "767",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -3842,7 +3842,7 @@
   },
   {
     "id": "779",
-    "class_name": "Winfrey (Thursday 4-6)",
+    "class_name": "Winfrey",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Chesterfield",
@@ -3888,7 +3888,7 @@
   },
   {
     "id": "803",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -3911,7 +3911,7 @@
   },
   {
     "id": "819",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -3934,7 +3934,7 @@
   },
   {
     "id": "845",
-    "class_name": "Newton (Tue 4-6)",
+    "class_name": "Newton",
     "day": "Tuesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -3980,7 +3980,7 @@
   },
   {
     "id": "852",
-    "class_name": "Galileo (Wed 4-6)",
+    "class_name": "Galileo",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Osborne",
@@ -4003,7 +4003,7 @@
   },
   {
     "id": "855",
-    "class_name": "Clinton (Fri 3-5)",
+    "class_name": "Clinton",
     "day": "Friday",
     "time": "15:00-17:00",
     "room": "Schomberg",
@@ -4026,7 +4026,7 @@
   },
   {
     "id": "857",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -4072,7 +4072,7 @@
   },
   {
     "id": "863",
-    "class_name": "Winfrey (Thursday 4-6)",
+    "class_name": "Winfrey",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Chesterfield",
@@ -4095,7 +4095,7 @@
   },
   {
     "id": "865",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -4118,7 +4118,7 @@
   },
   {
     "id": "866",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -4141,7 +4141,7 @@
   },
   {
     "id": "867",
-    "class_name": "Winfrey (Thursday 4-6)",
+    "class_name": "Winfrey",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Chesterfield",
@@ -4279,7 +4279,7 @@
   },
   {
     "id": "889",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -4302,7 +4302,7 @@
   },
   {
     "id": "896",
-    "class_name": "Galileo (Wed 4-6)",
+    "class_name": "Galileo",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Osborne",
@@ -5475,7 +5475,7 @@
   },
   {
     "id": "904",
-    "class_name": "Galileo (Wed 4-6)",
+    "class_name": "Galileo",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Osborne",
@@ -5498,7 +5498,7 @@
   },
   {
     "id": "911",
-    "class_name": "Galileo (Wed 4-6)",
+    "class_name": "Galileo",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Osborne",
@@ -5521,7 +5521,7 @@
   },
   {
     "id": "913",
-    "class_name": "Newton (Tue 4-6)",
+    "class_name": "Newton",
     "day": "Tuesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -5544,7 +5544,7 @@
   },
   {
     "id": "929",
-    "class_name": "Newton (Tue 4-6)",
+    "class_name": "Newton",
     "day": "Tuesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -5613,7 +5613,7 @@
   },
   {
     "id": "939",
-    "class_name": "Winfrey (Thursday 4-6)",
+    "class_name": "Winfrey",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Chesterfield",
@@ -5636,7 +5636,7 @@
   },
   {
     "id": "945",
-    "class_name": "Newton (Tue 4-6)",
+    "class_name": "Newton",
     "day": "Tuesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -5682,7 +5682,7 @@
   },
   {
     "id": "948",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -5774,7 +5774,7 @@
   },
   {
     "id": "968",
-    "class_name": "Newton (Tue 4-6)",
+    "class_name": "Newton",
     "day": "Tuesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -5797,7 +5797,7 @@
   },
   {
     "id": "970",
-    "class_name": "Newton (Tue 4-6)",
+    "class_name": "Newton",
     "day": "Tuesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -5843,7 +5843,7 @@
   },
   {
     "id": "986",
-    "class_name": "Newton (Tue 4-6)",
+    "class_name": "Newton",
     "day": "Tuesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -5889,7 +5889,7 @@
   },
   {
     "id": "991",
-    "class_name": "Tracy (Sat 4-6)",
+    "class_name": "Tracy",
     "day": "Wednesday",
     "time": "16:00-18:00",
     "room": "Schomberg",
@@ -5935,7 +5935,7 @@
   },
   {
     "id": "996",
-    "class_name": "Grande (Thu 4-6 PM)",
+    "class_name": "Grande",
     "day": "Thursday",
     "time": "16:00-18:00",
     "room": "Schomberg",
