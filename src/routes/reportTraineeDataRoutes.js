@@ -112,6 +112,8 @@ router.get('/:id', async (req, res) => {
       }
     });
   }
+});
+
 // Dummy handlers to prevent 500 errors if called
 router.post('/', (req, res) => res.json({ success: true, message: 'OK' }));
 router.put('/:id', (req, res) => res.json({ success: true, message: 'OK' }));
