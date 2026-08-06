@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PERIOD_START = '1 Jan 2026';
-const PERIOD_END = '31 Dec 2026';
+const PERIOD_END = '31 Aug 2026';
 
 // Helper to ensure table exists & auto-seed if empty
 async function ensureTableAndSeed() {
