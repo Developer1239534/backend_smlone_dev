@@ -139,8 +139,8 @@ const { getDbMetrics } = require('./db/neonClient');
     `);
 
     // Auto-seed login_portalllll if empty
-    const checkCount = await db.query('SELECT COUNT(*) FROM login_portalllll;');
-    if (parseInt(checkCount.rows[0].count, 10) === 0) {
+    const checkLpCount = await db.query('SELECT COUNT(*) FROM login_portalllll;');
+    if (parseInt(checkLpCount.rows[0].count, 10) === 0) {
       console.log('🌱 Seeding login_portalllll initial 630 trainees...');
       const seedData = require('./routes/seed_login_portalllll.json');
       for (const row of seedData) {
@@ -180,6 +180,7 @@ const { getDbMetrics } = require('./db/neonClient');
       console.log('✅ Auto-seeded login_portalllll successfully!');
     }
 
+    await db.query(`
       -- Create report_activity table
       CREATE TABLE IF NOT EXISTS report_activity (
         trainee_id VARCHAR(100) PRIMARY KEY,
