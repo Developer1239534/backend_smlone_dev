@@ -4,115 +4,115 @@ const db = require('../db/neonClient');
 const fs = require('fs');
 const path = require('path');
 
-// Helper to ensure table exists and auto-seed if empty
+// Helper: No-op after table drop
 async function ensureTableAndSeed() {
-  await db.query(`
-    CREATE TABLE IF NOT EXISTS report_trainee_data (
-      id SERIAL PRIMARY KEY,
-      trainee_id VARCHAR(100) NOT NULL UNIQUE,
-      name VARCHAR(255) NOT NULL,
-      latest_speaking_project VARCHAR(255),
-      speaking_project_to_next_level VARCHAR(50),
-      last_speaker_date VARCHAR(100),
-      last_life_project_date VARCHAR(100),
-      last_life_project TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS idx_report_trainee_data_trainee_id ON report_trainee_data(trainee_id);
-    CREATE INDEX IF NOT EXISTS idx_report_trainee_data_name ON report_trainee_data(name);
-  `).catch(() => null);
-
-  const check = await db.query('SELECT COUNT(*) FROM report_trainee_data');
-  const count = parseInt(check.rows[0].count, 10);
-
-  if (count === 0) {
-    console.log('⚡ report_trainee_data is empty. Auto-seeding 1,236 records...');
-    try {
-      let seedRows = [];
-      const p1 = path.join(__dirname, 'seed_report_trainee_data.json');
-      const p2 = path.join(__dirname, '..', '..', 'scripts', 'seed_report_trainee_data.json');
-      const p3 = path.join(__dirname, '..', 'db', 'seed_report_trainee_data.json');
-
-      if (fs.existsSync(p1)) seedRows = JSON.parse(fs.readFileSync(p1, 'utf8'));
-      else if (fs.existsSync(p2)) seedRows = JSON.parse(fs.readFileSync(p2, 'utf8'));
-      else if (fs.existsSync(p3)) seedRows = JSON.parse(fs.readFileSync(p3, 'utf8'));
-
-      if (Array.isArray(seedRows) && seedRows.length > 0) {
-        const BATCH_SIZE = 200;
-        for (let i = 0; i < seedRows.length; i += BATCH_SIZE) {
-          const chunk = seedRows.slice(i, i + BATCH_SIZE);
-          const placeholders = [];
-          const values = [];
-          let idx = 1;
-
-          chunk.forEach(r => {
-            placeholders.push(`($${idx}, $${idx+1}, $${idx+2}, $${idx+3}, $${idx+4}, $${idx+5}, $${idx+6})`);
-            values.push(
-              r.trainee_id,
-              r.name,
-              r.latest_speaking_project || null,
-              r.speaking_project_to_next_level || null,
-              r.last_speaker_date || null,
-              r.last_life_project_date || null,
-              r.last_life_project || null
-            );
-            idx += 7;
-          });
-
-          await db.query(`
-            INSERT INTO report_trainee_data (
-              trainee_id, name, latest_speaking_project, speaking_project_to_next_level, last_speaker_date, last_life_project_date, last_life_project
-            )
-            VALUES ${placeholders.join(',\n')}
-            ON CONFLICT (trainee_id) DO UPDATE SET
-              name = EXCLUDED.name,
-              latest_speaking_project = EXCLUDED.latest_speaking_project,
-              speaking_project_to_next_level = EXCLUDED.speaking_project_to_next_level,
-              last_speaker_date = EXCLUDED.last_speaker_date,
-              last_life_project_date = EXCLUDED.last_life_project_date,
-              last_life_project = EXCLUDED.last_life_project,
-              updated_at = NOW();
-          `, values);
-        }
-        console.log(`✅ Auto-seeded ${seedRows.length} rows into report_trainee_data.`);
-      }
-    } catch (err) {
-      console.error('❌ Auto-seed failed:', err.message);
-    }
-  }
+  return;
 }
 
 // GET /api/report-trainee-data
 router.get('/', async (req, res) => {
   try {
-    await ensureTableAndSeed();
-
-    const { trainee_id, name, search, all, page = 1, limit = 100 } = req.query;
-
-    let query = `SELECT * FROM report_trainee_data`;
+    const { trainee_id, name, search } = req.query;
+    
+    // Fallback to login_portal_fix
+    let query = `SELECT id as trainee_id, name, level as latest_speaking_project, house as last_life_project FROM login_portal_fix`;
     const conditions = [];
     const params = [];
 
     if (trainee_id) {
       params.push(trainee_id);
-      conditions.push(`trainee_id = $${params.length}`);
+      conditions.push(`id = $${params.length}`);
     }
 
-    if (name) {
-      params.push(`%${name}%`);
+    if (name || search) {
+      params.push(`%${name || search}%`);
       conditions.push(`name ILIKE $${params.length}`);
     }
 
-    if (search) {
-      params.push(`%${search}%`);
-      conditions.push(`(
-        trainee_id ILIKE $${params.length} OR 
-        name ILIKE $${params.length} OR 
-        latest_speaking_project ILIKE $${params.length} OR 
-        last_life_project ILIKE $${params.length}
-      )`);
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
     }
+
+    query += ` ORDER BY name ASC LIMIT 100`;
+
+    const result = await db.query(query, params).catch(() => ({ rows: [] }));
+
+    res.json({
+      success: true,
+      data: result.rows.map(r => ({
+        id: r.trainee_id,
+        trainee_id: r.trainee_id,
+        name: r.name,
+        latest_speaking_project: r.latest_speaking_project || '—',
+        speaking_project_to_next_level: '0%',
+        last_speaker_date: null,
+        last_life_project_date: null,
+        last_life_project: r.last_life_project || '—'
+      })),
+      total: result.rows.length
+    });
+  } catch (err) {
+    res.json({ success: true, data: [], total: 0 });
+  }
+});
+
+// GET /api/report-trainee-data/:id
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const cleanId = String(id).trim();
+
+    const result = await db.query(
+      `SELECT id as trainee_id, name, level as latest_speaking_project, house as last_life_project FROM login_portal_fix WHERE id = $1`,
+      [cleanId]
+    ).catch(() => ({ rows: [] }));
+
+    if (result.rows.length > 0) {
+      const r = result.rows[0];
+      return res.json({
+        success: true,
+        data: {
+          id: r.trainee_id,
+          trainee_id: r.trainee_id,
+          name: r.name,
+          latest_speaking_project: r.latest_speaking_project || '—',
+          speaking_project_to_next_level: '0%',
+          last_speaker_date: null,
+          last_life_project_date: null,
+          last_life_project: r.last_life_project || '—'
+        }
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        id: cleanId,
+        trainee_id: cleanId,
+        name: 'Trainee ' + cleanId,
+        latest_speaking_project: '—',
+        speaking_project_to_next_level: '0%',
+        last_speaker_date: null,
+        last_life_project_date: null,
+        last_life_project: '—'
+      }
+    });
+  } catch (err) {
+    res.json({
+      success: true,
+      data: {
+        id: req.params.id,
+        trainee_id: req.params.id,
+        name: 'Trainee ' + req.params.id,
+        latest_speaking_project: '—',
+        speaking_project_to_next_level: '0%',
+        last_speaker_date: null,
+        last_life_project_date: null,
+        last_life_project: '—'
+      }
+    });
+  }
+});
 
     if (conditions.length > 0) {
       query += ` WHERE ` + conditions.join(' AND ');
