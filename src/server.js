@@ -106,57 +106,79 @@ const { getDbMetrics } = require('./db/neonClient');
 
 
     await db.query('DROP TABLE IF EXISTS profile_trainee CASCADE');
-
     await db.query('DROP TABLE IF EXISTS login_portal_fix CASCADE');
+    await db.query('DROP TABLE IF EXISTS login_trainee CASCADE');
 
-    // Create login_trainee table
+    // Create login_portalllll table
     await db.query(`
-      CREATE TABLE IF NOT EXISTS login_trainee (
-        id BIGSERIAL PRIMARY KEY,
-        student_id VARCHAR(50) UNIQUE NOT NULL REFERENCES profile_trainee(trainee_id) ON DELETE CASCADE ON UPDATE CASCADE,
-        password VARCHAR(255) NOT NULL,
-        plain_password VARCHAR(255),
-        reset_token VARCHAR(255),
-        reset_token_expires TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE INDEX IF NOT EXISTS idx_login_trainee_student_id ON login_trainee(student_id);
-      CREATE INDEX IF NOT EXISTS idx_profile_trainee_class_name ON profile_trainee(class_name);
-      CREATE INDEX IF NOT EXISTS idx_profile_trainee_created_at ON profile_trainee(created_at);
-      CREATE INDEX IF NOT EXISTS idx_profile_trainee_updated_at ON profile_trainee(updated_at);
-      CREATE INDEX IF NOT EXISTS idx_registrasi_ca_created_at ON registrasi_ca(created_at);
-      CREATE INDEX IF NOT EXISTS idx_registrasi_cp_created_at ON registrasi_cp(created_at);
-      CREATE INDEX IF NOT EXISTS idx_registrasi_tr_created_at ON registrasi_tr(created_at);
-    `);
-
-    // Create profile_trainee table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS profile_trainee (
-        class_name VARCHAR(100),
+      CREATE TABLE IF NOT EXISTS login_portalllll (
+        id VARCHAR(100) PRIMARY KEY,
+        class_name VARCHAR(255),
         day VARCHAR(50),
         time VARCHAR(50),
         room VARCHAR(100),
         branch VARCHAR(100),
-        trainee_id VARCHAR(50),
-        name VARCHAR(255),
-        level VARCHAR(50),
-        newest_grade VARCHAR(50),
-        house VARCHAR(100),
+        name VARCHAR(255) NOT NULL,
+        level VARCHAR(100),
+        newest_grade VARCHAR(100),
+        house VARCHAR(255),
         house_role VARCHAR(100),
         trainee_homeroom VARCHAR(100),
         homeroom_kelas VARCHAR(100),
         trainer VARCHAR(100),
-        membership_status VARCHAR(50),
-        membership_expired_date DATE,
+        membership VARCHAR(100),
+        expiry_date DATE,
         first_enroll DATE,
-        raw_data JSONB,
+        password VARCHAR(255) NOT NULL,
+        plain_password VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-      CREATE INDEX IF NOT EXISTS idx_profile_trainee_trainee_id ON profile_trainee(trainee_id);
-      CREATE INDEX IF NOT EXISTS idx_profile_trainee_branch ON profile_trainee(branch);
-      CREATE INDEX IF NOT EXISTS idx_profile_trainee_class_name ON profile_trainee(class_name);
+      CREATE INDEX IF NOT EXISTS idx_login_portalllll_membership ON login_portalllll(membership);
+      CREATE INDEX IF NOT EXISTS idx_login_portalllll_branch ON login_portalllll(branch);
+    `);
+
+    // Auto-seed login_portalllll if empty
+    const checkCount = await db.query('SELECT COUNT(*) FROM login_portalllll;');
+    if (parseInt(checkCount.rows[0].count, 10) === 0) {
+      console.log('🌱 Seeding login_portalllll initial 630 trainees...');
+      const seedData = require('./routes/seed_login_portalllll.json');
+      for (const row of seedData) {
+        await db.query(`
+          INSERT INTO login_portalllll (
+            id, class_name, day, time, room, branch, name, level, newest_grade,
+            house, house_role, trainee_homeroom, homeroom_kelas, trainer,
+            membership, expiry_date, first_enroll, password, plain_password
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+          ON CONFLICT (id) DO UPDATE SET
+            name = EXCLUDED.name,
+            class_name = EXCLUDED.class_name,
+            day = EXCLUDED.day,
+            time = EXCLUDED.time,
+            room = EXCLUDED.room,
+            branch = EXCLUDED.branch,
+            level = EXCLUDED.level,
+            newest_grade = EXCLUDED.newest_grade,
+            house = EXCLUDED.house,
+            house_role = EXCLUDED.house_role,
+            trainee_homeroom = EXCLUDED.trainee_homeroom,
+            homeroom_kelas = EXCLUDED.homeroom_kelas,
+            trainer = EXCLUDED.trainer,
+            membership = EXCLUDED.membership,
+            expiry_date = EXCLUDED.expiry_date,
+            first_enroll = EXCLUDED.first_enroll,
+            password = EXCLUDED.password,
+            plain_password = EXCLUDED.plain_password,
+            updated_at = NOW();
+        `, [
+          row.id, row.class_name, row.day, row.time, row.room, row.branch, row.name,
+          row.level, row.newest_grade, row.house, row.house_role, row.trainee_homeroom,
+          row.homeroom_kelas, row.trainer, row.membership, row.expiry_date, row.first_enroll,
+          row.password, row.plain_password
+        ]);
+      }
+      console.log('✅ Auto-seeded login_portalllll successfully!');
+    }
 
       -- Create report_activity table
       CREATE TABLE IF NOT EXISTS report_activity (
