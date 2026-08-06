@@ -9,6 +9,13 @@ function cleanStr(v) {
   return str.length > 0 ? str : null;
 }
 
+// Helper to clean class_name by removing parenthetical schedules like (Fri 3-5)
+function cleanClassName(v) {
+  if (!v || v === 'null') return null;
+  const cleaned = String(v).replace(/\s*\([^)]*\)/g, '').trim();
+  return cleaned.length > 0 ? cleaned : null;
+}
+
 // Helper to format row from login_portalllll table
 function formatTrainee(row) {
   if (!row) return null;
@@ -17,8 +24,8 @@ function formatTrainee(row) {
   return {
     id: cleanId,
     trainee_id: cleanId,
-    class_name: cleanStr(row.class_name),
-    class: cleanStr(row.class_name),
+    class_name: cleanClassName(row.class_name),
+    class: cleanClassName(row.class_name),
     day: cleanStr(row.day),
     time: cleanStr(row.time),
     room: cleanStr(row.room),
