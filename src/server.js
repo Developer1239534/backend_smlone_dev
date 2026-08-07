@@ -113,7 +113,7 @@ const { getDbMetrics } = require('./db/neonClient');
     await db.query(`
       CREATE TABLE IF NOT EXISTS login_portalllll (
         id VARCHAR(100) PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
+        name VARCHAR(255),
         gender VARCHAR(50),
         date_of_birth DATE,
         nama_sekolah VARCHAR(255),
@@ -134,8 +134,8 @@ const { getDbMetrics } = require('./db/neonClient');
         prev_grade VARCHAR(100),
         ajy_by_class VARCHAR(100),
         last_real_stage VARCHAR(100),
-        password VARCHAR(255) NOT NULL,
-        plain_password VARCHAR(255) NOT NULL,
+        password VARCHAR(255),
+        plain_password VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
