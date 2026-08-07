@@ -177,7 +177,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'ID and Name are required' });
     }
 
-    const pass = String(password || plain_password || `SML${cleanId}`).trim();
+    const passVal = password ? String(password).trim() : `SML${cleanId}`;
+    const plainPassVal = plain_password ? String(plain_password).trim() : (password ? String(password).trim() : `SML${cleanId}`);
     const finalClassName = class_name || cls || null;
 
     const result = await db.query(`
@@ -220,7 +221,7 @@ router.post('/', async (req, res) => {
       membership || null, expiry_date || null, cabang_id || null, first_enroll || null, finalClassName,
       house || null, level || null, house_role || null, cabang_kelas || null, newest_grade || null, trainee_homeroom || null,
       screening_test || null, draft_grade || null, prev_grade || null, ajy_by_class || null, last_real_stage || null,
-      pass, pass
+      passVal, plainPassVal
     ]);
 
     res.json({
