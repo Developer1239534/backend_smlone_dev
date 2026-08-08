@@ -16,6 +16,16 @@ function cleanClassName(v) {
   return cleaned.length > 0 ? cleaned : null;
 }
 
+// Helper to convert Junior/Youth Program to Core/Orator Society Program
+function cleanProgramName(v) {
+  if (!v || v === 'null') return null;
+  const str = String(v).trim();
+  if (str.toLowerCase().includes('junior/youth')) {
+    return 'Core/Orator Society Program';
+  }
+  return str;
+}
+
 // Helper to format date into clean YYYY-MM-DD string without time/timezone
 function formatDateOnly(v) {
   if (!v || v === 'null') return null;
@@ -46,7 +56,7 @@ function formatTrainee(row) {
     gender: cleanStr(row.gender),
     date_of_birth: formatDateOnly(row.date_of_birth),
     nama_sekolah: cleanStr(row.nama_sekolah),
-    cleaned_program: cleanStr(row.cleaned_program),
+    cleaned_program: cleanProgramName(row.cleaned_program),
     membership: cleanStr(row.membership),
     expiry_date: formatDateOnly(row.expiry_date),
     cabang_id: cleanStr(row.cabang_id),
@@ -217,7 +227,7 @@ router.post('/', async (req, res) => {
         updated_at = NOW()
       RETURNING *;
     `, [
-      cleanId, name, gender || null, date_of_birth || null, nama_sekolah || null, cleaned_program || null,
+      cleanId, name, gender || null, date_of_birth || null, nama_sekolah || null, cleanProgramName(cleaned_program) || null,
       membership || null, expiry_date || null, cabang_id || null, first_enroll || null, finalClassName,
       house || null, level || null, house_role || null, cabang_kelas || null, newest_grade || null, trainee_homeroom || null,
       screening_test || null, draft_grade || null, prev_grade || null, ajy_by_class || null, last_real_stage || null,
