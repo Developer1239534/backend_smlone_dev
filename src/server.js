@@ -439,6 +439,16 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/feedbacks', feedbackRoutes);
+app.use('/api/sml-feedback', feedbackRoutes);
+app.use('/api/sml_feedback', feedbackRoutes);
+app.use('/api/trainee-feedback', feedbackRoutes);
+app.use('/api/student-feedback', feedbackRoutes);
+app.use('/api/coach-feedback', feedbackRoutes);
+app.use('/feedback', feedbackRoutes);
+app.use('/feedbacks', feedbackRoutes);
+
 app.use('/api/ranking-house', rankingHouseRoutes);
 app.use('/api/ranking_house', rankingHouseRoutes);
 app.use('/api/ranking-houses', rankingHouseRoutes);
@@ -470,16 +480,6 @@ app.use('/api/report-trainee-data', reportTraineeDataRoutes);
 app.use('/api/report_trainee_data', reportTraineeDataRoutes);
 app.use('/report-trainee-data', reportTraineeDataRoutes);
 app.use('/report_trainee_data', reportTraineeDataRoutes);
-
-app.use('/api/feedback', feedbackRoutes);
-app.use('/api/feedbacks', feedbackRoutes);
-app.use('/api/sml-feedback', feedbackRoutes);
-app.use('/api/sml_feedback', feedbackRoutes);
-app.use('/api/trainee-feedback', feedbackRoutes);
-app.use('/api/student-feedback', feedbackRoutes);
-app.use('/api/coach-feedback', feedbackRoutes);
-app.use('/feedback', feedbackRoutes);
-app.use('/feedbacks', feedbackRoutes);
 
 app.use('/api/goldpoint-trainee', goldPointRankingRoutes);
 app.use('/api/goldpoint_trainee', goldPointRankingRoutes);
