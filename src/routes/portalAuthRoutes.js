@@ -10,9 +10,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'smlone-portal-jwt-secret-2026';
 async function getOrCreateTraineeAccount(studentId) {
   const cleanId = String(studentId).trim();
 
-  // Check if trainee exists in login_portal_fix
+  // Check if trainee exists in login_portalllll
   const traineeRes = await db.query(
-    'SELECT * FROM login_portal_fix WHERE LOWER(id) = LOWER($1)',
+    'SELECT * FROM login_portalllll WHERE LOWER(id) = LOWER($1)',
     [cleanId]
   );
 

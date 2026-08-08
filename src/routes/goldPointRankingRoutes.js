@@ -208,8 +208,8 @@ router.get('/:id', async (req, res) => {
       return res.json({ success: true, data: formatted });
     }
 
-    // 2. Fallback to login_portal_fix
-    const fixResult = await db.query(`SELECT * FROM login_portal_fix WHERE id = $1`, [cleanId]).catch(() => ({ rows: [] }));
+    // 2. Fallback to login_portalllll
+    const fixResult = await db.query(`SELECT * FROM login_portalllll WHERE id = $1`, [cleanId]).catch(() => ({ rows: [] }));
     if (fixResult.rows.length > 0) {
       const r = fixResult.rows[0];
       const formatted = {

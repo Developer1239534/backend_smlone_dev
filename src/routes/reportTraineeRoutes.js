@@ -92,8 +92,8 @@ async function getSingleReportTrainee(req, res) {
       });
     }
 
-    // Search name in login_portal_fix for fallback
-    const fixResult = await db.query(`SELECT name FROM login_portal_fix WHERE id = $1`, [cleanId]).catch(() => ({ rows: [] }));
+    // Search name in login_portalllll for fallback
+    const fixResult = await db.query(`SELECT name FROM login_portalllll WHERE id = $1`, [cleanId]).catch(() => ({ rows: [] }));
     const nameFallback = fixResult.rows[0]?.name || 'Trainee ' + cleanId;
 
     // 200 OK Fallback to prevent 404 errors

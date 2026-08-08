@@ -12,7 +12,7 @@ async function getTraineeOrError(id, res) {
         lpf.id AS id_trainee,
         lpf.name AS trainee_name,
         lpf.name AS nama_trainee,
-        COALESCE(lpf.cleaned_program, 'Junior/Youth Program') AS program,
+        COALESCE(lpf.cleaned_program, 'Core/Orator Society Program') AS program,
         COALESCE(lpf.class, 'Gladwell') AS class,
         COALESCE(lpf.level, 'Sergeant') AS level,
         lpf.expiry_date AS membership_expiry,
@@ -31,7 +31,7 @@ async function getTraineeOrError(id, res) {
         COALESCE(lpf.wa_trainee, '-') AS phone,
         NULL AS weekly_report,
         NULL AS progress_video
-       FROM login_portal_fix lpf
+       FROM login_portalllll lpf
        WHERE lpf.id = $1`,
       [id]
     );

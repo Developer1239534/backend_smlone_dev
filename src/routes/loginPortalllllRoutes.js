@@ -16,7 +16,7 @@ function cleanClassName(v) {
   return cleaned.length > 0 ? cleaned : null;
 }
 
-// Helper to convert Junior/Youth Program to Core/Orator Society Program
+// Helper to convert Core/Orator Society Program to Core/Orator Society Program
 function cleanProgramName(v) {
   if (!v || v === 'null') return null;
   const str = String(v).trim();

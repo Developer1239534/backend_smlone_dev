@@ -73,7 +73,7 @@ router.get('/', async (req, res) => {
   try {
     const { search, cabang_id, class: classParam, house, level, all, page = 1, limit = 50 } = req.query;
 
-    let query = `SELECT * FROM login_portal_fix`;
+    let query = `SELECT * FROM login_portalllll`;
     const conditions = [];
     const params = [];
 
@@ -118,7 +118,7 @@ router.get('/', async (req, res) => {
     }
 
     // Count
-    let countQuery = `SELECT COUNT(*) FROM login_portal_fix`;
+    let countQuery = `SELECT COUNT(*) FROM login_portalllll`;
     if (conditions.length > 0) {
       countQuery += ` WHERE ` + conditions.join(' AND ');
     }
@@ -150,7 +150,7 @@ router.get('/', async (req, res) => {
     console.error('[LoginPortalFix] Fetch list error:', error);
     res.status(500).json({
       success: false,
-      message: 'Gagal mengambil data login_portal_fix',
+      message: 'Gagal mengambil data login_portalllll',
       error: error.message
     });
   }
@@ -170,7 +170,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const result = await db.query(`SELECT * FROM login_portal_fix WHERE LOWER(id) = LOWER($1)`, [cleanId]);
+    const result = await db.query(`SELECT * FROM login_portalllll WHERE LOWER(id) = LOWER($1)`, [cleanId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -243,7 +243,7 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     const cleanId = String(id || '').trim();
 
-    const result = await db.query(`SELECT * FROM login_portal_fix WHERE LOWER(id) = LOWER($1)`, [cleanId]);
+    const result = await db.query(`SELECT * FROM login_portalllll WHERE LOWER(id) = LOWER($1)`, [cleanId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -301,14 +301,14 @@ router.post('/', async (req, res) => {
     // Auto-generate password: SML + ID if not provided
     const password = body.password ? String(body.password).trim() : `SML${cleanId}`;
 
-    // Replace Junior/Youth Program -> Core/Orator Society
+    // Replace Core/Orator Society Program -> Core/Orator Society
     let cleaned_program = String(body.cleaned_program || body['Cleaned Program'] || '').trim();
-    if (cleaned_program === 'Junior/Youth Program') {
+    if (cleaned_program === 'Core/Orator Society Program') {
       cleaned_program = 'Core/Orator Society';
     }
 
     const query = `
-      INSERT INTO login_portal_fix (
+      INSERT INTO login_portalllll (
         id, name, password, gender, date_of_birth, nama_sekolah, cleaned_program,
         membership, expiry_date, cabang_id, first_enroll, class, house, level,
         house_role, cabang_kelas, newest_grade, trainee_homeroom,
@@ -393,7 +393,7 @@ const updateTraineeProfile = async (req, res) => {
     const emailVal = email !== undefined ? email : email_trainee;
 
     const result = await db.query(
-      `UPDATE login_portal_fix SET
+      `UPDATE login_portalllll SET
         nama_sekolah = COALESCE($1, nama_sekolah),
         wa_trainee = COALESCE($2, wa_trainee),
         wa_orang_tua = COALESCE($3, wa_orang_tua),
@@ -441,7 +441,7 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const cleanId = String(id || '').trim();
 
-    await db.query(`DELETE FROM login_portal_fix WHERE LOWER(id) = LOWER($1)`, [cleanId]);
+    await db.query(`DELETE FROM login_portalllll WHERE LOWER(id) = LOWER($1)`, [cleanId]);
     res.json({
       success: true,
       message: `Trainee ${cleanId} berhasil dihapus`

@@ -48,7 +48,7 @@ async function ensureTableAndSeed() {
         // Fetch trainee name map
         const nameMap = {};
         try {
-          const nameRes = await db.query('SELECT trainee_id, name FROM profile_trainee UNION SELECT id as trainee_id, name FROM login_portal_fix');
+          const nameRes = await db.query('SELECT trainee_id, name FROM profile_trainee UNION SELECT id as trainee_id, name FROM login_portalllll');
           nameRes.rows.forEach(r => {
             if (r.trainee_id && r.name) nameMap[r.trainee_id.trim()] = r.name.trim();
           });

@@ -14,8 +14,8 @@ router.get('/', async (req, res) => {
   try {
     const { trainee_id, name, search } = req.query;
     
-    // Fallback to login_portal_fix
-    let query = `SELECT id as trainee_id, name, level as latest_speaking_project, house as last_life_project FROM login_portal_fix`;
+    // Fallback to login_portalllll
+    let query = `SELECT id as trainee_id, name, level as latest_speaking_project, house as last_life_project FROM login_portalllll`;
     const conditions = [];
     const params = [];
 
@@ -63,7 +63,7 @@ router.get('/:id', async (req, res) => {
     const cleanId = String(id).trim();
 
     const result = await db.query(
-      `SELECT id as trainee_id, name, level as latest_speaking_project, house as last_life_project FROM login_portal_fix WHERE id = $1`,
+      `SELECT id as trainee_id, name, level as latest_speaking_project, house as last_life_project FROM login_portalllll WHERE id = $1`,
       [cleanId]
     ).catch(() => ({ rows: [] }));
 

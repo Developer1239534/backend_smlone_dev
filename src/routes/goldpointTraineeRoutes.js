@@ -35,7 +35,7 @@ const sendResponse = (res, statusCode, payload) => {
 async function ensureColumns() {
   try {
     await db.query(`
-      ALTER TABLE login_portal_fix 
+      ALTER TABLE login_portalllll 
       ADD COLUMN IF NOT EXISTS total_gold INT DEFAULT 0,
       ADD COLUMN IF NOT EXISTS gp_month INT DEFAULT 0,
       ADD COLUMN IF NOT EXISTS rank INT DEFAULT 0,
@@ -58,7 +58,7 @@ router.get('/', async (req, res) => {
         id,
         name AS nama_trainee,
         name AS trainee_name,
-        COALESCE(cleaned_program, 'Junior/Youth Program') AS status,
+        COALESCE(cleaned_program, 'Core/Orator Society Program') AS status,
         COALESCE(level, 'Sergeant') AS level,
         COALESCE(house, 'House of Creanova') AS house,
         COALESCE(class, 'Gladwell') AS class,
@@ -73,7 +73,7 @@ router.get('/', async (req, res) => {
         COALESCE(kategori, ajy_by_class, 'Junior') AS junior_youth,
         COALESCE(rank, 0) AS rank,
         updated_at
-      FROM login_portal_fix
+      FROM login_portalllll
       WHERE name IS NOT NULL 
         AND TRIM(name) != '' 
         AND LOWER(TRIM(name)) NOT IN ('trainee', 'youth', 'junior')
@@ -121,7 +121,7 @@ router.get('/', async (req, res) => {
       data: formattedData
     });
   } catch (err) {
-    console.error('Error fetching goldpoint data from login_portal_fix:', err);
+    console.error('Error fetching goldpoint data from login_portalllll:', err);
     return sendResponse(res, 200, {
       success: true,
       total: 0,
@@ -156,7 +156,7 @@ router.get('/:id', async (req, res) => {
         COALESCE(kategori, ajy_by_class, 'Junior') AS junior_youth,
         COALESCE(rank, 0) AS rank,
         updated_at
-      FROM login_portal_fix 
+      FROM login_portalllll 
       WHERE id = $1 AND name IS NOT NULL AND TRIM(name) != ''
     `, [id]);
 
@@ -210,7 +210,7 @@ router.post('/', async (req, res) => {
       if (!id || id === 'ID') continue;
 
       const result = await db.query(`
-        UPDATE login_portal_fix 
+        UPDATE login_portalllll 
         SET 
           total_gold = $2,
           gp_month = $3,
