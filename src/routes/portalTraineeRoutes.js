@@ -2,93 +2,93 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// Intercept any POST request sent to /api/portal-trainee (regardless of subpath like /goldpoint-trainee, /g, /, etc.)
+// Intercept any POST request sent to /api/portal-trainee
 router.use(async (req, res, next) => {
   if (req.method === 'POST') {
-  try {
-    let itemsToProcess = [];
-    if (Array.isArray(req.body)) {
-      itemsToProcess = req.body;
-    } else if (req.body && Array.isArray(req.body.daftar_siswa)) {
-      itemsToProcess = req.body.daftar_siswa;
-    } else if (req.body) {
-      itemsToProcess = [req.body];
-    }
+    try {
+      let itemsToProcess = [];
+      if (Array.isArray(req.body)) {
+        itemsToProcess = req.body;
+      } else if (req.body && Array.isArray(req.body.daftar_siswa)) {
+        itemsToProcess = req.body.daftar_siswa;
+      } else if (req.body) {
+        itemsToProcess = [req.body];
+      }
 
-    const updatedRecords = [];
+      const updatedRecords = [];
 
-    for (let idx = 0; idx < itemsToProcess.length; idx++) {
-      const item = itemsToProcess[idx];
-      const id = String(item.id || item.trainee_id || '').trim();
-      const name = String(item.nama_trainee || item.name || item.trainee_name || '').trim();
-      const status = item.status || 'Active';
-      const level = item.level || 'Sergeant';
-      const house = item.house || item.house_sml || 'House of Thenova';
-      const className = item.class || item.nama_kelas || 'Gladwell';
-      const branch = item.branch || item.cabang || 'TIMOR';
-      const totalGold = parseInt(item.total_gold || item.total_gold_periode || item.gp_month || '0') || 0;
-      const kategori = item.kategori || item.junior_youth || 'Junior';
-      let rank = parseInt(item.rank || '0') || (idx + 1);
+      for (let idx = 0; idx < itemsToProcess.length; idx++) {
+        const item = itemsToProcess[idx];
+        const id = String(item.id || item.trainee_id || '').trim();
+        const name = String(item.nama_trainee || item.name || item.trainee_name || '').trim();
+        const status = item.status || 'Active';
+        const level = item.level || 'Sergeant';
+        const house = item.house || item.house_sml || 'House of Thenova';
+        const className = item.class || item.nama_kelas || 'Gladwell';
+        const branch = item.branch || item.cabang || 'TIMOR';
+        const totalGold = parseInt(item.total_gold || item.total_gold_periode || item.gp_month || '0') || 0;
+        const kategori = item.kategori || item.junior_youth || 'Junior';
+        let rank = parseInt(item.rank || '0') || (idx + 1);
 
-      if (!id || !name || id === 'ID' || id === '2' || id === '5' || id === '6') continue;
+        if (!id || !name || id === 'ID' || id === '2' || id === '5' || id === '6') continue;
 
-      const queryText = `
-        INSERT INTO goldpoint_trainee 
-          (id, nama_trainee, status, level, house, class, branch, total_gold_periode, gp_month, kategori, rank, updated_at)
-        VALUES 
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
-        ON CONFLICT (id) 
-        DO UPDATE SET
-          nama_trainee = EXCLUDED.nama_trainee,
-          status = EXCLUDED.status,
-          level = EXCLUDED.level,
-          house = EXCLUDED.house,
-          class = EXCLUDED.class,
-          branch = EXCLUDED.branch,
-          total_gold_periode = EXCLUDED.total_gold_periode,
-          gp_month = EXCLUDED.gp_month,
-          kategori = EXCLUDED.kategori,
-          rank = EXCLUDED.rank,
-          updated_at = NOW()
-        RETURNING *;
-      `;
+        const queryText = `
+          INSERT INTO goldpoint_trainee 
+            (id, nama_trainee, status, level, house, class, branch, total_gold_periode, gp_month, kategori, rank, updated_at)
+          VALUES 
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+          ON CONFLICT (id) 
+          DO UPDATE SET
+            nama_trainee = EXCLUDED.nama_trainee,
+            status = EXCLUDED.status,
+            level = EXCLUDED.level,
+            house = EXCLUDED.house,
+            class = EXCLUDED.class,
+            branch = EXCLUDED.branch,
+            total_gold_periode = EXCLUDED.total_gold_periode,
+            gp_month = EXCLUDED.gp_month,
+            kategori = EXCLUDED.kategori,
+            rank = EXCLUDED.rank,
+            updated_at = NOW()
+          RETURNING *;
+        `;
 
-      const result = await db.query(queryText, [id, name, status, level, house, className, branch, totalGold, totalGold, kategori, rank]);
+        const result = await db.query(queryText, [id, name, status, level, house, className, branch, totalGold, totalGold, kategori, rank]);
 
-      // Connect & Sync with portal_trainee table
+        // Connect & Sync with profile_trainee table
+        await db.query(`
+          UPDATE profile_trainee 
+          SET name = $2, house = $3, class = $4, branch_id = $5
+          WHERE trainee_id = $1 OR id = $1
+        `, [id, name, house, className, branch]).catch(() => null);
+
+        updatedRecords.push(result.rows[0]);
+      }
+
+      // Auto-fix any 0 or null ranks in database
       await db.query(`
-        UPDATE portal_trainee 
-        SET name = $2, house = $3, class = $4, branch_id = $5
-        WHERE trainee_id = $1 OR id = $1
-      `, [id, name, house, className, branch]).catch(() => null);
+        WITH ranked AS (
+          SELECT id, ROW_NUMBER() OVER (
+            PARTITION BY kategori, branch 
+            ORDER BY total_gold_periode DESC, nama_trainee ASC
+          ) AS calculated_rank
+          FROM goldpoint_trainee
+        )
+        UPDATE goldpoint_trainee g
+        SET rank = r.calculated_rank
+        FROM ranked r
+        WHERE g.id = r.id AND (g.rank IS NULL OR g.rank = 0);
+      `).catch(() => null);
 
-      updatedRecords.push(result.rows[0]);
+      return res.json({
+        success: true,
+        count: updatedRecords.length,
+        data: updatedRecords
+      });
+    } catch (err) {
+      console.error('Error upserting goldpoint_trainee:', err);
+      return res.status(500).json({ success: false, message: err.message });
     }
-
-    // Auto-fix any 0 or null ranks in database
-    await db.query(`
-      WITH ranked AS (
-        SELECT id, ROW_NUMBER() OVER (
-          PARTITION BY kategori, branch 
-          ORDER BY total_gold_periode DESC, nama_trainee ASC
-        ) AS calculated_rank
-        FROM goldpoint_trainee
-      )
-      UPDATE goldpoint_trainee g
-      SET rank = r.calculated_rank
-      FROM ranked r
-      WHERE g.id = r.id AND (g.rank IS NULL OR g.rank = 0);
-    `).catch(() => null);
-
-    return res.json({
-      success: true,
-      count: updatedRecords.length,
-      data: updatedRecords
-    });
-  } catch (err) {
-    console.error('Error upserting goldpoint_trainee:', err);
-    return res.status(500).json({ success: false, message: err.message });
-  }
   }
   next();
 });
@@ -132,7 +132,7 @@ router.get('/', async (req, res) => {
   try {
     const { search, branch_id, level, program, class: classFilter, page = 1, limit = 20 } = req.query;
 
-    let query = `SELECT * FROM portal_trainee`;
+    let query = `SELECT * FROM profile_trainee`;
     const conditions = [];
     const params = [];
 
@@ -181,7 +181,7 @@ router.get('/', async (req, res) => {
     const sanitizedData = result.rows.map(sanitizeTraineeRecord);
 
     // Total count query
-    let countQuery = `SELECT COUNT(*) FROM portal_trainee`;
+    let countQuery = `SELECT COUNT(*) FROM profile_trainee`;
     if (conditions.length > 0) {
       countQuery += ` WHERE ` + conditions.join(' AND ');
     }
@@ -212,10 +212,10 @@ router.get('/', async (req, res) => {
 // GET /api/portal-trainee/stats/summary - Read-only summary statistics
 router.get('/stats/summary', async (req, res) => {
   try {
-    const totalRes = await db.query(`SELECT COUNT(*) FROM portal_trainee`);
-    const branchRes = await db.query(`SELECT branch_id, COUNT(*) as count FROM portal_trainee GROUP BY branch_id ORDER BY count DESC`);
-    const programRes = await db.query(`SELECT program, COUNT(*) as count FROM portal_trainee GROUP BY program ORDER BY count DESC`);
-    const levelRes = await db.query(`SELECT level, COUNT(*) as count FROM portal_trainee GROUP BY level ORDER BY count DESC`);
+    const totalRes = await db.query(`SELECT COUNT(*) FROM profile_trainee`);
+    const branchRes = await db.query(`SELECT branch_id, COUNT(*) as count FROM profile_trainee GROUP BY branch_id ORDER BY count DESC`);
+    const programRes = await db.query(`SELECT program, COUNT(*) as count FROM profile_trainee GROUP BY program ORDER BY count DESC`);
+    const levelRes = await db.query(`SELECT level, COUNT(*) as count FROM profile_trainee GROUP BY level ORDER BY count DESC`);
 
     res.json({
       success: true,
@@ -237,20 +237,155 @@ router.get('/stats/summary', async (req, res) => {
   }
 });
 
-// GET /api/portal-trainee/:id - Read-only: Get single trainee by trainee_id
-router.get('/:id', async (req, res) => {
+// GET /api/portal-trainee/:id/link-report - Real-time assigned link_report data for specific trainee
+router.get('/:id/link-report', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await db.query(`SELECT * FROM portal_trainee WHERE trainee_id = $1`, [id]);
+    const linkReports = await db.query(
+      `SELECT * FROM link_report WHERE trainee_id = $1 ORDER BY term DESC`,
+      [id]
+    );
 
-    if (result.rows.length === 0) {
+    res.json({
+      success: true,
+      read_only: true,
+      trainee_id: id,
+      total_reports: linkReports.rows.length,
+      data: linkReports.rows
+    });
+  } catch (error) {
+    console.error('[PortalTrainee] Link report error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil link report trainee',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/portal-trainee/:id/report-activity - Real-time assigned report_activity data for specific trainee
+router.get('/:id/report-activity', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const reportActivity = await db.query(
+      `SELECT * FROM report_activity WHERE trainee_id = $1`,
+      [id]
+    );
+
+    if (reportActivity.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Data trainee tidak ditemukan'
+        message: 'Report activity trainee tidak ditemukan'
       });
     }
 
+    res.json({
+      success: true,
+      read_only: true,
+      trainee_id: id,
+      data: reportActivity.rows[0]
+    });
+  } catch (error) {
+    console.error('[PortalTrainee] Report activity error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil report activity trainee',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/portal-trainee/:id/profile-trainee or /portal-admin - Real-time assigned profile_trainee data for specific trainee
+const handleGetProfileTrainee = async (req, res) => {
+  const { id } = req.params;
+  const cleanId = String(id || '').trim();
+  try {
+    let profileTraineeRes = await db.query(
+      `SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`,
+      [cleanId]
+    );
+
+    if (profileTraineeRes.rows.length === 0) {
+      // Check tabel_login_trainee or profile_trainee as fallback
+      const loginCheck = await db.query(`SELECT * FROM tabel_login_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] }));
+      const foundName = loginCheck.rows[0]?.nama || `Trainee ${cleanId}`;
+
+      const autoUpsert = await db.query(`
+        INSERT INTO profile_trainee (trainee_id, name, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (trainee_id) DO UPDATE SET updated_at = NOW()
+        RETURNING *;
+      `, [cleanId, foundName]).catch(() => null);
+
+      if (autoUpsert && autoUpsert.rows.length > 0) {
+        profileTraineeRes = autoUpsert;
+      } else {
+        return res.json({
+          success: true,
+          read_only: true,
+          trainee_id: cleanId,
+          data: { trainee_id: cleanId, name: foundName }
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      read_only: true,
+      trainee_id: cleanId,
+      data: profileTraineeRes.rows[0]
+    });
+  } catch (error) {
+    console.error('[PortalTrainee] Profile trainee error:', error);
+    res.json({
+      success: true,
+      read_only: true,
+      trainee_id: cleanId,
+      data: { trainee_id: cleanId, name: `Trainee ${cleanId}` }
+    });
+  }
+};
+
+router.get('/:id/profile-trainee', handleGetProfileTrainee);
+router.get('/:id/portal-admin', handleGetProfileTrainee);
+
+// GET /api/portal-trainee/:id - Read-only: Get single trainee by trainee_id with real-time link_report, report_activity, and profile_trainee
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  const cleanId = String(id || '').trim();
+  try {
+    let result = await db.query(`SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]);
+
+    if (result.rows.length === 0) {
+      const ptCheck = await db.query(`SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`, [cleanId]).catch(() => ({ rows: [] }));
+      const foundName = ptCheck.rows[0]?.name || `Trainee ${cleanId}`;
+      result = { rows: [{ trainee_id: cleanId, name: foundName, branch_id: ptCheck.rows[0]?.branch || 'Centre Point' }] };
+    }
+
     const sanitizedTrainee = sanitizeTraineeRecord(result.rows[0]);
+
+    // Fetch real-time link_report entries
+    const linkReportRes = await db.query(
+      `SELECT * FROM link_report WHERE LOWER(trainee_id) = LOWER($1) ORDER BY term DESC`,
+      [cleanId]
+    ).catch(() => ({ rows: [] }));
+
+    // Fetch real-time report_activity entry
+    const reportActivityRes = await db.query(
+      `SELECT * FROM report_activity WHERE LOWER(trainee_id) = LOWER($1)`,
+      [cleanId]
+    ).catch(() => ({ rows: [] }));
+
+    // Fetch real-time profile_trainee entry
+    const profileTraineeRes = await db.query(
+      `SELECT * FROM profile_trainee WHERE LOWER(trainee_id) = LOWER($1)`,
+      [cleanId]
+    ).catch(() => ({ rows: [] }));
+
+    sanitizedTrainee.link_reports = linkReportRes.rows;
+    sanitizedTrainee.report_activity = reportActivityRes.rows[0] || null;
+    sanitizedTrainee.profile_trainee = profileTraineeRes.rows[0] || null;
+    sanitizedTrainee.profile_trainee = profileTraineeRes.rows[0] || null;
 
     res.json({
       success: true,
@@ -259,13 +394,12 @@ router.get('/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('[PortalTrainee] Fetch single error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Gagal mengambil rincian data portal trainee',
-      error: error.message
+    res.json({
+      success: true,
+      read_only: true,
+      data: { trainee_id: cleanId, name: `Trainee ${cleanId}` }
     });
   }
 });
 
 module.exports = router;
-

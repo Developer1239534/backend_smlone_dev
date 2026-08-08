@@ -29,26 +29,20 @@ const sendResponse = (res, statusCode, payload) => {
   return res.status(statusCode).json(payload);
 };
 
-// Handle OPTIONS preflight
-router.options('(.*)', (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  return res.sendStatus(200);
-});
+
 
 // Ensure columns exist on startup / request
 async function ensureColumns() {
   try {
     await db.query(`
-      ALTER TABLE portal_trainee 
+      ALTER TABLE login_portalllll 
       ADD COLUMN IF NOT EXISTS total_gold INT DEFAULT 0,
       ADD COLUMN IF NOT EXISTS gp_month INT DEFAULT 0,
       ADD COLUMN IF NOT EXISTS rank INT DEFAULT 0,
       ADD COLUMN IF NOT EXISTS kategori VARCHAR;
     `);
   } catch (err) {
-    // Ignore error if columns exist or query fails
+    // Ignore error if columns exist
   }
 }
 
@@ -61,25 +55,25 @@ router.get('/', async (req, res) => {
 
     let queryText = `
       SELECT 
-        trainee_id AS id,
+        id,
         name AS nama_trainee,
         name AS trainee_name,
-        COALESCE(program, 'Junior/Youth Program') AS status,
+        COALESCE(cleaned_program, 'Core/Orator Society Program') AS status,
         COALESCE(level, 'Sergeant') AS level,
-        COALESCE(house, 'House of Thenova') AS house,
+        COALESCE(house, 'House of Creanova') AS house,
         COALESCE(class, 'Gladwell') AS class,
         COALESCE(class, 'Gladwell') AS class_name,
         COALESCE(class, 'Gladwell') AS nama_kelas,
-        COALESCE(branch_id, 'TIMOR') AS branch,
-        COALESCE(branch_id, 'TIMOR') AS cabang,
+        COALESCE(cabang_id, 'TIMOR') AS branch,
+        COALESCE(cabang_id, 'TIMOR') AS cabang,
         COALESCE(total_gold, 0) AS total_gold_periode,
         COALESCE(gp_month, total_gold, 0) AS gp_month,
         COALESCE(total_gold, 0) AS total_gold,
-        COALESCE(kategori, 'Junior') AS kategori,
-        COALESCE(kategori, 'Junior') AS junior_youth,
+        COALESCE(kategori, ajy_by_class, 'Junior') AS kategori,
+        COALESCE(kategori, ajy_by_class, 'Junior') AS junior_youth,
         COALESCE(rank, 0) AS rank,
         updated_at
-      FROM portal_trainee
+      FROM login_portalllll
       WHERE name IS NOT NULL 
         AND TRIM(name) != '' 
         AND LOWER(TRIM(name)) NOT IN ('trainee', 'youth', 'junior')
@@ -88,27 +82,26 @@ router.get('/', async (req, res) => {
     let paramIndex = 1;
 
     if (branch && branch.toUpperCase() !== 'ALL' && branch.toUpperCase() !== 'ALL_BRANCH') {
-      queryText += ` AND UPPER(COALESCE(branch_id, 'TIMOR')) = $${paramIndex++}`;
+      queryText += ` AND UPPER(COALESCE(cabang_id, 'TIMOR')) = $${paramIndex++}`;
       queryParams.push(branch.toUpperCase());
     }
 
     if (category && category.toUpperCase() !== 'ALL') {
-      queryText += ` AND UPPER(COALESCE(kategori, 'Junior')) = $${paramIndex++}`;
+      queryText += ` AND UPPER(COALESCE(kategori, ajy_by_class, 'Junior')) = $${paramIndex++}`;
       queryParams.push(category.toUpperCase());
     }
 
     if (search) {
-      queryText += ` AND (LOWER(name) LIKE $${paramIndex} OR LOWER(trainee_id) LIKE $${paramIndex})`;
+      queryText += ` AND (LOWER(name) LIKE $${paramIndex} OR LOWER(id) LIKE $${paramIndex})`;
       queryParams.push(`%${search.toLowerCase()}%`);
       paramIndex++;
     }
 
-    queryText += ` ORDER BY COALESCE(total_gold, 0) DESC, name ASC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    queryText += ` ORDER BY NULLIF(regexp_replace(id, '\\D', '', 'g'), '')::bigint ASC, id ASC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
     queryParams.push(parseInt(limit), parseInt(offset));
 
     const result = await db.query(queryText, queryParams);
 
-    // Format and sanitize class names & dynamic ranks
     const formattedData = result.rows
       .filter(row => row.nama_trainee && row.nama_trainee.trim().length > 0)
       .map((row, idx) => {
@@ -128,7 +121,7 @@ router.get('/', async (req, res) => {
       data: formattedData
     });
   } catch (err) {
-    console.error('Error fetching goldpoint data from portal_trainee:', err);
+    console.error('Error fetching goldpoint data from login_portalllll:', err);
     return sendResponse(res, 200, {
       success: true,
       total: 0,
@@ -146,25 +139,25 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     const result = await db.query(`
       SELECT 
-        trainee_id AS id,
+        id,
         name AS nama_trainee,
         name AS trainee_name,
         COALESCE(level, 'Sergeant') AS level,
-        COALESCE(house, 'House of Thenova') AS house,
+        COALESCE(house, 'House of Creanova') AS house,
         COALESCE(class, 'Gladwell') AS class,
         COALESCE(class, 'Gladwell') AS class_name,
         COALESCE(class, 'Gladwell') AS nama_kelas,
-        COALESCE(branch_id, 'TIMOR') AS branch,
-        COALESCE(branch_id, 'TIMOR') AS cabang,
+        COALESCE(cabang_id, 'TIMOR') AS branch,
+        COALESCE(cabang_id, 'TIMOR') AS cabang,
         COALESCE(total_gold, 0) AS total_gold_periode,
         COALESCE(gp_month, total_gold, 0) AS gp_month,
         COALESCE(total_gold, 0) AS total_gold,
-        COALESCE(kategori, 'Junior') AS kategori,
-        COALESCE(kategori, 'Junior') AS junior_youth,
+        COALESCE(kategori, ajy_by_class, 'Junior') AS kategori,
+        COALESCE(kategori, ajy_by_class, 'Junior') AS junior_youth,
         COALESCE(rank, 0) AS rank,
         updated_at
-      FROM portal_trainee 
-      WHERE trainee_id = $1 AND name IS NOT NULL AND TRIM(name) != ''
+      FROM login_portalllll 
+      WHERE id = $1 AND name IS NOT NULL AND TRIM(name) != ''
     `, [id]);
 
     if (result.rows.length === 0) {
@@ -207,7 +200,7 @@ router.post('/', async (req, res) => {
       const item = itemsToProcess[idx];
       const id = String(item.id || item.trainee_id || '').trim();
       const level = item.level || 'Sergeant';
-      const house = item.house || item.house_sml || 'House of Thenova';
+      const house = item.house || item.house_sml || 'House of Creanova';
       const className = sanitizeClass(item.class || item.nama_kelas || item.class_name || 'Gladwell');
       const branch = item.branch || item.cabang || 'TIMOR';
       const totalGold = parseInt(item.total_gold || item.total_gold_periode || item.gp_month || '0') || 0;
@@ -217,7 +210,7 @@ router.post('/', async (req, res) => {
       if (!id || id === 'ID') continue;
 
       const result = await db.query(`
-        UPDATE portal_trainee 
+        UPDATE login_portalllll 
         SET 
           total_gold = $2,
           gp_month = $3,
@@ -226,9 +219,9 @@ router.post('/', async (req, res) => {
           level = COALESCE($6, level),
           house = COALESCE($7, house),
           class = COALESCE($8, class),
-          branch_id = COALESCE($9, branch_id),
+          cabang_id = COALESCE($9, cabang_id),
           updated_at = NOW()
-        WHERE trainee_id = $1
+        WHERE id = $1
         RETURNING *;
       `, [id, totalGold, totalGold, rank, kategori, level, house, className, branch]);
 

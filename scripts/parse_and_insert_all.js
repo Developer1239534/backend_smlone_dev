@@ -1,0 +1,353 @@
+const fs = require('fs');
+const path = require('path');
+const db = require('../src/db/neonClient');
+
+function parseCustomDate(str) {
+  if (!str) return null;
+  const clean = str.trim();
+  if (!clean || clean.length < 5) return null;
+
+  const match2DigitYear = clean.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{2})$/);
+  if (match2DigitYear) {
+    const day = match2DigitYear[1].padStart(2, '0');
+    const monthStr = match2DigitYear[2];
+    let yy = parseInt(match2DigitYear[3], 10);
+    const fullYear = yy <= 30 ? 2000 + yy : 1900 + yy;
+
+    const d = new Date(`${day} ${monthStr} ${fullYear}`);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      if (year >= 1900 && year <= 2099) {
+        return d.toISOString().split('T')[0];
+      }
+    }
+  }
+
+  const d = new Date(clean);
+  if (!isNaN(d.getTime())) {
+    const year = d.getFullYear();
+    if (year >= 1900 && year <= 2099) {
+      return d.toISOString().split('T')[0];
+    }
+  }
+  return null;
+}
+
+async function run() {
+  console.log('🚀 Re-importing dataset into login_portal_fix...');
+
+  // Auto-create login_portal_fix table if it doesn't exist
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS login_portal_fix (
+      id VARCHAR(100) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      gender VARCHAR(50),
+      date_of_birth DATE,
+      nama_sekolah VARCHAR(255),
+      cleaned_program VARCHAR(255),
+      membership VARCHAR(100),
+      expiry_date DATE,
+      cabang_id VARCHAR(100),
+      first_enroll DATE,
+      class VARCHAR(255),
+      house VARCHAR(255),
+      level VARCHAR(50),
+      house_role VARCHAR(100),
+      cabang_kelas VARCHAR(100),
+      newest_grade VARCHAR(50),
+      trainee_homeroom VARCHAR(100),
+      screening_test TEXT,
+      draft_grade VARCHAR(50),
+      prev_grade VARCHAR(50),
+      ajy_by_class VARCHAR(50),
+      last_real_stage DATE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS screening_test TEXT;
+    ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS wa_trainee VARCHAR(100);
+    ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS wa_orang_tua VARCHAR(100);
+    ALTER TABLE login_portal_fix ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+    DELETE FROM login_portal_fix WHERE NULLIF(regexp_replace(id, '\\D', '', 'g'), '')::bigint < 20 OR name IN ('Ghaitsa', 'Rizky', 'Junior', 'Youth', 'Muly', 'Agustina', 'Loita', 'Nabilah');
+    CREATE INDEX IF NOT EXISTS idx_login_portal_fix_membership ON login_portal_fix(membership);
+    CREATE INDEX IF NOT EXISTS idx_login_portal_fix_cabang ON login_portal_fix(cabang_id);
+  `);
+  console.log('✅ Verified login_portal_fix table exists.');
+  
+  // Read prompt file
+  const promptPath = path.join(__dirname, 'full_user_prompt.txt');
+  if (!fs.existsSync(promptPath)) {
+    console.error('File not found:', promptPath);
+    process.exit(1);
+  }
+  let text = fs.readFileSync(promptPath, 'utf8');
+
+  if (text.includes('<USER_REQUEST>')) text = text.split('<USER_REQUEST>')[1];
+  const rawLines = text.split('\n');
+  const lines = [];
+  for (const rawLine of rawLines) {
+    if (rawLine.includes('\t')) {
+      const cells = rawLine.split('\t').map(c => c.trim());
+      for (const cell of cells) {
+        lines.push(cell);
+      }
+    } else {
+      lines.push(rawLine.trim());
+    }
+  }
+
+  function isStudentName(str) {
+    if (!str || str.length < 2) return false;
+    if (/^\d+$/.test(str)) return false;
+    if (str.startsWith('http') || str.startsWith('[http')) return false;
+    if (str.startsWith('House of ')) return false;
+    if (['Male', 'Female', 'TIMOR', 'CEMARA', 'TRITURA'].includes(str)) return false;
+    if (str.startsWith('Active') || str.startsWith('Expired')) return false;
+    if (['Sergeant', 'General', 'Lt. Colonel', 'Colonel', 'Lt. General', 'Private', 'Apprentice'].includes(str)) return false;
+    if (['Youth', 'Junior', 'Apprentice'].includes(str)) return false;
+    if (['Agustina', 'Ghaitsa', 'Muly', 'Loita', 'Rizky', 'Nabilah'].includes(str)) return false;
+    if (str.includes('Program') || str.includes('Professionals')) return false;
+    if (parseCustomDate(str) !== null) return false;
+    return true;
+  }
+
+  const records = [];
+  let currentBlock = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+
+    const isId = /^\d+$/.test(line);
+    const nextLine = i + 1 < lines.length ? lines[i + 1] : null;
+
+    if (isId && isStudentName(nextLine)) {
+      if (currentBlock.length > 0) {
+        records.push(currentBlock);
+      }
+      currentBlock = [line];
+    } else if (currentBlock.length > 0) {
+      currentBlock.push(line);
+    }
+  }
+  if (currentBlock.length > 0) {
+    records.push(currentBlock);
+  }
+
+  console.log(`📋 Total student blocks identified: ${records.length}`);
+
+  const rowMap = new Map();
+
+  for (const block of records) {
+    const id = block[0];
+    const name = block[1];
+
+    if (!id || !name || !/^\d+$/.test(id)) continue;
+
+    let gender = null;
+    let date_of_birth = null;
+    let nama_sekolah = null;
+    let cleaned_program = 'Core/Orator Society';
+    let membership = null;
+    let expiry_date = null;
+    let cabang_id = null;
+    let first_enroll = null;
+    let className = null;
+    let house = null;
+    let level = null;
+    let house_role = null;
+    let cabang_kelas = null;
+    let newest_grade = null;
+    let trainee_homeroom = null;
+    let screening_test = null;
+    let draft_grade = null;
+    let prev_grade = null;
+    let ajy_by_class = null;
+    let last_real_stage = null;
+
+    const datesFound = [];
+
+    for (let k = 2; k < block.length; k++) {
+      const val = block[k];
+      if (!val) continue;
+
+      if (val === 'Male' || val === 'Female') {
+        gender = val;
+      } else if (val.startsWith('Active') || val.startsWith('Expired')) {
+        membership = val;
+      } else if (val === 'TIMOR' || val === 'CEMARA' || val === 'TRITURA') {
+        if (!cabang_id) cabang_id = val;
+        else cabang_kelas = val;
+      } else if (val.startsWith('House of ')) {
+        house = val;
+      } else if (['Sergeant', 'General', 'Lt. Colonel', 'Colonel', 'Lt. General', 'Private', 'Apprentice'].includes(val)) {
+        house_role = val;
+      } else if (['Youth', 'Junior', 'Apprentice'].includes(val)) {
+        ajy_by_class = val;
+      } else if (val.startsWith('http') || val.includes('drive.google.com') || val.includes('[http')) {
+        let cleanUrl = val.replace(/\[|\]/g, '');
+        if (cleanUrl.includes('(') && cleanUrl.includes(')')) {
+          cleanUrl = cleanUrl.split('(')[1].split(')')[0];
+        }
+        screening_test = cleanUrl.trim();
+      } else if (val.includes('Program') || val.includes('Professionals')) {
+        if (val === 'Junior/Youth Program') {
+          cleaned_program = 'Core/Orator Society';
+        } else {
+          cleaned_program = val;
+        }
+      } else {
+        const parsedDt = parseCustomDate(val);
+        if (parsedDt) {
+          datesFound.push(parsedDt);
+        } else if (/^\d{1,2}$/.test(val)) {
+          // If homeroom or screening_test already captured, subsequent numbers are draft_grade then prev_grade
+          if (trainee_homeroom || screening_test) {
+            if (!draft_grade) draft_grade = val;
+            else if (!prev_grade) prev_grade = val;
+          } else {
+            // Before homeroom: level then newest_grade
+            if (!level) level = val;
+            else if (!newest_grade) newest_grade = val;
+            else if (!draft_grade) draft_grade = val;
+            else if (!prev_grade) prev_grade = val;
+          }
+        } else if (['Agustina', 'Ghaitsa', 'Muly', 'Loita', 'Rizky', 'Nabilah'].includes(val)) {
+          trainee_homeroom = val;
+        } else {
+          if (!className && (val.includes('(') || val.includes('Class') || ['Einstein', 'Dale', 'Clinton', 'Millman', 'Kiyosaki', 'Winfrey', 'Doyle', 'Spielberg', 'Ziglar', 'Tracy', 'Robbins', 'Gladwell', 'Mandela', 'DaVinci', 'Newton', 'Maxwell', 'Sigmund', 'Obsidian', 'Ruby', 'Sapphire', 'Jade', 'Alexandrite', 'Topaz', 'Pearl', 'Amber', 'Hogwarts', 'Wonderland', 'Neverland', 'Whomville', 'Camelot', 'Narnia', 'Denver', 'Lincoln', 'Graham', 'Asheville', 'Canfield', 'Beryl', 'Cairo', 'Auckland', 'Atlanta', 'Eldorado', 'Sherwood Forest', 'Athens', 'Almeria', 'Quartz', 'Diamond', 'Emerald', 'Azurite', 'Duloc', 'Atlantis', 'Plato', 'Socrates'].some(c => val.includes(c)))) {
+            className = val;
+          } else if (!nama_sekolah && val.length > 2) {
+            nama_sekolah = val;
+          }
+        }
+      }
+    }
+
+    if (datesFound.length > 0) date_of_birth = datesFound[0];
+    if (datesFound.length > 1) expiry_date = datesFound[1];
+    if (datesFound.length > 2) first_enroll = datesFound[2];
+    if (datesFound.length > 3) last_real_stage = datesFound[3];
+
+    // Fallbacks for grade alignment
+    if (!newest_grade) newest_grade = draft_grade || level;
+    if (!draft_grade) draft_grade = newest_grade || level;
+    if (!prev_grade) prev_grade = draft_grade;
+
+    const password = `SML${id}`;
+
+    const newRecord = {
+      id, name, password, gender, date_of_birth, nama_sekolah, cleaned_program,
+      membership, expiry_date, cabang_id, first_enroll, className, house, level,
+      house_role, cabang_kelas, newest_grade, trainee_homeroom, screening_test,
+      draft_grade, prev_grade, ajy_by_class, last_real_stage
+    };
+
+    if (rowMap.has(id)) {
+      const existing = rowMap.get(id);
+      rowMap.set(id, {
+        id,
+        name: newRecord.name || existing.name,
+        password: existing.password || newRecord.password,
+        gender: newRecord.gender || existing.gender,
+        date_of_birth: newRecord.date_of_birth || existing.date_of_birth,
+        nama_sekolah: newRecord.nama_sekolah || existing.nama_sekolah,
+        cleaned_program: newRecord.cleaned_program || existing.cleaned_program,
+        membership: newRecord.membership || existing.membership,
+        expiry_date: newRecord.expiry_date || existing.expiry_date,
+        cabang_id: newRecord.cabang_id || existing.cabang_id,
+        first_enroll: newRecord.first_enroll || existing.first_enroll,
+        className: newRecord.className || existing.className,
+        house: newRecord.house || existing.house,
+        level: newRecord.level || existing.level,
+        house_role: newRecord.house_role || existing.house_role,
+        cabang_kelas: newRecord.cabang_kelas || existing.cabang_kelas,
+        newest_grade: newRecord.newest_grade || existing.newest_grade,
+        trainee_homeroom: newRecord.trainee_homeroom || existing.trainee_homeroom,
+        screening_test: newRecord.screening_test || existing.screening_test,
+        draft_grade: newRecord.draft_grade || existing.draft_grade,
+        prev_grade: newRecord.prev_grade || existing.prev_grade,
+        ajy_by_class: newRecord.ajy_by_class || existing.ajy_by_class,
+        last_real_stage: newRecord.last_real_stage || existing.last_real_stage
+      });
+    } else {
+      rowMap.set(id, newRecord);
+    }
+  }
+
+  const uniqueRows = Array.from(rowMap.values());
+  console.log(`🚀 Executing BATCH UPSERT for ${uniqueRows.length} unique records...`);
+
+  const BATCH_SIZE = 100;
+  for (let i = 0; i < uniqueRows.length; i += BATCH_SIZE) {
+    const chunk = uniqueRows.slice(i, i + BATCH_SIZE);
+    const valuePlaceholders = [];
+    const params = [];
+
+    chunk.forEach((row, idx) => {
+      const offset = idx * 23;
+      const placeholders = Array.from({ length: 23 }, (_, pIdx) => `$${offset + pIdx + 1}`).join(', ');
+      valuePlaceholders.push(`(${placeholders}, NOW())`);
+
+      params.push(
+        row.id, row.name, row.password, row.gender, row.date_of_birth, row.nama_sekolah,
+        row.cleaned_program, row.membership, row.expiry_date, row.cabang_id, row.first_enroll,
+        row.className, row.house, row.level, row.house_role, row.cabang_kelas, row.newest_grade,
+        row.trainee_homeroom, row.screening_test, row.draft_grade, row.prev_grade,
+        row.ajy_by_class, row.last_real_stage
+      );
+    });
+
+    const batchSql = `
+      INSERT INTO login_portal_fix (
+        id, name, password, gender, date_of_birth, nama_sekolah, cleaned_program,
+        membership, expiry_date, cabang_id, first_enroll, class, house, level,
+        house_role, cabang_kelas, newest_grade, trainee_homeroom, screening_test,
+        draft_grade, prev_grade, ajy_by_class, last_real_stage, updated_at
+      ) VALUES ${valuePlaceholders.join(', ')}
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        password = EXCLUDED.password,
+        gender = EXCLUDED.gender,
+        date_of_birth = EXCLUDED.date_of_birth,
+        nama_sekolah = EXCLUDED.nama_sekolah,
+        cleaned_program = EXCLUDED.cleaned_program,
+        membership = EXCLUDED.membership,
+        expiry_date = EXCLUDED.expiry_date,
+        cabang_id = EXCLUDED.cabang_id,
+        first_enroll = EXCLUDED.first_enroll,
+        class = EXCLUDED.class,
+        house = EXCLUDED.house,
+        level = EXCLUDED.level,
+        house_role = EXCLUDED.house_role,
+        cabang_kelas = EXCLUDED.cabang_kelas,
+        newest_grade = EXCLUDED.newest_grade,
+        trainee_homeroom = EXCLUDED.trainee_homeroom,
+        screening_test = EXCLUDED.screening_test,
+        draft_grade = EXCLUDED.draft_grade,
+        prev_grade = EXCLUDED.prev_grade,
+        ajy_by_class = EXCLUDED.ajy_by_class,
+        last_real_stage = EXCLUDED.last_real_stage,
+        updated_at = NOW();
+    `;
+
+    await db.query(batchSql, params);
+    console.log(`  ✓ Inserted batch ${Math.floor(i / BATCH_SIZE) + 1} / ${Math.ceil(uniqueRows.length / BATCH_SIZE)} (${chunk.length} rows)`);
+  }
+
+  console.log('🎉 Re-import finished!');
+
+  const countRes = await db.query('SELECT COUNT(*) FROM login_portal_fix');
+  console.log('📊 Total rows in `login_portal_fix` table:', countRes.rows[0].count);
+
+  const activeRes = await db.query("SELECT COUNT(*) FROM login_portal_fix WHERE membership ILIKE 'Active%'");
+  console.log('📊 Active membership count:', activeRes.rows[0].count);
+
+  process.exit(0);
+}
+
+run().catch(err => {
+  console.error('❌ Error executing import:', err);
+  process.exit(1);
+});

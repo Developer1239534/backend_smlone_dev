@@ -1,0 +1,57 @@
+[
+  {
+    "period": "7/31/2026",
+    "first_date_month": "1 Jul 2026",
+    "last_date_month": "31 Jul 2026",
+    "house": "House of Thenova",
+    "total_gold_house": 24835,
+    "rank": 1,
+    "class_name": "Kiyosaki",
+    "cabang": "TIMOR",
+    "program": "Youth"
+  },
+  {
+    "period": "7/31/2026",
+    "first_date_month": "1 Jul 2026",
+    "last_date_month": "31 Jul 2026",
+    "house": "House of Havaria",
+    "total_gold_house": 14637,
+    "rank": 2,
+    "class_name": "Obsidian",
+    "cabang": "CEMARA",
+    "program": "Youth"
+  },
+  {
+    "period": "7/31/2026",
+    "first_date_month": "1 Jul 2026",
+    "last_date_month": "31 Jul 2026",
+    "house": "House of Quorion",
+    "total_gold_house": 9460,
+    "rank": 3,
+    "class_name": "Spielberg",
+    "cabang": "TIMOR",
+    "program": "Youth"
+  },
+  {
+    "period": "7/31/2026",
+    "first_date_month": "1 Jul 2026",
+    "last_date_month": "31 Jul 2026",
+    "house": "House of Creanova",
+    "total_gold_house": 5680,
+    "rank": 4,
+    "class_name": "Graham",
+    "cabang": "TIMOR",
+    "program": "Junior"
+  },
+  {
+    "period": "7/31/2026",
+    "first_date_month": "1 Jul 2026",
+    "last_date_month": "31 Jul 2026",
+    "house": "House of Reverion",
+    "total_gold_house": 3670,
+    "rank": 5,
+    "class_name": "Alexandrite",
+    "cabang": "CEMARA",
+    "program": "Junior"
+  }
+]

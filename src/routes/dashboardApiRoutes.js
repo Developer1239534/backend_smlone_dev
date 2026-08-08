@@ -7,30 +7,41 @@ const verifyToken = require('../middleware/authMiddleware');
 async function getTraineeOrError(id, res) {
   try {
     const result = await db.query(
-      `SELECT dt.*, 
-              COALESCE(gp.total_gold_periode, '0') AS total_gold_periode,
-              gp.rank_id_junior,
-              gp.rank_id_youth,
-              gp.rank_id_junior_timor,
-              gp.rank_id_youth_timor,
-              gp.rank_id_junior_tritura,
-              gp.rank_id_youth_tritura,
-              gp.rank_id_junior_cemara,
-              gp.rank_id_youth_cemara
-       FROM dashboard_trainne dt
-       LEFT JOIN (
-         SELECT DISTINCT ON (trainee_id) *
-         FROM gp_month
-         ORDER BY trainee_id, created_at DESC
-       ) gp ON dt.id = gp.trainee_id
-       WHERE dt.id = $1`,
+      `SELECT 
+        lpf.id,
+        lpf.id AS id_trainee,
+        lpf.name AS trainee_name,
+        lpf.name AS nama_trainee,
+        COALESCE(lpf.cleaned_program, 'Core/Orator Society Program') AS program,
+        COALESCE(lpf.class, 'Gladwell') AS class,
+        COALESCE(lpf.level, 'Sergeant') AS level,
+        lpf.expiry_date AS membership_expiry,
+        lpf.date_of_birth AS tanggal_lahir,
+        COALESCE(lpf.cabang_id, 'TIMOR') AS cabang,
+        COALESCE(lpf.house, 'House of Creanova') AS house_sml,
+        COALESCE(lpf.newest_grade, '-') AS newest_grade,
+        COALESCE(lpf.nama_sekolah, '-') AS nama_sekolah,
+        COALESCE(lpf.wa_trainee, '-') AS wa_trainee,
+        COALESCE(lpf.wa_orang_tua, '-') AS wa_orang_tua,
+        COALESCE(lpf.email, '-') AS email,
+        COALESCE(lpf.screening_test, '-') AS screening_test,
+        COALESCE(lpf.ajy_by_class, 'Junior') AS junior_youth,
+        '0' AS total_gold_periode,
+        NULL AS profile_picture,
+        COALESCE(lpf.wa_trainee, '-') AS phone,
+        NULL AS weekly_report,
+        NULL AS progress_video
+       FROM login_portalllll lpf
+       WHERE lpf.id = $1`,
       [id]
     );
-    if (result.rows.length === 0) {
-      res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
-      return null;
+
+    if (result.rows.length > 0) {
+      return result.rows[0];
     }
-    return result.rows[0];
+
+    res.status(404).json({ success: false, message: `Trainee dengan ID ${id} tidak ditemukan.` });
+    return null;
   } catch (err) {
     console.error(`[Dashboard API Error] ID: ${id}:`, err.message);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -77,13 +88,23 @@ function compareRealStagePeriods(a, b) {
   return parseRealStagePeriod(b) - parseRealStagePeriod(a);
 }
 
+// Safe table query helper
+async function safeQuery(sql, params = []) {
+  try {
+    const res = await db.query(sql, params);
+    return res.rows;
+  } catch (err) {
+    return [];
+  }
+}
+
 // ========================================================
 // PUBLIC NEWS / ANNOUNCEMENTS
 // ========================================================
 router.get('/news', async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM news_announcements ORDER BY id DESC');
-    res.json({ success: true, data: result.rows });
+    const rows = await safeQuery('SELECT * FROM news_announcements ORDER BY id DESC');
+    res.json({ success: true, data: rows });
   } catch (err) {
     console.error('[Dashboard API] GET News error:', err.message);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -96,11 +117,8 @@ router.get('/profile/:id', async (req, res) => {
   if (!trainee) return;
 
   try {
-    const rsResult = await db.query(
-      'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
-      [trainee.id]
-    );
-    const sortedRS = rsResult.rows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
+    const rsRows = await safeQuery('SELECT periode, url FROM real_stage WHERE trainee_id = $1', [trainee.id]);
+    const sortedRS = rsRows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
 
     res.json({
       success: true,
@@ -118,14 +136,6 @@ router.get('/profile/:id', async (req, res) => {
         house_sml: trainee.house_sml,
         total_gold_periode: trainee.total_gold_periode,
         junior_youth: trainee.junior_youth,
-        rank_id_junior: trainee.rank_id_junior,
-        rank_id_youth: trainee.rank_id_youth,
-        rank_id_junior_timor: trainee.rank_id_junior_timor,
-        rank_id_youth_timor: trainee.rank_id_youth_timor,
-        rank_id_junior_tritura: trainee.rank_id_junior_tritura,
-        rank_id_youth_tritura: trainee.rank_id_youth_tritura,
-        rank_id_junior_cemara: trainee.rank_id_junior_cemara,
-        rank_id_youth_cemara: trainee.rank_id_youth_cemara,
         newest_grade: trainee.newest_grade,
         nama_sekolah: trainee.nama_sekolah,
         wa_trainee: trainee.wa_trainee,
@@ -243,8 +253,8 @@ router.get('/progress/:id', async (req, res) => {
   const trainee = await getTraineeOrError(req.params.id, res);
   if (!trainee) return;
 
-  const ptRes = await db.query('SELECT speaking_project_to_next_level FROM portal_trainee WHERE trainee_id = $1', [trainee.id]);
-  const progressPercent = ptRes.rows[0]?.speaking_project_to_next_level || null;
+  const ptRows = await safeQuery('SELECT speaking_project_to_next_level FROM profile_trainee WHERE trainee_id = $1', [trainee.id]);
+  const progressPercent = ptRows[0]?.speaking_project_to_next_level || null;
 
   res.json({
     success: true,
@@ -252,7 +262,7 @@ router.get('/progress/:id', async (req, res) => {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
       progress_ke_next_level: progressPercent,
-      progress_video: trainee.progress_video
+      progress_video: trainee.progress_video || null
     }
   });
 });
@@ -279,18 +289,11 @@ router.get('/reports/:id', async (req, res) => {
   if (!trainee) return;
 
   try {
-    const reportsResult = await db.query(
-      'SELECT periode, url FROM quarterly_report WHERE trainee_id = $1',
-      [trainee.id]
-    );
-    const sortedReports = reportsResult.rows.sort((a, b) => comparePeriods(a.periode, b.periode));
+    const reportsRows = await safeQuery('SELECT periode, url FROM quarterly_report WHERE trainee_id = $1', [trainee.id]);
+    const sortedReports = reportsRows.sort((a, b) => comparePeriods(a.periode, b.periode));
 
-    // Fetch real stage reports
-    const rsResult = await db.query(
-      'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
-      [trainee.id]
-    );
-    const sortedRS = rsResult.rows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
+    const rsRows = await safeQuery('SELECT periode, url FROM real_stage WHERE trainee_id = $1', [trainee.id]);
+    const sortedRS = rsRows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
 
     res.json({
       success: true,
@@ -323,11 +326,8 @@ router.get('/reports/quarterly/:id', async (req, res) => {
   if (!trainee) return;
 
   try {
-    const reportsResult = await db.query(
-      'SELECT periode, url FROM quarterly_report WHERE trainee_id = $1',
-      [trainee.id]
-    );
-    const sortedReports = reportsResult.rows.sort((a, b) => comparePeriods(a.periode, b.periode));
+    const reportsRows = await safeQuery('SELECT periode, url FROM quarterly_report WHERE trainee_id = $1', [trainee.id]);
+    const sortedReports = reportsRows.sort((a, b) => comparePeriods(a.periode, b.periode));
 
     res.json({
       success: true,
@@ -351,11 +351,8 @@ router.get('/reports/real-stage/:id', async (req, res) => {
   if (!trainee) return;
 
   try {
-    const reportsResult = await db.query(
-      'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
-      [trainee.id]
-    );
-    const sortedReports = reportsResult.rows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
+    const reportsRows = await safeQuery('SELECT periode, url FROM real_stage WHERE trainee_id = $1', [trainee.id]);
+    const sortedReports = reportsRows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
 
     res.json({
       success: true,
@@ -382,18 +379,10 @@ router.get('/rankings/:id', async (req, res) => {
     data: {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
-      gold_rank: trainee.gold_rank,
-      referral_code: trainee.referral_code,
-      total_gold_periode: trainee.total_gold_periode,
-      junior_youth: trainee.junior_youth,
-      rank_id_junior: trainee.rank_id_junior,
-      rank_id_youth: trainee.rank_id_youth,
-      rank_id_junior_timor: trainee.rank_id_junior_timor,
-      rank_id_youth_timor: trainee.rank_id_youth_timor,
-      rank_id_junior_tritura: trainee.rank_id_junior_tritura,
-      rank_id_youth_tritura: trainee.rank_id_youth_tritura,
-      rank_id_junior_cemara: trainee.rank_id_junior_cemara,
-      rank_id_youth_cemara: trainee.rank_id_youth_cemara
+      gold_rank: trainee.gold_rank || 0,
+      referral_code: trainee.referral_code || null,
+      total_gold_periode: trainee.total_gold_periode || '0',
+      junior_youth: trainee.junior_youth || 'Junior'
     }
   });
 });
@@ -408,7 +397,7 @@ router.get('/speaking-projects/:id', async (req, res) => {
     data: {
       id_trainee: trainee.id,
       nama_trainee: trainee.trainee_name,
-      last_speaking_project: trainee.last_speaking_project,
+      last_speaking_project: trainee.last_speaking_project || null,
       completed_speaking_project: null
     }
   });
@@ -420,11 +409,8 @@ router.get('/reports/previous/:id', async (req, res) => {
   if (!trainee) return;
 
   try {
-    const reportsResult = await db.query(
-      'SELECT periode, url FROM quarterly_report WHERE trainee_id = $1',
-      [trainee.id]
-    );
-    const sortedReports = reportsResult.rows.sort((a, b) => comparePeriods(a.periode, b.periode));
+    const reportsRows = await safeQuery('SELECT periode, url FROM quarterly_report WHERE trainee_id = $1', [trainee.id]);
+    const sortedReports = reportsRows.sort((a, b) => comparePeriods(a.periode, b.periode));
 
     res.json({
       success: true,

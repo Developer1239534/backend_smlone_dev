@@ -10,19 +10,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'smlone-portal-jwt-secret-2026';
 async function getOrCreateTraineeAccount(studentId) {
   const cleanId = String(studentId).trim();
 
-  // Check existing login account
-  const accountRes = await db.query(
-    'SELECT * FROM login_trainee WHERE LOWER(student_id) = LOWER($1)',
-    [cleanId]
-  );
-
-  if (accountRes.rows.length > 0) {
-    return accountRes.rows[0];
-  }
-
-  // Check if trainee exists in portal_trainee
+  // Check if trainee exists in login_portalllll
   const traineeRes = await db.query(
-    'SELECT trainee_id FROM portal_trainee WHERE LOWER(trainee_id) = LOWER($1)',
+    'SELECT * FROM login_portalllll WHERE LOWER(id) = LOWER($1)',
     [cleanId]
   );
 
@@ -30,33 +20,30 @@ async function getOrCreateTraineeAccount(studentId) {
     return null; // Trainee not found in system
   }
 
-  // Create default account with password = SML + student_id
-  const defaultPassword = `SML${cleanId}`;
-  const hash = await bcrypt.hash(defaultPassword, 10);
+  const trainee = traineeRes.rows[0];
 
-  const insertRes = await db.query(`
-    INSERT INTO login_trainee (student_id, password, plain_password)
-    VALUES ($1, $2, $3)
-    ON CONFLICT (student_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
-    RETURNING *
-  `, [cleanId, hash, defaultPassword]);
-
-  return insertRes.rows[0];
+  return {
+    student_id: trainee.id,
+    password: trainee.password || `SML${trainee.id}`,
+    plain_password: `SML${trainee.id}`,
+    trainee
+  };
 }
 
 // 1. POST /api/auth/trainee/login - Trainee Login (Student ID & Password)
 router.post('/login', async (req, res) => {
   try {
-    const { student_id, password } = req.body;
+    const { student_id, id, password } = req.body;
+    const rawId = student_id || id || '';
+    const cleanStudentId = String(rawId).trim();
 
-    if (!student_id || !password) {
+    if (!cleanStudentId || !password) {
       return res.status(400).json({
         success: false,
         message: 'Student ID dan Password wajib diisi.'
       });
     }
 
-    const cleanStudentId = String(student_id).trim();
     const account = await getOrCreateTraineeAccount(cleanStudentId);
 
     if (!account) {
@@ -66,21 +53,25 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Verify Password
-    const isMatch = await bcrypt.compare(password, account.password);
+    const cleanPassword = String(password).trim();
+    const storedPassword = String(account.password || '').trim();
+    const expectedDefault = `SML${cleanStudentId}`;
+
+    let isMatch = false;
+    if (cleanPassword === storedPassword || cleanPassword === expectedDefault) {
+      isMatch = true;
+    } else if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$')) {
+      isMatch = await bcrypt.compare(cleanPassword, storedPassword).catch(() => false);
+    }
+
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Password salah. Password default adalah SML + Student ID (Contoh: SML27).'
+        message: `Password salah. Format password yang benar adalah ${expectedDefault}`
       });
     }
 
-    // Fetch Trainee Profile details
-    const profileRes = await db.query(
-      'SELECT * FROM portal_trainee WHERE LOWER(trainee_id) = LOWER($1)',
-      [cleanStudentId]
-    );
-    const profile = profileRes.rows[0] || {};
+    const profile = account.trainee;
 
     // Generate JWT Token
     const token = jwt.sign(
@@ -96,10 +87,10 @@ router.post('/login', async (req, res) => {
       data: {
         student_id: account.student_id,
         name: profile.name || null,
-        program: profile.program || null,
+        program: profile.cleaned_program || null,
         class: profile.class || null,
         level: profile.level || null,
-        branch_id: profile.branch_id || null,
+        branch_id: profile.cabang_id || null,
         profile
       }
     });

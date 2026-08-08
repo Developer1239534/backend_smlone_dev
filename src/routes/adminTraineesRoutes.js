@@ -33,13 +33,27 @@ const formatForAdmin = (row) => {
 // 1. GET /api/admin/trainees - Get all trainees
 router.get('/', async (req, res) => {
   try {
+    let limitClause = '';
+    const params = [];
+    if (req.query.limit || req.query.page) {
+      const limit = parseInt(req.query.limit) || 20;
+      const page = parseInt(req.query.page) || 1;
+      const offset = (page - 1) * limit;
+      limitClause = ` LIMIT $1 OFFSET $2`;
+      params.push(limit, offset);
+    }
+
     const result = await db.query(`
-      SELECT * FROM dashboard_trainne 
+      SELECT id, trainee_name, status, program, class, level, membership_expiry,
+             last_speaking_project, weekly_report, referral_code, gold_rank,
+             progress_video, plain_password, phone, profile_picture, tanggal_lahir,
+             cabang, house_sml, total_gold_periode, junior_youth, gender
+      FROM dashboard_trainne 
       ORDER BY 
         CASE WHEN id ~ '^[0-9]+$' THEN 0 ELSE 1 END,
         CASE WHEN id ~ '^[0-9]+$' THEN CAST(id AS BIGINT) ELSE NULL END ASC,
-        id ASC
-    `);
+        id ASC${limitClause}
+    `, params);
     res.json({ success: true, count: result.rows.length, data: result.rows.map(formatForAdmin) });
   } catch (err) {
     console.error('[Admin Trainees] GET All Error:', err.message);
