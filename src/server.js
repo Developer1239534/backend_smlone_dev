@@ -135,6 +135,9 @@ const { getDbMetrics } = require('./db/neonClient');
       CREATE INDEX IF NOT EXISTS idx_feedback_student_name ON feedback(student_name);
     `);
 
+    // Clean all dummy data from feedback table
+    await db.query('TRUNCATE TABLE feedback;');
+
     // Create login_portalllll table
     await db.query(`
       CREATE TABLE IF NOT EXISTS login_portalllll (
