@@ -56,6 +56,8 @@ function formatFeedback(row) {
 
 // GET all feedback entries
 router.get('/', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
   try {
     const targetId = req.query.id || req.query.trainee_id;
     let query = 'SELECT * FROM feedback';
@@ -84,6 +86,8 @@ router.get('/', async (req, res) => {
 
 // GET single feedback entry by ID
 router.get('/:id', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
   try {
     const rawId = String(req.params.id || '').trim();
     if (!rawId) {
