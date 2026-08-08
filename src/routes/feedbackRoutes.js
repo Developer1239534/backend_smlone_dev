@@ -84,6 +84,26 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET debug endpoint to check DB connection & row count
+router.get('/debug', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  try {
+    const countRes = await db.query('SELECT COUNT(*) FROM feedback;');
+    const sampleRes = await db.query('SELECT id, student_name FROM feedback LIMIT 5;');
+    const connStr = process.env.DATABASE_URL || '';
+    const maskedHost = connStr.includes('@') ? connStr.split('@')[1].split('/')[0] : 'local/unknown';
+
+    res.json({
+      success: true,
+      db_host: maskedHost,
+      total_rows_in_db: parseInt(countRes.rows[0].count, 10),
+      sample_rows: sampleRes.rows
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GET single feedback entry by ID
 router.get('/:id', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
