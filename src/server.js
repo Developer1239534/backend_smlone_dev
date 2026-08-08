@@ -575,6 +575,14 @@ app.use('/api/portal-trainee/gold-point-rankings', goldPointRankingRoutes);
 app.use('/api/portal-admin/gold-point-rankings', goldPointRankingRoutes);
 app.use('/gold-point-ranking', goldPointRankingRoutes);
 app.use('/gold-point-rankings', goldPointRankingRoutes);
+
+// Public Feedback Routes (Table feedback - 20 columns, id primary key)
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/feedbacks', feedbackRoutes);
+app.use('/api/sml-feedback', feedbackRoutes);
+app.use('/api/sml_feedback', feedbackRoutes);
+app.use('/api/trainee-feedback', feedbackRoutes);
+app.use('/feedback', feedbackRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/portal-trainee', portalTraineeRoutes);
 app.use('/api/portal-admin', portalAdminRoutes);
