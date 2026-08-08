@@ -48,27 +48,52 @@ function formatDateOnly(v) {
 function formatTrainee(row) {
   if (!row) return null;
   const cleanId = String(row.id || '').trim();
+  const schoolVal = cleanStr(row.nama_sekolah || row.school || row.school_name);
+  const dobVal = formatDateOnly(row.date_of_birth || row.birthday || row.dob);
+  const homeroomVal = cleanStr(row.trainee_homeroom || row.homeroom_class || row.homeroom);
+  const branchVal = cleanStr(row.cabang_id || row.branch);
+  const branchClassVal = cleanStr(row.cabang_kelas || row.branch_class);
+  const trainerVal = cleanStr(row.trainer || row.class_trainers);
+  const dayTimeVal = cleanStr(row.day_and_time || row.day_time || row.class_schedule);
+  const roomVal = cleanStr(row.room || row.room_name);
 
   return {
     id: cleanId,
     trainee_id: cleanId,
     name: cleanStr(row.name),
     gender: cleanStr(row.gender),
-    date_of_birth: formatDateOnly(row.date_of_birth),
-    nama_sekolah: cleanStr(row.nama_sekolah),
+    date_of_birth: dobVal,
+    birthday: dobVal,
+    dob: dobVal,
+    nama_sekolah: schoolVal,
+    school: schoolVal,
+    school_name: schoolVal,
     cleaned_program: cleanProgramName(row.cleaned_program),
+    program: cleanProgramName(row.cleaned_program),
     membership: cleanStr(row.membership),
+    membership_status: cleanStr(row.membership),
     expiry_date: formatDateOnly(row.expiry_date),
-    cabang_id: cleanStr(row.cabang_id),
+    cabang_id: branchVal,
+    branch: branchVal,
     first_enroll: formatDateOnly(row.first_enroll),
     class_name: cleanClassName(row.class_name),
     class: cleanClassName(row.class_name),
     house: cleanStr(row.house),
     level: cleanStr(row.level),
     house_role: cleanStr(row.house_role),
-    cabang_kelas: cleanStr(row.cabang_kelas),
+    cabang_kelas: branchClassVal,
+    branch_class: branchClassVal,
     newest_grade: cleanStr(row.newest_grade),
-    trainee_homeroom: cleanStr(row.trainee_homeroom),
+    trainee_homeroom: homeroomVal,
+    homeroom_class: homeroomVal,
+    homeroom: homeroomVal,
+    trainer: trainerVal,
+    class_trainers: trainerVal,
+    day_and_time: dayTimeVal,
+    day_time: dayTimeVal,
+    class_schedule: dayTimeVal,
+    room: roomVal,
+    room_name: roomVal,
     screening_test: cleanStr(row.screening_test),
     draft_grade: cleanStr(row.draft_grade),
     prev_grade: cleanStr(row.prev_grade),
