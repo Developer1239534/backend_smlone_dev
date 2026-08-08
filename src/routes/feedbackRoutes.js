@@ -93,9 +93,10 @@ router.get('/:id', async (req, res) => {
     const result = await db.query('SELECT * FROM feedback WHERE TRIM(id) = $1;', [rawId]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        status: 'error',
-        message: `Feedback entry with ID '${rawId}' not found`
+      return res.json({
+        status: 'success',
+        data: null,
+        message: `Belum ada data feedback untuk ID '${rawId}'`
       });
     }
 
