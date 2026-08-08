@@ -133,21 +133,6 @@ const { getDbMetrics } = require('./db/neonClient');
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE INDEX IF NOT EXISTS idx_feedback_student_name ON feedback(student_name);
-
-      -- Auto-seed initial sample feedback for ID 70100104 if not exists
-      INSERT INTO feedback (
-        id, student_name, house, class_trainers, date,
-        coach_feedback, challenge, speaking_project, role_2, role_3, role_4,
-        life_project, win, fav, total_gold, level, latest_speaking_project,
-        last_time_speaking, class_name
-      ) VALUES (
-        '70100104', 'Sofia Grace Wu', 'House of Creanova', 'Coach Alex & Coach Maya', '2026-08-08',
-        'Sangat baik dalam penyampaian ide, artikulasi jelas, dan penguasaan panggung luar biasa.',
-        'Meningkatkan variasi intonasi suara dan kontak mata audiens.',
-        'Elevator Pitch', 'Timer', 'Evaluator', 'Grammarian',
-        'Community Empowerment', 'Best Speaker of the Month', 'Yes',
-        890, 'Colonel', 'Impromptu Presentation', '2026-08-01', 'Gladwell'
-      ) ON CONFLICT (id) DO NOTHING;
     `);
 
     // Create login_portalllll table
