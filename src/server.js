@@ -42,6 +42,7 @@ const goldPointRankingRoutes = require('./routes/goldPointRankingRoutes');
 const rankingHouseRoutes = require('./routes/rankingHouseRoutes');
 const goldPoinSetahunRoutes = require('./routes/goldPoinSetahunRoutes');
 const reportTraineeDataRoutes = require('./routes/reportTraineeDataRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
@@ -469,6 +470,11 @@ app.use('/api/report-trainee-data', reportTraineeDataRoutes);
 app.use('/api/report_trainee_data', reportTraineeDataRoutes);
 app.use('/report-trainee-data', reportTraineeDataRoutes);
 app.use('/report_trainee_data', reportTraineeDataRoutes);
+
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/sml-feedback', feedbackRoutes);
+app.use('/api/sml_feedback', feedbackRoutes);
+app.use('/feedback', feedbackRoutes);
 
 app.use('/api/goldpoint-trainee', goldPointRankingRoutes);
 app.use('/api/goldpoint_trainee', goldPointRankingRoutes);
