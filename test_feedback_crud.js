@@ -1,13 +1,13 @@
 const db = require('./src/db/neonClient');
 
 async function testFeedbackCrud() {
-  console.log('🧪 Testing CRUD operations on table "feedback"...');
+  console.log('🧪 Testing CRUD operations on table "feedback" (ONLY id PRIMARY KEY)...');
 
   try {
     // 1. Insert test feedback row
     const insertRes = await db.query(`
       INSERT INTO feedback (
-        trainee_id, student_name, house, class_trainers, date,
+        id, student_name, house, class_trainers, date,
         coach_feedback, challenge, speaking_project, role_2, role_3, role_4,
         life_project, win, fav, total_gold, level, latest_speaking_project,
         last_time_speaking, class_name
@@ -36,7 +36,7 @@ async function testFeedbackCrud() {
     await db.query('DELETE FROM feedback WHERE id = $1;', [createdId]);
     console.log('✅ Deleted test feedback record ID:', createdId);
 
-    console.log('🎉 ALL CRUD TESTS PASSED FOR TABLE "feedback"!');
+    console.log('🎉 ALL CRUD TESTS PASSED FOR TABLE "feedback" WITH ONLY "id" COLUMN!');
     process.exit(0);
   } catch (err) {
     console.error('❌ Feedback CRUD test failed:', err);

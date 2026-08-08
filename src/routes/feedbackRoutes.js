@@ -25,12 +25,11 @@ function formatDateOnly(v) {
   return str.length >= 5 ? str : null;
 }
 
-// Helper to format feedback row
+// Helper to format feedback row (using ONLY id)
 function formatFeedback(row) {
   if (!row) return null;
   return {
-    id: row.id,
-    trainee_id: cleanStr(row.trainee_id),
+    id: cleanStr(row.id),
     student_name: cleanStr(row.student_name),
     house: cleanStr(row.house),
     class_trainers: cleanStr(row.class_trainers),
@@ -58,15 +57,15 @@ function formatFeedback(row) {
 // GET all feedback entries
 router.get('/', async (req, res) => {
   try {
-    const traineeId = req.query.trainee_id || req.query.id;
+    const targetId = req.query.id || req.query.trainee_id;
     let query = 'SELECT * FROM feedback';
     let params = [];
 
-    if (traineeId) {
-      query += ' WHERE TRIM(trainee_id) = $1 ORDER BY id DESC;';
-      params.push(String(traineeId).trim());
+    if (targetId) {
+      query += ' WHERE TRIM(id) = $1 ORDER BY created_at DESC;';
+      params.push(String(targetId).trim());
     } else {
-      query += ' ORDER BY id DESC;';
+      query += ' ORDER BY created_at DESC;';
     }
 
     const result = await db.query(query, params);
@@ -83,7 +82,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET single feedback entry by ID or trainee_id
+// GET single feedback entry by ID
 router.get('/:id', async (req, res) => {
   try {
     const rawId = String(req.params.id || '').trim();
@@ -91,19 +90,18 @@ router.get('/:id', async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'ID parameter is required' });
     }
 
-    // Search by primary key id or trainee_id
-    let result = await db.query('SELECT * FROM feedback WHERE id::text = $1 OR TRIM(trainee_id) = $1 ORDER BY id DESC;', [rawId]);
+    const result = await db.query('SELECT * FROM feedback WHERE TRIM(id) = $1;', [rawId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         status: 'error',
-        message: `Feedback entry with ID or trainee_id '${rawId}' not found`
+        message: `Feedback entry with ID '${rawId}' not found`
       });
     }
 
     res.json({
       status: 'success',
-      data: result.rows.map(formatFeedback)
+      data: formatFeedback(result.rows[0])
     });
   } catch (error) {
     console.error('Error fetching feedback by ID:', error);
@@ -111,7 +109,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create a new feedback entry
+// POST create / upsert feedback entry
 router.post('/', async (req, res) => {
   try {
     const {
@@ -121,21 +119,46 @@ router.post('/', async (req, res) => {
       last_time_speaking, class_name, class: cls
     } = req.body || {};
 
-    const cleanTraineeId = cleanStr(trainee_id || id);
+    const cleanId = cleanStr(id || trainee_id);
+    if (!cleanId) {
+      return res.status(400).json({ status: 'error', message: 'Field "id" is required' });
+    }
+
     const cleanStudentName = cleanStr(student_name);
     const finalClassName = cleanStr(class_name || cls);
 
     const result = await db.query(`
       INSERT INTO feedback (
-        trainee_id, student_name, house, class_trainers, date,
+        id, student_name, house, class_trainers, date,
         coach_feedback, challenge, speaking_project, role_2, role_3, role_4,
         life_project, win, fav, total_gold, level, latest_speaking_project,
         last_time_speaking, class_name
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
-      ) RETURNING *;
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        student_name = EXCLUDED.student_name,
+        house = EXCLUDED.house,
+        class_trainers = EXCLUDED.class_trainers,
+        date = EXCLUDED.date,
+        coach_feedback = EXCLUDED.coach_feedback,
+        challenge = EXCLUDED.challenge,
+        speaking_project = EXCLUDED.speaking_project,
+        role_2 = EXCLUDED.role_2,
+        role_3 = EXCLUDED.role_3,
+        role_4 = EXCLUDED.role_4,
+        life_project = EXCLUDED.life_project,
+        win = EXCLUDED.win,
+        fav = EXCLUDED.fav,
+        total_gold = EXCLUDED.total_gold,
+        level = EXCLUDED.level,
+        latest_speaking_project = EXCLUDED.latest_speaking_project,
+        last_time_speaking = EXCLUDED.last_time_speaking,
+        class_name = EXCLUDED.class_name,
+        updated_at = NOW()
+      RETURNING *;
     `, [
-      cleanTraineeId, cleanStudentName, house || null, class_trainers || null, date || null,
+      cleanId, cleanStudentName, house || null, class_trainers || null, date || null,
       coach_feedback || null, challenge || null, speaking_project || null, role_2 || null, role_3 || null, role_4 || null,
       life_project || null, win || null, fav || null, total_gold ? parseInt(total_gold, 10) : 0, level || null,
       latest_speaking_project || null, last_time_speaking || null, finalClassName
@@ -143,11 +166,11 @@ router.post('/', async (req, res) => {
 
     res.json({
       status: 'success',
-      message: 'Feedback entry created successfully',
+      message: 'Feedback entry saved successfully',
       data: formatFeedback(result.rows[0])
     });
   } catch (error) {
-    console.error('Error creating feedback entry:', error);
+    console.error('Error saving feedback entry:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 });
@@ -161,7 +184,7 @@ router.put('/:id', async (req, res) => {
     }
 
     const {
-      trainee_id, student_name, house, class_trainers, date,
+      student_name, house, class_trainers, date,
       coach_feedback, challenge, speaking_project, role_2, role_3, role_4,
       life_project, win, fav, total_gold, level, latest_speaking_project,
       last_time_speaking, class_name, class: cls
@@ -171,30 +194,29 @@ router.put('/:id', async (req, res) => {
 
     const result = await db.query(`
       UPDATE feedback SET
-        trainee_id = COALESCE($1, trainee_id),
-        student_name = COALESCE($2, student_name),
-        house = COALESCE($3, house),
-        class_trainers = COALESCE($4, class_trainers),
-        date = COALESCE($5, date),
-        coach_feedback = COALESCE($6, coach_feedback),
-        challenge = COALESCE($7, challenge),
-        speaking_project = COALESCE($8, speaking_project),
-        role_2 = COALESCE($9, role_2),
-        role_3 = COALESCE($10, role_3),
-        role_4 = COALESCE($11, role_4),
-        life_project = COALESCE($12, life_project),
-        win = COALESCE($13, win),
-        fav = COALESCE($14, fav),
-        total_gold = COALESCE($15, total_gold),
-        level = COALESCE($16, level),
-        latest_speaking_project = COALESCE($17, latest_speaking_project),
-        last_time_speaking = COALESCE($18, last_time_speaking),
-        class_name = COALESCE($19, class_name),
+        student_name = COALESCE($1, student_name),
+        house = COALESCE($2, house),
+        class_trainers = COALESCE($3, class_trainers),
+        date = COALESCE($4, date),
+        coach_feedback = COALESCE($5, coach_feedback),
+        challenge = COALESCE($6, challenge),
+        speaking_project = COALESCE($7, speaking_project),
+        role_2 = COALESCE($8, role_2),
+        role_3 = COALESCE($9, role_3),
+        role_4 = COALESCE($10, role_4),
+        life_project = COALESCE($11, life_project),
+        win = COALESCE($12, win),
+        fav = COALESCE($13, fav),
+        total_gold = COALESCE($14, total_gold),
+        level = COALESCE($15, level),
+        latest_speaking_project = COALESCE($16, latest_speaking_project),
+        last_time_speaking = COALESCE($17, last_time_speaking),
+        class_name = COALESCE($18, class_name),
         updated_at = NOW()
-      WHERE id::text = $20 OR TRIM(trainee_id) = $20
+      WHERE TRIM(id) = $19
       RETURNING *;
     `, [
-      trainee_id || null, student_name || null, house || null, class_trainers || null, date || null,
+      student_name || null, house || null, class_trainers || null, date || null,
       coach_feedback || null, challenge || null, speaking_project || null, role_2 || null, role_3 || null, role_4 || null,
       life_project || null, win || null, fav || null, total_gold !== undefined ? parseInt(total_gold, 10) : null, level || null,
       latest_speaking_project || null, last_time_speaking || null, finalClassName || null, rawId
@@ -207,7 +229,7 @@ router.put('/:id', async (req, res) => {
     res.json({
       status: 'success',
       message: 'Feedback entry updated successfully',
-      data: result.rows.map(formatFeedback)
+      data: formatFeedback(result.rows[0])
     });
   } catch (error) {
     console.error('Error updating feedback entry:', error);
@@ -223,7 +245,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'ID parameter is required' });
     }
 
-    const result = await db.query('DELETE FROM feedback WHERE id::text = $1 OR TRIM(trainee_id) = $1 RETURNING *;', [rawId]);
+    const result = await db.query('DELETE FROM feedback WHERE TRIM(id) = $1 RETURNING *;', [rawId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ status: 'error', message: `Feedback entry '${rawId}' not found` });
