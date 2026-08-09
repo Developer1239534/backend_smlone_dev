@@ -62,6 +62,9 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (error) {
+    if (error.code === '42P01' || (error.message && error.message.includes('does not exist'))) {
+      return res.json({ success: true, data: [], total: 0 });
+    }
     console.error('[ReportTrainee] Fetch error:', error);
     res.status(500).json({
       success: false,
