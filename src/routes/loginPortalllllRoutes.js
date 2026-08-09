@@ -117,6 +117,9 @@ router.get('/', async (req, res) => {
       data: formatted
     });
   } catch (error) {
+    if (error.code === '42P01' || (error.message && error.message.includes('does not exist'))) {
+      return res.json({ status: 'success', total: 0, data: [] });
+    }
     console.error('Error fetching login_portalllll:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
@@ -191,6 +194,9 @@ router.get('/:id', async (req, res) => {
       data: formatTrainee(result.rows[0])
     });
   } catch (error) {
+    if (error.code === '42P01' || (error.message && error.message.includes('does not exist'))) {
+      return res.json({ status: 'success', data: null, message: 'Table has been removed' });
+    }
     console.error('Error fetching trainee from login_portalllll:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
