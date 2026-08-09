@@ -107,86 +107,16 @@ const { getDbMetrics } = require('./db/neonClient');
 
 
     await db.query('DROP TABLE IF EXISTS profile_trainee CASCADE');
-    // Create feedback table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS feedback (
-        id VARCHAR(100) PRIMARY KEY,
-        student_name VARCHAR(255),
-        house VARCHAR(255),
-        class_trainers VARCHAR(255),
-        date DATE,
-        coach_feedback TEXT,
-        challenge TEXT,
-        speaking_project TEXT,
-        role_2 VARCHAR(255),
-        role_3 VARCHAR(255),
-        role_4 VARCHAR(255),
-        life_project TEXT,
-        win VARCHAR(255),
-        fav VARCHAR(255),
-        total_gold INTEGER DEFAULT 0,
-        level VARCHAR(100),
-        latest_speaking_project TEXT,
-        last_time_speaking VARCHAR(255),
-        class_name VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE INDEX IF NOT EXISTS idx_feedback_student_name ON feedback(student_name);
-    `);
-
-    // Auto-seed all 729 feedback records on server startup if database table is empty (0 rows)
-    try {
-      const checkRes = await db.query('SELECT COUNT(*) FROM feedback;');
-      const currentCount = parseInt(checkRes.rows[0].count, 10);
-
-      if (currentCount === 0) {
-        console.log('🌱 Seeding 729 feedback records into database...');
-        const feedbackSeed = require('./routes/seed_feedback_729.json');
-        if (Array.isArray(feedbackSeed) && feedbackSeed.length > 0) {
-          for (const f of feedbackSeed) {
-            if (!f.id) continue;
-            await db.query(`
-              INSERT INTO feedback (
-                id, student_name, house, class_trainers, date,
-                coach_feedback, challenge, speaking_project, role_2, role_3, role_4,
-                life_project, win, fav, total_gold, level, latest_speaking_project,
-                last_time_speaking, class_name
-              ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
-              ) ON CONFLICT (id) DO UPDATE SET
-                student_name = EXCLUDED.student_name,
-                house = EXCLUDED.house,
-                class_trainers = EXCLUDED.class_trainers,
-                date = EXCLUDED.date,
-                coach_feedback = EXCLUDED.coach_feedback,
-                challenge = EXCLUDED.challenge,
-                speaking_project = EXCLUDED.speaking_project,
-                role_2 = EXCLUDED.role_2,
-                role_3 = EXCLUDED.role_3,
-                role_4 = EXCLUDED.role_4,
-                life_project = EXCLUDED.life_project,
-                win = EXCLUDED.win,
-                fav = EXCLUDED.fav,
-                total_gold = EXCLUDED.total_gold,
-                level = EXCLUDED.level,
-                latest_speaking_project = EXCLUDED.latest_speaking_project,
-                last_time_speaking = EXCLUDED.last_time_speaking,
-                class_name = EXCLUDED.class_name,
-                updated_at = NOW();
-            `, [
-              f.id, f.student_name || null, f.house || null, f.class_trainers || null, f.date || null,
-              f.coach_feedback || null, f.challenge || null, f.speaking_project || null, f.role_2 || null, f.role_3 || null, f.role_4 || null,
-              f.life_project || null, f.win || null, f.fav || null, f.total_gold || 0, f.level || null,
-              f.latest_speaking_project || null, f.last_time_speaking || null, f.class_name || f.class || null
-            ]);
-          }
-          console.log(`✅ Auto-seeded ${feedbackSeed.length} feedback records into database!`);
-        }
-      }
-    } catch (seedErr) {
-      console.error('Error auto-seeding 729 feedback records on startup:', seedErr.message);
-    }
+    // Drop all requested old tables so database remains clean for new custom tables
+    await db.query('DROP TABLE IF EXISTS feedback CASCADE;');
+    await db.query('DROP TABLE IF EXISTS gold_poin_setahun CASCADE;');
+    await db.query('DROP TABLE IF EXISTS gold_point_rankings CASCADE;');
+    await db.query('DROP TABLE IF EXISTS gold_point_setahun CASCADE;');
+    await db.query('DROP TABLE IF EXISTS house_rank CASCADE;');
+    await db.query('DROP TABLE IF EXISTS ranking_house CASCADE;');
+    await db.query('DROP TABLE IF EXISTS report_trainee CASCADE;');
+    await db.query('DROP TABLE IF EXISTS login_portal_fix CASCADE;');
+    await db.query('DROP TABLE IF EXISTS login_portalllll CASCADE;');
 
 
 
