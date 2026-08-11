@@ -5,7 +5,7 @@ const db = require('../db/neonClient');
 // GET / - Ambil semua data credential portal
 router.get('/', async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM credential_portal');
+    const result = await db.query('SELECT id, nama, membership_status, password FROM credential_portal');
     res.json({
       success: true,
       message: 'Berhasil mengambil data Credential Portal.',
@@ -51,9 +51,9 @@ router.post('/push', async (req, res) => {
         continue;
       }
 
-      // Map kolom dari Google Sheets / n8n ke kolom database
+      // Map kolom dari Google Sheets / n8n (Name / Nama) ke kolom database 'nama'
       const id                = row['ID']                || row['id']                || '';
-      const name              = row['Name']              || row['name']              || row['Nama'] || row['nama'] || '';
+      const nama              = row['Nama']              || row['nama']              || row['Name'] || row['name'] || '';
       const membership_status = row['MEMBERSHIP STATUS'] || row['Membership Status'] || row['membership_status'] || row['membership'] || '';
       const password          = row['Password']          || row['password']          || '';
 
@@ -66,18 +66,18 @@ router.post('/push', async (req, res) => {
 
       try {
         await db.query(
-          `INSERT INTO credential_portal (id, nama, name, membership_status, password)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [id, name, name, membership_status, password]
+          `INSERT INTO credential_portal (id, nama, membership_status, password)
+           VALUES ($1, $2, $3, $4)`,
+          [id, nama, membership_status, password]
         );
         insertedCount++;
       } catch (rowError) {
         try {
           await db.query(
             `UPDATE credential_portal 
-             SET nama = $2, name = $3, membership_status = $4, password = $5
+             SET nama = $2, membership_status = $3, password = $4
              WHERE id = $1`,
-            [id, name, name, membership_status, password]
+            [id, nama, membership_status, password]
           );
           insertedCount++;
         } catch (updateError) {

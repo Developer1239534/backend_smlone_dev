@@ -4,7 +4,6 @@
 CREATE TABLE IF NOT EXISTS credential_portal (
   id                VARCHAR(255) PRIMARY KEY,
   nama              VARCHAR(255),
-  name              VARCHAR(255),
   membership_status VARCHAR(255),
   password          VARCHAR(255)
 );
