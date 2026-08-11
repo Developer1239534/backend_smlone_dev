@@ -10,21 +10,21 @@ CREATE TABLE IF NOT EXISTS credential_portal (
 
 -- Tabel profile_trainee
 CREATE TABLE IF NOT EXISTS profile_trainee (
-  id                    VARCHAR(255) PRIMARY KEY,
-  nama                  VARCHAR(255),
-  gender                VARCHAR(50),
-  membership            VARCHAR(100),
-  start_date            DATE,
-  expiry_date           DATE,
-  class                 VARCHAR(100),
-  house                 VARCHAR(100),
-  trainer_homeroom      VARCHAR(255),
-  date_of_birthday      DATE,
-  kelas                 VARCHAR(100),
-  email_account_parents VARCHAR(255),
-  nomor_wa_parent       VARCHAR(50),
-  nomor_wa_trainee      VARCHAR(50),
-  nama_sekolah          VARCHAR(255)
+  "ID"                    VARCHAR(255) PRIMARY KEY,
+  "Nama"                  VARCHAR(255),
+  "Gender"                VARCHAR(50),
+  "Membership"            VARCHAR(100),
+  "Start Date"            TEXT,
+  "Expiry Date"           TEXT,
+  "Class"                 VARCHAR(100),
+  "House"                 VARCHAR(100),
+  "Trainer Homeroom"      VARCHAR(255),
+  "Date of Birthday"      TEXT,
+  "Kelas"                 VARCHAR(100),
+  "Email Account Parents" VARCHAR(255),
+  "Nomor WA Parent"       VARCHAR(100),
+  "Nomor WA Trainee"      VARCHAR(100),
+  "Nama Sekolah"          VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS houses (
