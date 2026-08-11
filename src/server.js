@@ -30,6 +30,7 @@ const portalTraineeRoutes = require('./routes/portalTraineeRoutes');
 const portalTraineeWebhookRoutes = require('./routes/portalTraineeWebhookRoutes');
 const portalAuthRoutes = require('./routes/portalAuthRoutes');
 const goldpointTraineeRoutes = require('./routes/goldpointTraineeRoutes');
+const credentialRoutes = require('./routes/credentialRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -412,6 +413,26 @@ app.use('/api/webhook/portal-trainee', (req, res, next) => {
   }
   next();
 }, portalTraineeWebhookRoutes);
+
+app.use('/api/webhook/credential', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, credentialRoutes);
+
+app.use('/api/webhook/credential-portal', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, credentialRoutes);
+
+// Credential Routes
+app.use('/api/credential', verifyToken, credentialRoutes);
+app.use('/api/credential-portal', verifyToken, credentialRoutes);
 
 
 
