@@ -2,10 +2,10 @@
 
 -- Tabel credential_portal
 CREATE TABLE IF NOT EXISTS credential_portal (
-  id                VARCHAR(255) PRIMARY KEY,
-  nama              VARCHAR(255),
-  membership_status VARCHAR(255),
-  password          VARCHAR(255)
+  "ID"                VARCHAR(255) PRIMARY KEY,
+  "Name"              VARCHAR(255),
+  "MEMBERSHIP STATUS" VARCHAR(255),
+  "Password"          VARCHAR(255)
 );
 
 -- Tabel profile_trainee

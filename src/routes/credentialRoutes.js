@@ -5,7 +5,7 @@ const db = require('../db/neonClient');
 // GET / - Ambil semua data credential portal
 router.get('/', async (req, res) => {
   try {
-    const result = await db.query('SELECT id, nama, membership_status, password FROM credential_portal');
+    const result = await db.query('SELECT * FROM credential_portal');
     res.json({
       success: true,
       message: 'Berhasil mengambil data Credential Portal.',
@@ -51,13 +51,13 @@ router.post('/push', async (req, res) => {
         continue;
       }
 
-      // Map kolom dari Google Sheets / n8n (Name / Nama) ke kolom database 'nama'
-      const id                = row['ID']                || row['id']                || '';
-      const nama              = row['Nama']              || row['nama']              || row['Name'] || row['name'] || '';
-      const membership_status = row['MEMBERSHIP STATUS'] || row['Membership Status'] || row['membership_status'] || row['membership'] || '';
-      const password          = row['Password']          || row['password']          || '';
+      // Map exact JSON keys from n8n payload: ID, Name, MEMBERSHIP STATUS, Password
+      const id                = String(row['ID']                ?? row['id']                ?? '');
+      const name              = String(row['Name']              ?? row['name']              ?? row['Nama'] ?? row['nama'] ?? '');
+      const membership_status = String(row['MEMBERSHIP STATUS'] ?? row['Membership Status'] ?? row['membership_status'] ?? row['membership'] ?? '');
+      const password          = String(row['Password']          ?? row['password']          ?? '');
 
-      // Wajib ada id
+      // Wajib ada ID
       if (!id) {
         console.warn(`[Credential Portal Push] Skipping row ${i}: missing ID`);
         skippedCount++;
@@ -66,18 +66,18 @@ router.post('/push', async (req, res) => {
 
       try {
         await db.query(
-          `INSERT INTO credential_portal (id, nama, membership_status, password)
+          `INSERT INTO credential_portal ("ID", "Name", "MEMBERSHIP STATUS", "Password")
            VALUES ($1, $2, $3, $4)`,
-          [id, nama, membership_status, password]
+          [id, name, membership_status, password]
         );
         insertedCount++;
       } catch (rowError) {
         try {
           await db.query(
             `UPDATE credential_portal 
-             SET nama = $2, membership_status = $3, password = $4
-             WHERE id = $1`,
-            [id, nama, membership_status, password]
+             SET "Name" = $2, "MEMBERSHIP STATUS" = $3, "Password" = $4
+             WHERE "ID" = $1`,
+            [id, name, membership_status, password]
           );
           insertedCount++;
         } catch (updateError) {
@@ -110,12 +110,12 @@ router.post('/push', async (req, res) => {
   }
 });
 
-// DELETE /:id - Hapus data berdasarkan id
+// DELETE /:id - Hapus data berdasarkan ID
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const result = await db.query(
-      'DELETE FROM credential_portal WHERE id = $1 RETURNING *',
+      'DELETE FROM credential_portal WHERE "ID" = $1 RETURNING *',
       [id]
     );
     if (result.rows.length === 0) {
