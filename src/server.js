@@ -32,6 +32,7 @@ const portalAuthRoutes = require('./routes/portalAuthRoutes');
 const goldpointTraineeRoutes = require('./routes/goldpointTraineeRoutes');
 const credentialRoutes = require('./routes/credentialRoutes');
 const profileTraineeRoutes = require('./routes/profileTraineeRoutes');
+const monthlyGoldPointRoutes = require('./routes/monthlyGoldPointRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -439,10 +440,19 @@ app.use('/api/webhook/profile-trainee', (req, res, next) => {
   next();
 }, profileTraineeRoutes);
 
+app.use('/api/webhook/monthly-gold-point', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, monthlyGoldPointRoutes);
+
 // Credential Routes
 app.use('/api/credential', verifyToken, credentialRoutes);
 app.use('/api/credential-portal', verifyToken, credentialRoutes);
 app.use('/api/profile-trainee', verifyToken, profileTraineeRoutes);
+app.use('/api/monthly-gold-point', verifyToken, monthlyGoldPointRoutes);
 
 
 

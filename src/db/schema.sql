@@ -27,6 +27,20 @@ CREATE TABLE IF NOT EXISTS profile_trainee (
   "Nama Sekolah"          VARCHAR(255)
 );
 
+-- Tabel monthly_gold_point
+CREATE TABLE IF NOT EXISTS monthly_gold_point (
+  "ID"                 VARCHAR(255) PRIMARY KEY,
+  "Nama Trainee"       VARCHAR(255),
+  "Active/Expired"     VARCHAR(100),
+  "Level"              VARCHAR(100),
+  "House"              VARCHAR(100),
+  "Class"              VARCHAR(100),
+  "Branch"             VARCHAR(100),
+  "Total Gold/Periode" VARCHAR(100),
+  "Junior/Youth"       VARCHAR(100),
+  "RANK/ID"            VARCHAR(255)
+);
+
 CREATE TABLE IF NOT EXISTS houses (
   id VARCHAR(50) PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
