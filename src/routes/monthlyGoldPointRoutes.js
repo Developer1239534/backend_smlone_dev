@@ -2,15 +2,38 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// GET / - Ambil semua data monthly_gold_point
+// GET / - Ambil semua data monthly_gold_point (dengan deduplikasi ID otomatis)
 router.get('/', async (req, res) => {
   try {
     const result = await db.query('SELECT * FROM monthly_gold_point');
+    
+    // Deduplicate by ID and sort descending by GP
+    const uniqueMap = new Map();
+    for (const row of result.rows) {
+      const id = row['ID'];
+      if (!id) continue;
+      if (!uniqueMap.has(id)) {
+        uniqueMap.set(id, row);
+      } else {
+        const existingGold = parseInt(uniqueMap.get(id)['Total Gold/Periode'] || '0', 10);
+        const currentGold = parseInt(row['Total Gold/Periode'] || '0', 10);
+        if (currentGold > existingGold) {
+          uniqueMap.set(id, row);
+        }
+      }
+    }
+
+    const sortedRows = Array.from(uniqueMap.values()).sort((a, b) => {
+      const goldA = parseInt(a['Total Gold/Periode'] || '0', 10);
+      const goldB = parseInt(b['Total Gold/Periode'] || '0', 10);
+      return goldB - goldA;
+    });
+
     res.json({
       success: true,
       message: 'Berhasil mengambil data Monthly Gold Point.',
-      total: result.rows.length,
-      data: result.rows
+      total: sortedRows.length,
+      data: sortedRows
     });
   } catch (error) {
     console.error('[Monthly Gold Point] GET error:', error.message);
