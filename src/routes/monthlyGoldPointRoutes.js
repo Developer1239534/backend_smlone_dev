@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
+const goldpointSeed = require('../db/goldpointSeed');
 
-// Helper to ensure monthly_gold_point table exists
+// Helper to ensure monthly_gold_point table exists and is populated
 async function ensureMonthlyGoldPointTable() {
   try {
     await db.query(`
@@ -22,51 +23,76 @@ async function ensureMonthlyGoldPointTable() {
       )
     `);
 
-    // Check if table is empty, if so populate from goldpoint_trainee if available
+    // Check if table is empty
     const countCheck = await db.query('SELECT COUNT(*) FROM monthly_gold_point');
-    if (parseInt(countCheck.rows[0].count, 10) === 0) {
-      try {
-        await db.query(`
-          INSERT INTO monthly_gold_point ("ID", "Nama Trainee", "Active/Expired", "Level", "House", "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID")
-          SELECT DISTINCT ON (trainee_id) 
-            trainee_id AS "ID",
-            COALESCE(trainee_name, nama_trainee) AS "Nama Trainee",
-            COALESCE(membership_status, status) AS "Active/Expired",
-            level AS "Level",
-            house AS "House",
-            COALESCE(class_name, class) AS "Class",
-            branch AS "Branch",
-            CAST(COALESCE(total_gold, total_gold_periode, gp_month, 0) AS TEXT) AS "Total Gold/Periode",
-            COALESCE(program, kategori, junior_youth) AS "Junior/Youth",
-            CAST(COALESCE(ranking, rank, 0) AS TEXT) AS "RANK/ID"
-          FROM goldpoint_trainee
-          ON CONFLICT ("ID") DO NOTHING
-        `);
-      } catch (copyErr) {
-        console.warn('[Monthly Gold Point] Could not populate from goldpoint_trainee:', copyErr.message);
+    if (parseInt(countCheck.rows[0].count, 10) === 0 && Array.isArray(goldpointSeed) && goldpointSeed.length > 0) {
+      console.log(`[Monthly Gold Point] Seeding ${goldpointSeed.length} records into monthly_gold_point...`);
+      for (const row of goldpointSeed) {
+        const id                 = String(row['ID']                 || row['id']                 || '');
+        const nama_trainee       = String(row['Nama Trainee']       || row['nama_trainee']       || '');
+        const active_expired     = String(row['Active/Expired']     || row['active_expired']     || '');
+        const level              = String(row['Level']              || row['level']              || '');
+        const house              = String(row['House']              || row['house']              || '');
+        const class_val          = String(row['Class']              || row['class']              || '');
+        const branch             = String(row['Branch']             || row['branch']             || '');
+        const total_gold_periode = String(row['Total Gold/Periode'] || row['total_gold_periode'] || '');
+        const junior_youth       = String(row['Junior/Youth']       || row['junior_youth']       || '');
+        const rank_id            = String(row['RANK/ID']            || row['rank_id']            || '');
+
+        if (!id) continue;
+
+        try {
+          await db.query(
+            `INSERT INTO monthly_gold_point (
+               "ID", "Nama Trainee", "Active/Expired", "Level", "House",
+               "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             ON CONFLICT ("ID") DO UPDATE SET
+               "Nama Trainee"       = EXCLUDED."Nama Trainee",
+               "Active/Expired"     = EXCLUDED."Active/Expired",
+               "Level"              = EXCLUDED."Level",
+               "House"              = EXCLUDED."House",
+               "Class"              = EXCLUDED."Class",
+               "Branch"             = EXCLUDED."Branch",
+               "Total Gold/Periode" = EXCLUDED."Total Gold/Periode",
+               "Junior/Youth"       = EXCLUDED."Junior/Youth",
+               "RANK/ID"            = EXCLUDED."RANK/ID"`,
+            [
+              id, nama_trainee, active_expired, level, house,
+              class_val, branch, total_gold_periode, junior_youth, rank_id
+            ]
+          );
+        } catch (e) {
+          // ignore single row seed err
+        }
       }
+      console.log('[Monthly Gold Point] Seeding completed.');
     }
   } catch (err) {
     console.error('[Monthly Gold Point] Table initialization error:', err.message);
   }
 }
 
-// GET / - Ambil semua data monthly_gold_point (dengan deduplikasi ID otomatis)
+// GET / - Ambil semua data monthly_gold_point (dengan deduplikasi ID & seed fallback)
 router.get('/', async (req, res) => {
   try {
     await ensureMonthlyGoldPointTable();
 
-    let result;
+    let rows = [];
     try {
-      result = await db.query('SELECT * FROM monthly_gold_point');
+      const result = await db.query('SELECT * FROM monthly_gold_point');
+      rows = result.rows;
     } catch (tblErr) {
-      // Fallback query from goldpoint_trainee if monthly_gold_point still fails
-      result = await db.query('SELECT * FROM goldpoint_trainee');
+      console.warn('[Monthly Gold Point] Database query failed, using seed fallback:', tblErr.message);
     }
-    
+
+    if (!rows || rows.length === 0) {
+      rows = goldpointSeed;
+    }
+
     // Deduplicate by ID and sort descending by GP
     const uniqueMap = new Map();
-    for (const row of result.rows) {
+    for (const row of rows) {
       const id = row['ID'] || row.id || row.trainee_id;
       if (!id) continue;
 
