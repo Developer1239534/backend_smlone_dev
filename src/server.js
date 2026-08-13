@@ -448,11 +448,11 @@ app.use('/api/webhook/monthly-gold-point', (req, res, next) => {
   next();
 }, monthlyGoldPointRoutes);
 
-// Credential Routes
-app.use('/api/credential', verifyToken, credentialRoutes);
-app.use('/api/credential-portal', verifyToken, credentialRoutes);
-app.use('/api/profile-trainee', verifyToken, profileTraineeRoutes);
-app.use('/api/monthly-gold-point', verifyToken, monthlyGoldPointRoutes);
+// Credential & Trainee Data Routes (Public GET for Frontend, Auth for Admin Mutations)
+app.use('/api/credential', credentialRoutes);
+app.use('/api/credential-portal', credentialRoutes);
+app.use('/api/profile-trainee', profileTraineeRoutes);
+app.use('/api/monthly-gold-point', monthlyGoldPointRoutes);
 
 
 
