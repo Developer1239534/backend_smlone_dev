@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
-const goldpointSeed = require('../db/goldpointSeed');
 
-// Helper to ensure monthly_gold_point table exists and is populated
-async function ensureMonthlyGoldPointTable() {
+// GET /api/monthly-gold-point - Ambil murni data dari tabel monthly_gold_point saja
+router.get('/', async (req, res) => {
   try {
+    // Pastikan tabel monthly_gold_point ada
     await db.query(`
       CREATE TABLE IF NOT EXISTS monthly_gold_point (
         "ID" TEXT PRIMARY KEY,
@@ -23,137 +23,13 @@ async function ensureMonthlyGoldPointTable() {
       )
     `);
 
-    // Check if table is empty
-    const countCheck = await db.query('SELECT COUNT(*) FROM monthly_gold_point');
-    if (parseInt(countCheck.rows[0].count, 10) === 0 && Array.isArray(goldpointSeed) && goldpointSeed.length > 0) {
-      console.log(`[Monthly Gold Point] Seeding ${goldpointSeed.length} records into monthly_gold_point...`);
-      for (const row of goldpointSeed) {
-        const id                 = String(row['ID']                 || row['id']                 || '');
-        const nama_trainee       = String(row['Nama Trainee']       || row['nama_trainee']       || '');
-        const active_expired     = String(row['Active/Expired']     || row['active_expired']     || '');
-        const level              = String(row['Level']              || row['level']              || '');
-        const house              = String(row['House']              || row['house']              || '');
-        const class_val          = String(row['Class']              || row['class']              || '');
-        const branch             = String(row['Branch']             || row['branch']             || '');
-        const total_gold_periode = String(row['Total Gold/Periode'] || row['total_gold_periode'] || '');
-        const junior_youth       = String(row['Junior/Youth']       || row['junior_youth']       || '');
-        const rank_id            = String(row['RANK/ID']            || row['rank_id']            || '');
-
-        if (!id) continue;
-
-        try {
-          await db.query(
-            `INSERT INTO monthly_gold_point (
-               "ID", "Nama Trainee", "Active/Expired", "Level", "House",
-               "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-             ON CONFLICT ("ID") DO UPDATE SET
-               "Nama Trainee"       = EXCLUDED."Nama Trainee",
-               "Active/Expired"     = EXCLUDED."Active/Expired",
-               "Level"              = EXCLUDED."Level",
-               "House"              = EXCLUDED."House",
-               "Class"              = EXCLUDED."Class",
-               "Branch"             = EXCLUDED."Branch",
-               "Total Gold/Periode" = EXCLUDED."Total Gold/Periode",
-               "Junior/Youth"       = EXCLUDED."Junior/Youth",
-               "RANK/ID"            = EXCLUDED."RANK/ID"`,
-            [
-              id, nama_trainee, active_expired, level, house,
-              class_val, branch, total_gold_periode, junior_youth, rank_id
-            ]
-          );
-        } catch (e) {
-          // ignore single row seed err
-        }
-      }
-      console.log('[Monthly Gold Point] Seeding completed.');
-    }
-  } catch (err) {
-    console.error('[Monthly Gold Point] Table initialization error:', err.message);
-  }
-}
-
-// GET / - Ambil semua data monthly_gold_point (dengan deduplikasi ID & seed fallback)
-router.get('/', async (req, res) => {
-  try {
-    await ensureMonthlyGoldPointTable();
-
-    let rows = [];
-    try {
-      const result = await db.query('SELECT * FROM monthly_gold_point');
-      rows = result.rows;
-    } catch (tblErr) {
-      console.warn('[Monthly Gold Point] Database query failed, using seed fallback:', tblErr.message);
-    }
-
-    if (!rows || rows.length === 0) {
-      rows = goldpointSeed;
-    }
-
-    // Deduplicate by ID and sort descending by GP
-    const uniqueMap = new Map();
-    for (const row of rows) {
-      const id = row['ID'] || row.id || row.trainee_id;
-      if (!id) continue;
-
-      const name = row['Nama Trainee'] || row.nama_trainee || row.trainee_name;
-      const status = row['Active/Expired'] || row.status || row.membership_status;
-      const level = row['Level'] || row.level;
-      const house = row['House'] || row.house;
-      const class_val = row['Class'] || row.class || row.class_name;
-      const branch = row['Branch'] || row.branch;
-      const gold = parseInt(row['Total Gold/Periode'] || row.total_gold || row.gp_month || row.total_gold_periode || '0', 10);
-      const category = row['Junior/Youth'] || row.kategori || row.program || row.junior_youth;
-      const rank = row['RANK/ID'] || row.rank || row.ranking;
-
-      const normalizedRow = {
-        ID: String(id),
-        id: String(id),
-        'Nama Trainee': name,
-        nama_trainee: name,
-        trainee_name: name,
-        'Active/Expired': status,
-        status: status,
-        membership_status: status,
-        Level: level,
-        level: level,
-        House: house,
-        house: house,
-        Class: class_val,
-        class: class_val,
-        class_name: class_val,
-        Branch: branch,
-        branch: branch,
-        'Total Gold/Periode': String(gold),
-        total_gold: gold,
-        gp_month: gold,
-        total_gold_periode: gold,
-        'Junior/Youth': category,
-        kategori: category,
-        junior_youth: category,
-        program: category,
-        'RANK/ID': rank,
-        rank: rank,
-        ranking: rank
-      };
-
-      if (!uniqueMap.has(String(id))) {
-        uniqueMap.set(String(id), normalizedRow);
-      } else {
-        const existingGold = uniqueMap.get(String(id)).total_gold;
-        if (gold > existingGold) {
-          uniqueMap.set(String(id), normalizedRow);
-        }
-      }
-    }
-
-    const sortedRows = Array.from(uniqueMap.values()).sort((a, b) => b.total_gold - a.total_gold);
+    const result = await db.query('SELECT * FROM monthly_gold_point');
 
     res.json({
       success: true,
       message: 'Berhasil mengambil data Monthly Gold Point.',
-      total: sortedRows.length,
-      data: sortedRows
+      total: result.rows.length,
+      data: result.rows
     });
   } catch (error) {
     console.error('[Monthly Gold Point] GET error:', error.message);
@@ -165,10 +41,25 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /push - Terima dan simpan data dari n8n / Google Sheets (bulk upsert)
+// POST /push - Terima dan simpan data dari n8n / Google Sheets (bulk upsert ke monthly_gold_point)
 router.post('/push', async (req, res) => {
   try {
-    await ensureMonthlyGoldPointTable();
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS monthly_gold_point (
+        "ID" TEXT PRIMARY KEY,
+        "Nama Trainee" TEXT,
+        "Active/Expired" TEXT,
+        "Level" TEXT,
+        "House" TEXT,
+        "Class" TEXT,
+        "Branch" TEXT,
+        "Total Gold/Periode" TEXT,
+        "Junior/Youth" TEXT,
+        "RANK/ID" TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     let data = req.body;
     if (!Array.isArray(data)) {
@@ -255,11 +146,10 @@ router.post('/push', async (req, res) => {
   }
 });
 
-// DELETE /:id - Hapus data berdasarkan ID
+// DELETE /:id - Hapus data berdasarkan ID dari monthly_gold_point
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await ensureMonthlyGoldPointTable();
     const result = await db.query('DELETE FROM monthly_gold_point WHERE "ID" = $1 RETURNING *', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Tidak ada data Monthly Gold Point dengan ID: ${id}` });
