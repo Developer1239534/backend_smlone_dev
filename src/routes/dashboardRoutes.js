@@ -85,7 +85,7 @@ router.get('/', async (req, res) => {
 // GET /api/dashboard-trainee/house-rank - Get all house rankings
 router.get('/house-rank', async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM house_rank ORDER BY "Rank" ASC NULLS LAST').catch(() => ({ rows: [] }));
+    const result = await db.query('SELECT * FROM house_rank ORDER BY "Rank" ASC NULLS LAST, "Total Gold" DESC');
     res.json({
       success: true,
       count: result.rows.length,
