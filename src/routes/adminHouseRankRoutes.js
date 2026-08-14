@@ -2,31 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// Auto-ensure table exists in public schema
-async function ensureTableExists() {
-  try {
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS public.house_rank (
-        "Nama House" VARCHAR(255),
-        "Total Gold" INT DEFAULT 0,
-        "Class" VARCHAR(255),
-        "Cabang" VARCHAR(255),
-        "Program" VARCHAR(255),
-        "Rank" INT
-      );
-    `);
-  } catch (e) {
-    console.error('[House Rank] Auto-create table warning:', e.message);
-  }
-}
-
 // GET / - Retrieve all house rank records
 router.get('/', async (req, res) => {
   try {
-    await ensureTableExists();
-
     const { search, cabang, program, house } = req.query;
-    let query = 'SELECT "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank" FROM public.house_rank WHERE 1=1';
+    let query = 'SELECT "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank" FROM house_rank WHERE 1=1';
     const params = [];
 
     if (search) {
@@ -60,27 +40,83 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST / - Create a new house rank record
+// POST / - Create a new house rank record (Supports Single Object OR Array Batch Insert)
 router.post('/', async (req, res) => {
-  await ensureTableExists();
-
-  const namaHouse = req.body['Nama House'] || req.body.nama_house || req.body.namaHouse || req.body.house_name;
-  const totalGold = req.body['Total Gold'] ?? req.body.total_gold ?? req.body.totalGold ?? 0;
-  const className = req.body['Class'] || req.body.class || req.body.className || null;
-  const cabang = req.body['Cabang'] || req.body.cabang || null;
-  const program = req.body['Program'] || req.body.program || null;
-  const rank = req.body['Rank'] ?? req.body.rank ?? null;
-
-  if (!namaHouse) {
-    return res.status(400).json({
-      success: false,
-      message: 'Field "Nama House" wajib diisi.'
-    });
-  }
-
   try {
+    const bodyData = req.body?.data || req.body?.items || req.body;
+
+    if (!bodyData) {
+      return res.status(400).json({
+        success: false,
+        message: 'Request body tidak boleh kosong.'
+      });
+    }
+
+    // Handle Array / Batch Insert
+    if (Array.isArray(bodyData)) {
+      if (bodyData.length === 0) {
+        return res.status(400).json({ success: false, message: 'Array data tidak boleh kosong.' });
+      }
+
+      // Optional: Clear existing data when syncing full batch list
+      const replaceMode = req.query.replace === 'true' || req.body?.replace === true;
+      if (replaceMode) {
+        await db.query('TRUNCATE TABLE house_rank;');
+      }
+
+      const inserted = [];
+      for (const item of bodyData) {
+        const namaHouse = item['Nama House'] || item.nama_house || item.namaHouse || item.house_name;
+        const totalGold = item['Total Gold'] ?? item.total_gold ?? item.totalGold ?? 0;
+        const className = item['Class'] || item.class || item.className || null;
+        const cabang = item['Cabang'] || item.cabang || null;
+        const program = item['Program'] || item.program || null;
+        const rank = item['Rank'] ?? item.rank ?? null;
+
+        if (namaHouse) {
+          const insertQuery = `
+            INSERT INTO house_rank (
+              "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank"
+            ) VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank"
+          `;
+          const resQuery = await db.query(insertQuery, [
+            namaHouse,
+            totalGold,
+            className,
+            cabang,
+            program,
+            rank
+          ]);
+          inserted.push(resQuery.rows[0]);
+        }
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: `Berhasil menambahkan ${inserted.length} data house_rank.`,
+        count: inserted.length,
+        data: inserted
+      });
+    }
+
+    // Handle Single Object Insert
+    const namaHouse = bodyData['Nama House'] || bodyData.nama_house || bodyData.namaHouse || bodyData.house_name;
+    const totalGold = bodyData['Total Gold'] ?? bodyData.total_gold ?? bodyData.totalGold ?? 0;
+    const className = bodyData['Class'] || bodyData.class || bodyData.className || null;
+    const cabang = bodyData['Cabang'] || bodyData.cabang || null;
+    const program = bodyData['Program'] || bodyData.program || null;
+    const rank = bodyData['Rank'] ?? bodyData.rank ?? null;
+
+    if (!namaHouse) {
+      return res.status(400).json({
+        success: false,
+        message: 'Field "Nama House" wajib diisi.'
+      });
+    }
+
     const insertQuery = `
-      INSERT INTO public.house_rank (
+      INSERT INTO house_rank (
         "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank"
       ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank"
@@ -107,29 +143,28 @@ router.post('/', async (req, res) => {
 
 // PUT / - Update house rank record based on "Nama House"
 router.put('/', async (req, res) => {
-  await ensureTableExists();
-
-  const targetNamaHouse = req.query.nama_house || req.body.target_nama_house || req.body['Nama House'] || req.body.nama_house;
-  
-  const namaHouse = req.body['Nama House'] || req.body.nama_house || targetNamaHouse;
-  const totalGold = req.body['Total Gold'] ?? req.body.total_gold;
-  const className = req.body['Class'] || req.body.class;
-  const cabang = req.body['Cabang'] || req.body.cabang;
-  const program = req.body['Program'] || req.body.program;
-  const rank = req.body['Rank'] ?? req.body.rank;
-
-  if (!targetNamaHouse) {
-    return res.status(400).json({ success: false, message: 'Harap tentukan "Nama House" yang ingin diupdate.' });
-  }
-
   try {
-    const check = await db.query('SELECT 1 FROM public.house_rank WHERE "Nama House" = $1', [targetNamaHouse]);
+    const body = req.body || {};
+    const targetNamaHouse = req.query.nama_house || body.target_nama_house || body['Nama House'] || body.nama_house;
+    
+    const namaHouse = body['Nama House'] || body.nama_house || targetNamaHouse;
+    const totalGold = body['Total Gold'] ?? body.total_gold;
+    const className = body['Class'] || body.class;
+    const cabang = body['Cabang'] || body.cabang;
+    const program = body['Program'] || body.program;
+    const rank = body['Rank'] ?? body.rank;
+
+    if (!targetNamaHouse) {
+      return res.status(400).json({ success: false, message: 'Harap tentukan "Nama House" yang ingin diupdate.' });
+    }
+
+    const check = await db.query('SELECT 1 FROM house_rank WHERE "Nama House" = $1', [targetNamaHouse]);
     if (check.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Data house_rank dengan Nama House "${targetNamaHouse}" tidak ditemukan.` });
     }
 
     const updateQuery = `
-      UPDATE public.house_rank SET
+      UPDATE house_rank SET
         "Nama House" = COALESCE($1, "Nama House"),
         "Total Gold" = COALESCE($2, "Total Gold"),
         "Class" = COALESCE($3, "Class"),
@@ -162,16 +197,15 @@ router.put('/', async (req, res) => {
 
 // DELETE / - Delete house rank record based on "Nama House"
 router.delete('/', async (req, res) => {
-  await ensureTableExists();
-
-  const namaHouse = req.query.nama_house || req.body['Nama House'] || req.body.nama_house;
-
-  if (!namaHouse) {
-    return res.status(400).json({ success: false, message: 'Harap sertakan parameter nama_house yang ingin dihapus.' });
-  }
-
   try {
-    const result = await db.query('DELETE FROM public.house_rank WHERE "Nama House" = $1 RETURNING *', [namaHouse]);
+    const body = req.body || {};
+    const namaHouse = req.query.nama_house || body['Nama House'] || body.nama_house;
+
+    if (!namaHouse) {
+      return res.status(400).json({ success: false, message: 'Harap sertakan parameter nama_house yang ingin dihapus.' });
+    }
+
+    const result = await db.query('DELETE FROM house_rank WHERE "Nama House" = $1 RETURNING *', [namaHouse]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Data house_rank dengan Nama House "${namaHouse}" tidak ditemukan.` });
     }
