@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// Auto-ensure table exists in whichever Neon DB instance backend connects to
+// Auto-ensure table exists in public schema
 async function ensureTableExists() {
   try {
     await db.query(`
-      CREATE TABLE IF NOT EXISTS house_rank (
+      CREATE TABLE IF NOT EXISTS public.house_rank (
         "Nama House" VARCHAR(255),
         "Total Gold" INT DEFAULT 0,
         "Class" VARCHAR(255),
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
     await ensureTableExists();
 
     const { search, cabang, program, house } = req.query;
-    let query = 'SELECT "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank" FROM house_rank WHERE 1=1';
+    let query = 'SELECT "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank" FROM public.house_rank WHERE 1=1';
     const params = [];
 
     if (search) {
@@ -80,7 +80,7 @@ router.post('/', async (req, res) => {
 
   try {
     const insertQuery = `
-      INSERT INTO house_rank (
+      INSERT INTO public.house_rank (
         "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank"
       ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank"
@@ -123,13 +123,13 @@ router.put('/', async (req, res) => {
   }
 
   try {
-    const check = await db.query('SELECT 1 FROM house_rank WHERE "Nama House" = $1', [targetNamaHouse]);
+    const check = await db.query('SELECT 1 FROM public.house_rank WHERE "Nama House" = $1', [targetNamaHouse]);
     if (check.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Data house_rank dengan Nama House "${targetNamaHouse}" tidak ditemukan.` });
     }
 
     const updateQuery = `
-      UPDATE house_rank SET
+      UPDATE public.house_rank SET
         "Nama House" = COALESCE($1, "Nama House"),
         "Total Gold" = COALESCE($2, "Total Gold"),
         "Class" = COALESCE($3, "Class"),
@@ -171,7 +171,7 @@ router.delete('/', async (req, res) => {
   }
 
   try {
-    const result = await db.query('DELETE FROM house_rank WHERE "Nama House" = $1 RETURNING *', [namaHouse]);
+    const result = await db.query('DELETE FROM public.house_rank WHERE "Nama House" = $1 RETURNING *', [namaHouse]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Data house_rank dengan Nama House "${namaHouse}" tidak ditemukan.` });
     }

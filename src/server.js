@@ -452,7 +452,13 @@ app.use('/api/trainee/feedback', feedbackRoutes);
 app.use('/api/dashboard-feedback', feedbackRoutes);
 app.use('/feedback', feedbackRoutes);
 app.use('/sml-feedback', feedbackRoutes);
-app.use('/trainee-feedback', feedbackRoutes);
+app.use('/api/portal-trainee/house-rank', adminHouseRankRoutes);
+app.use('/api/portal-trainee/house_rank', adminHouseRankRoutes);
+app.use('/api/portal-admin/house-rank', adminHouseRankRoutes);
+app.use('/api/portal-admin/house_rank', adminHouseRankRoutes);
+app.use('/portal-trainee/house-rank', adminHouseRankRoutes);
+app.use('/portal-admin/house-rank', adminHouseRankRoutes);
+
 app.use('/api/quiz', quizRoutes);
 app.use('/api/portal-trainee', portalTraineeRoutes);
 app.use('/api/portal-admin', portalAdminRoutes);
