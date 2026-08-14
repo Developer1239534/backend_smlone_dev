@@ -159,6 +159,16 @@ router.post('/push', async (req, res) => {
   }
 });
 
+// DELETE /truncate - Kosongkan seluruh tabel monthly_gold_point
+router.delete('/truncate', async (req, res) => {
+  try {
+    await db.query('TRUNCATE TABLE monthly_gold_point');
+    res.json({ success: true, message: 'Seluruh isi tabel monthly_gold_point berhasil dikosongkan.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Gagal mengosongkan tabel.', error: error.message });
+  }
+});
+
 // DELETE /:id - Hapus data berdasarkan ID dari monthly_gold_point
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
