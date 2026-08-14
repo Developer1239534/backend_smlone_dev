@@ -2,9 +2,29 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
+// Self-healing helper: ensures house_rank table exists in whatever database the server connects to
+async function ensureTableExists() {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS house_rank (
+        "Nama House" VARCHAR(255),
+        "Total Gold" INT DEFAULT 0,
+        "Class" VARCHAR(255),
+        "Cabang" VARCHAR(255),
+        "Program" VARCHAR(255),
+        "Rank" INT
+      );
+    `);
+  } catch (err) {
+    console.error('[House Rank] Error auto-creating table:', err.message);
+  }
+}
+
 // GET / - Retrieve all house rank records
 router.get('/', async (req, res) => {
   try {
+    await ensureTableExists();
+
     const { search, cabang, program, house } = req.query;
     let query = 'SELECT "Nama House", "Total Gold", "Class", "Cabang", "Program", "Rank" FROM house_rank WHERE 1=1';
     const params = [];
@@ -42,6 +62,8 @@ router.get('/', async (req, res) => {
 
 // POST / - Create a new house rank record
 router.post('/', async (req, res) => {
+  await ensureTableExists();
+
   const namaHouse = req.body['Nama House'] || req.body.nama_house || req.body.namaHouse || req.body.house_name;
   const totalGold = req.body['Total Gold'] ?? req.body.total_gold ?? req.body.totalGold ?? 0;
   const className = req.body['Class'] || req.body.class || req.body.className || null;
@@ -85,6 +107,8 @@ router.post('/', async (req, res) => {
 
 // PUT / - Update house rank record based on "Nama House"
 router.put('/', async (req, res) => {
+  await ensureTableExists();
+
   const targetNamaHouse = req.query.nama_house || req.body.target_nama_house || req.body['Nama House'] || req.body.nama_house;
   
   const namaHouse = req.body['Nama House'] || req.body.nama_house || targetNamaHouse;
@@ -138,6 +162,8 @@ router.put('/', async (req, res) => {
 
 // DELETE / - Delete house rank record based on "Nama House"
 router.delete('/', async (req, res) => {
+  await ensureTableExists();
+
   const namaHouse = req.query.nama_house || req.body['Nama House'] || req.body.nama_house;
 
   if (!namaHouse) {
