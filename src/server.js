@@ -214,16 +214,6 @@ const { getDbMetrics } = require('./db/neonClient');
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      -- Create house_rank table
-      CREATE TABLE IF NOT EXISTS house_rank (
-        "Nama House" VARCHAR(255),
-        "Total Gold" INT DEFAULT 0,
-        "Class" VARCHAR(255),
-        "Cabang" VARCHAR(255),
-        "Program" VARCHAR(255),
-        "Rank" INT
-      );
-
       -- Create gold_poin_setahun table
       CREATE TABLE IF NOT EXISTS gold_poin_setahun (
         id SERIAL PRIMARY KEY,
@@ -251,6 +241,15 @@ const { getDbMetrics } = require('./db/neonClient');
         last_life_project TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      -- Create house_rank table
+      CREATE TABLE IF NOT EXISTS house_rank (
+        "Nama House" VARCHAR(255),
+        "Total Gold" INT DEFAULT 0,
+        "Class" VARCHAR(255),
+        "Cabang" VARCHAR(255),
+        "Program" VARCHAR(255),
+        "Rank" INT
       );
       CREATE INDEX IF NOT EXISTS idx_report_trainee_data_trainee_id ON report_trainee_data(trainee_id);
       CREATE INDEX IF NOT EXISTS idx_report_trainee_data_name ON report_trainee_data(name);
@@ -452,13 +451,7 @@ app.use('/api/trainee/feedback', feedbackRoutes);
 app.use('/api/dashboard-feedback', feedbackRoutes);
 app.use('/feedback', feedbackRoutes);
 app.use('/sml-feedback', feedbackRoutes);
-app.use('/api/portal-trainee/house-rank', adminHouseRankRoutes);
-app.use('/api/portal-trainee/house_rank', adminHouseRankRoutes);
-app.use('/api/portal-admin/house-rank', adminHouseRankRoutes);
-app.use('/api/portal-admin/house_rank', adminHouseRankRoutes);
-app.use('/portal-trainee/house-rank', adminHouseRankRoutes);
-app.use('/portal-admin/house-rank', adminHouseRankRoutes);
-
+app.use('/trainee-feedback', feedbackRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/portal-trainee', portalTraineeRoutes);
 app.use('/api/portal-admin', portalAdminRoutes);
