@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// GET /api/monthly-gold-point - Ambil murni data dari tabel monthly_gold_point saja
+// GET /api/monthly-gold-point - Ambil murni data dari tabel monthly_gold_point dengan 10 kolom persis
 router.get('/', async (req, res) => {
   try {
     // Pastikan tabel monthly_gold_point ada
@@ -23,7 +23,20 @@ router.get('/', async (req, res) => {
       )
     `);
 
-    const result = await db.query('SELECT * FROM monthly_gold_point');
+    const result = await db.query(`
+      SELECT 
+        "ID", 
+        "Nama Trainee", 
+        "Active/Expired", 
+        "Level", 
+        "House", 
+        "Class", 
+        "Branch", 
+        "Total Gold/Periode", 
+        "Junior/Youth", 
+        "RANK/ID" 
+      FROM monthly_gold_point
+    `);
 
     res.json({
       success: true,
