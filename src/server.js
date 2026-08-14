@@ -201,16 +201,6 @@ const { getDbMetrics } = require('./db/neonClient');
       CREATE INDEX IF NOT EXISTS idx_gold_point_rankings_trainee_id ON gold_point_rankings(trainee_id);
       CREATE INDEX IF NOT EXISTS idx_gold_point_rankings_period ON gold_point_rankings(period);
 
-      -- Create house_rank table (6 exact columns without ID)
-      CREATE TABLE IF NOT EXISTS house_rank (
-        "Nama House" VARCHAR(255),
-        "Total Gold" INT DEFAULT 0,
-        "Class" VARCHAR(255),
-        "Cabang" VARCHAR(255),
-        "Program" VARCHAR(255),
-        "Rank" INT
-      );
-
       -- Create ranking_house table
       CREATE TABLE IF NOT EXISTS ranking_house (
         id SERIAL PRIMARY KEY,
@@ -222,6 +212,16 @@ const { getDbMetrics } = require('./db/neonClient');
         program VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Create house_rank table
+      CREATE TABLE IF NOT EXISTS house_rank (
+        "Nama House" VARCHAR(255),
+        "Total Gold" INT DEFAULT 0,
+        "Class" VARCHAR(255),
+        "Cabang" VARCHAR(255),
+        "Program" VARCHAR(255),
+        "Rank" INT
       );
 
       -- Create gold_poin_setahun table
