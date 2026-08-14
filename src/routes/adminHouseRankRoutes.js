@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 
-// Self-healing helper: ensures house_rank table exists in whatever database the server connects to
+// Auto-ensure table exists in whichever Neon DB instance backend connects to
 async function ensureTableExists() {
   try {
     await db.query(`
@@ -15,8 +15,8 @@ async function ensureTableExists() {
         "Rank" INT
       );
     `);
-  } catch (err) {
-    console.error('[House Rank] Error auto-creating table:', err.message);
+  } catch (e) {
+    console.error('[House Rank] Auto-create table warning:', e.message);
   }
 }
 
