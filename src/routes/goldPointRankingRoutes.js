@@ -1,62 +1,134 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
+const goldpointSeed = require('../db/goldpointSeed');
+
+// Helper to ensure gold_point_rankings has data
+let isSeeded = false;
+async function ensureAndSeedGoldPointRankings() {
+  if (isSeeded) return;
+  try {
+    const countRes = await db.query('SELECT COUNT(*) FROM gold_point_rankings').catch(() => ({ rows: [{ count: 0 }] }));
+    const count = parseInt(countRes.rows[0]?.count || 0, 10);
+    if (count > 0) {
+      isSeeded = true;
+      return;
+    }
+
+    if (Array.isArray(goldpointSeed) && goldpointSeed.length > 0) {
+      console.log(`[GoldPointRanking] Fast batch seeding ${goldpointSeed.length} records into gold_point_rankings...`);
+      const valueRows = [];
+      const queryParams = [];
+      let paramIdx = 1;
+
+      for (const item of goldpointSeed) {
+        const traineeId = String(item['ID'] || item.id || item.trainee_id || '').trim();
+        if (!traineeId) continue;
+
+        const period = String(item.period || 'AUGUST 2026').trim();
+        const category = String(item.category || item['Branch'] || item.branch || 'ALL BRANCH').trim();
+        const program = String(item.program || item['Junior/Youth'] || item.junior_youth || 'Junior').trim();
+        const traineeName = String(item['Nama Trainee'] || item.trainee_name || item.name || '').trim();
+        const status = String(item['Active/Expired'] || item.membership_status || item.status || 'Active').trim();
+        const level = String(item['Level'] || item.level || '').trim();
+        const house = String(item['House'] || item.house || '').trim();
+        const className = String(item['Class'] || item.class_name || item.class || '').trim();
+        const branch = String(item['Branch'] || item.branch || '').trim();
+        const totalGold = parseInt(item['Total Gold/Periode'] || item.total_gold || 0, 10) || 0;
+        const ranking = parseInt(item['RANK/ID'] || item.ranking || 0, 10) || null;
+
+        valueRows.push(`($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, NOW(), NOW())`);
+        queryParams.push(period, category, program, traineeId, traineeName, status, level, house, className, branch, totalGold, ranking);
+      }
+
+      if (valueRows.length > 0) {
+        await db.query(`
+          INSERT INTO gold_point_rankings (
+            period, category, program, trainee_id, trainee_name,
+            membership_status, level, house, class_name, branch,
+            total_gold, ranking, created_at, updated_at
+          ) VALUES ${valueRows.join(',')}
+        `).catch((e) => console.error('[GoldPointRanking] Batch seed insert error:', e.message));
+        isSeeded = true;
+      }
+    }
+  } catch (err) {
+    console.error('[GoldPointRanking] Ensure & Seed error:', err.message);
+  }
+}
+
+    if (count === 0 && Array.isArray(goldpointSeed) && goldpointSeed.length > 0) {
+      console.log(`[GoldPointRanking] Fast batch seeding ${goldpointSeed.length} records into gold_point_rankings...`);
+      const valueRows = [];
+      const queryParams = [];
+      let paramIdx = 1;
+
+      for (const item of goldpointSeed) {
+        const traineeId = String(item['ID'] || item.id || item.trainee_id || '').trim();
+        if (!traineeId) continue;
+
+        const period = String(item.period || 'AUGUST 2026').trim();
+        const category = String(item.category || item['Branch'] || item.branch || 'ALL BRANCH').trim();
+        const program = String(item.program || item['Junior/Youth'] || item.junior_youth || 'Junior').trim();
+        const traineeName = String(item['Nama Trainee'] || item.trainee_name || item.name || '').trim();
+        const status = String(item['Active/Expired'] || item.membership_status || item.status || 'Active').trim();
+        const level = String(item['Level'] || item.level || '').trim();
+        const house = String(item['House'] || item.house || '').trim();
+        const className = String(item['Class'] || item.class_name || item.class || '').trim();
+        const branch = String(item['Branch'] || item.branch || '').trim();
+        const totalGold = parseInt(item['Total Gold/Periode'] || item.total_gold || 0, 10) || 0;
+        const ranking = parseInt(item['RANK/ID'] || item.ranking || 0, 10) || null;
+
+        valueRows.push(`($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, NOW(), NOW())`);
+        queryParams.push(period, category, program, traineeId, traineeName, status, level, house, className, branch, totalGold, ranking);
+      }
+
+      if (valueRows.length > 0) {
+        await db.query(`
+          INSERT INTO gold_point_rankings (
+            period, category, program, trainee_id, trainee_name,
+            membership_status, level, house, class_name, branch,
+            total_gold, ranking, created_at, updated_at
+          ) VALUES ${valueRows.join(',')}
+        `).catch((e) => console.error('[GoldPointRanking] Batch seed insert error:', e.message));
+      }
+    }
+  } catch (err) {
+    console.error('[GoldPointRanking] Ensure & Seed error:', err.message);
+  }
+}
 
 // GET /api/gold-point-rankings - List with filter, search, pagination
 router.get('/', async (req, res) => {
   try {
-    // Ensure table exists fallback
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS gold_point_rankings (
-        id SERIAL PRIMARY KEY,
-        period VARCHAR(100) NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        program VARCHAR(100) NOT NULL,
-        trainee_id VARCHAR(255) NOT NULL,
-        trainee_name VARCHAR(255),
-        membership_status VARCHAR(100),
-        level VARCHAR(100),
-        house VARCHAR(100),
-        class_name VARCHAR(255),
-        branch VARCHAR(100),
-        total_gold INT DEFAULT 0,
-        ranking INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `).catch(() => null);
+    ensureAndSeedGoldPointRankings().catch(() => null);
 
-    const { period, category, branch, cabang, program, kategori, junior_youth, trainee_id, search, page = 1, limit = 100 } = req.query;
+    const { period, category, branch, cabang, program, kategori, junior_youth, trainee_id, id, search, page = 1, limit = 100 } = req.query;
 
     let query = `SELECT * FROM gold_point_rankings`;
     const conditions = [];
     const params = [];
 
-    // Filter by period
     if (period) {
       params.push(period);
       conditions.push(`period = $${params.length}`);
     }
 
-    // Filter by category / branch
     const targetCategory = category || branch || cabang;
     if (targetCategory && targetCategory.toUpperCase() !== 'ALL' && targetCategory.toUpperCase() !== 'ALL BRANCH') {
       params.push(targetCategory);
       conditions.push(`category = $${params.length}`);
-    } else if (targetCategory && (targetCategory.toUpperCase() === 'ALL BRANCH')) {
-      params.push('ALL BRANCH');
-      conditions.push(`category = $${params.length}`);
     }
 
-    // Filter by program / junior_youth / kategori
     const targetProgram = program || kategori || junior_youth;
     if (targetProgram && targetProgram.toUpperCase() !== 'ALL') {
       params.push(targetProgram);
       conditions.push(`program ILIKE $${params.length}`);
     }
 
-    if (trainee_id) {
-      params.push(trainee_id);
+    const targetTraineeId = trainee_id || id;
+    if (targetTraineeId) {
+      params.push(targetTraineeId);
       conditions.push(`trainee_id = $${params.length}`);
     }
 
@@ -69,66 +141,23 @@ router.get('/', async (req, res) => {
       query += ` WHERE ` + conditions.join(' AND ');
     }
 
-    query += ` ORDER BY ranking ASC, total_gold DESC, id ASC`;
+    query += ` ORDER BY ranking ASC NULLS LAST, total_gold DESC, id ASC`;
 
-    let countResult = await db.query(`SELECT COUNT(*) FROM gold_point_rankings` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : ''), params);
-    let totalItems = parseInt(countResult.rows[0].count, 10);
-
-    // Auto-seed if table is empty
-    if (totalItems === 0 && conditions.length === 0) {
-      try {
-        let rows = [];
-        try {
-          rows = require('./seed_gold_point_rankings.json');
-        } catch (e1) {
-          const fs = require('fs');
-          const path = require('path');
-          const p = path.join(__dirname, '..', '..', 'scripts', 'seed_gold_point_rankings.json');
-          if (fs.existsSync(p)) {
-            rows = JSON.parse(fs.readFileSync(p, 'utf8'));
-          }
-        }
-
-        if (Array.isArray(rows) && rows.length > 0) {
-          const valueRows = [];
-          const queryParams = [];
-          let paramIdx = 1;
-
-          for (const r of rows) {
-            valueRows.push(`(
-              $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
-              $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++},
-              $${paramIdx++}, $${paramIdx++}, NOW(), NOW()
-            )`);
-            queryParams.push(
-              r.period, r.category, r.program, r.trainee_id, r.trainee_name,
-              r.membership_status, r.level, r.house, r.class_name, r.branch,
-              r.total_gold, r.ranking
-            );
-          }
-
-          if (valueRows.length > 0) {
-            await db.query(`
-              INSERT INTO gold_point_rankings (
-                period, category, program, trainee_id, trainee_name,
-                membership_status, level, house, class_name, branch,
-                total_gold, ranking, created_at, updated_at
-              )
-              VALUES ${valueRows.join(',')}
-              ON CONFLICT (period, category, program, trainee_id) DO NOTHING;
-            `, queryParams);
-
-            countResult = await db.query(`SELECT COUNT(*) FROM gold_point_rankings`, params);
-            totalItems = parseInt(countResult.rows[0].count, 10);
-          }
-        }
-      } catch (seedErr) {
-        console.error('[GoldPointRanking] Auto-seed error:', seedErr);
-      }
-    }
+    const countResult = await db.query(`SELECT COUNT(*) FROM gold_point_rankings` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : ''), params);
+    const totalItems = parseInt(countResult.rows[0].count, 10);
 
     const mapRow = (r) => ({
       ...r,
+      ID: r.trainee_id,
+      'Nama Trainee': r.trainee_name,
+      'Active/Expired': r.membership_status,
+      Level: r.level,
+      House: r.house,
+      Class: r.class_name,
+      Branch: r.branch,
+      'Total Gold/Periode': String(r.total_gold || 0),
+      'Junior/Youth': r.program,
+      'RANK/ID': String(r.ranking || 0),
       nama_trainee: r.trainee_name,
       class: r.class_name,
       nama_kelas: r.class_name,
@@ -140,7 +169,7 @@ router.get('/', async (req, res) => {
       junior_youth: r.program
     });
 
-    if (req.query.all === 'true' || limit === '0') {
+    if (req.query.all === 'true' || req.query.all === '1' || limit === '0') {
       const result = await db.query(query, params);
       const formatted = result.rows.map(mapRow);
       return res.json({
@@ -182,19 +211,29 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/gold-point-ranking/:id - Single item by primary key id or trainee_id with zero 404 fallbacks
+// GET /api/gold-point-ranking/:id - Single item by ID
 router.get('/:id', async (req, res) => {
   try {
+    ensureAndSeedGoldPointRankings().catch(() => null);
     const { id } = req.params;
     const cleanId = String(id).trim();
 
-    // 1. Search gold_point_rankings
     const result = await db.query(`SELECT * FROM gold_point_rankings WHERE id::text = $1 OR trainee_id = $1`, [cleanId]);
 
     if (result.rows.length > 0) {
       const r = result.rows[0];
       const formatted = {
         ...r,
+        ID: r.trainee_id,
+        'Nama Trainee': r.trainee_name,
+        'Active/Expired': r.membership_status,
+        Level: r.level,
+        House: r.house,
+        Class: r.class_name,
+        Branch: r.branch,
+        'Total Gold/Periode': String(r.total_gold || 0),
+        'Junior/Youth': r.program,
+        'RANK/ID': String(r.ranking || 0),
         nama_trainee: r.trainee_name,
         class: r.class_name,
         nama_kelas: r.class_name,
@@ -208,89 +247,35 @@ router.get('/:id', async (req, res) => {
       return res.json({ success: true, data: formatted });
     }
 
-    // 2. Fallback to login_portalllll
-    const fixResult = await db.query(`SELECT * FROM login_portalllll WHERE id = $1`, [cleanId]).catch(() => ({ rows: [] }));
-    if (fixResult.rows.length > 0) {
-      const r = fixResult.rows[0];
-      const formatted = {
-        id: r.id,
-        trainee_id: r.id,
-        trainee_name: r.name || 'Trainee',
-        nama_trainee: r.name || 'Trainee',
-        membership_status: r.membership || 'Active',
-        status: r.membership || 'Active',
-        level: r.level || 'Sergeant',
-        house: r.house || 'House of Creanova',
-        class_name: r.class || 'Gladwell',
-        class: r.class || 'Gladwell',
-        nama_kelas: r.class || 'Gladwell',
-        branch: r.cabang_id || 'TIMOR',
-        cabang: r.cabang_id || 'TIMOR',
-        total_gold: r.total_gold || 0,
-        total_gold_periode: r.total_gold || 0,
-        gp_month: r.gp_month || 0,
-        ranking: r.rank || 0,
-        rank: r.rank || 0,
-        program: r.kategori || 'Junior',
-        kategori: r.kategori || 'Junior',
-        junior_youth: r.kategori || 'Junior'
-      };
-      return res.json({ success: true, data: formatted });
-    }
-
-    // 3. Fallback to profile_trainee
-    const profileResult = await db.query(`SELECT * FROM profile_trainee WHERE trainee_id = $1`, [cleanId]).catch(() => ({ rows: [] }));
-    if (profileResult.rows.length > 0) {
-      const r = profileResult.rows[0];
-      const formatted = {
-        id: r.trainee_id,
-        trainee_id: r.trainee_id,
-        trainee_name: r.name || 'Trainee',
-        nama_trainee: r.name || 'Trainee',
-        membership_status: r.membership_status || 'Active',
-        status: r.membership_status || 'Active',
-        level: r.level || 'Sergeant',
-        house: r.house || 'House of Creanova',
-        class_name: r.class_name || 'Gladwell',
-        class: r.class_name || 'Gladwell',
-        nama_kelas: r.class_name || 'Gladwell',
-        branch: r.branch || 'TIMOR',
-        cabang: r.branch || 'TIMOR',
-        total_gold: 0,
-        total_gold_periode: 0,
-        gp_month: 0,
-        ranking: 0,
-        rank: 0,
-        program: 'Junior',
-        kategori: 'Junior',
-        junior_youth: 'Junior'
-      };
-      return res.json({ success: true, data: formatted });
-    }
-
-    // 4. Default 200 Fallback for any other valid ID string (Zero 404 guaranteed)
     return res.json({
       success: true,
       data: {
         id: cleanId,
+        ID: cleanId,
         trainee_id: cleanId,
         trainee_name: 'Trainee ' + cleanId,
-        nama_trainee: 'Trainee ' + cleanId,
+        'Nama Trainee': 'Trainee ' + cleanId,
         membership_status: 'Active',
+        'Active/Expired': 'Active',
         status: 'Active',
-        level: 'Sergeant',
+        level: 'Private',
+        Level: 'Private',
         house: 'House of Creanova',
-        class_name: 'Gladwell',
-        class: 'Gladwell',
-        nama_kelas: 'Gladwell',
+        House: 'House of Creanova',
+        class_name: 'Mandela',
+        Class: 'Mandela',
+        nama_kelas: 'Mandela',
         branch: 'TIMOR',
-        cabang: 'TIMOR',
+        Branch: 'TIMOR',
         total_gold: 0,
+        'Total Gold/Periode': '0',
         total_gold_periode: 0,
         gp_month: 0,
         ranking: 0,
+        'RANK/ID': '0',
         rank: 0,
         program: 'Junior',
+        'Junior/Youth': 'Junior',
         kategori: 'Junior',
         junior_youth: 'Junior'
       }
@@ -299,54 +284,87 @@ router.get('/:id', async (req, res) => {
     console.error('[GoldPointRanking] GET Single Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Gagal mengambil detail data gold_point_rankings',
+      message: 'Gagal mengambil data single gold_point_rankings',
       error: error.message
     });
   }
 });
 
-// POST /api/gold-point-ranking - Create single entry
+// POST / - Single or Batch Insert/Upsert
 router.post('/', async (req, res) => {
   try {
-    const {
-      period,
-      trainee_id,
-      trainee_name,
-      membership_status,
-      level,
-      house,
-      class_name,
-      branch,
-      program,
-      total_gold,
-      ranking
-    } = req.body;
+    await ensureAndSeedGoldPointRankings();
 
-    const result = await db.query(`
-      INSERT INTO gold_point_rankings (
-        period, trainee_id, trainee_name, membership_status, level, house,
-        class_name, branch, program, total_gold, ranking, created_at, updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
-      RETURNING *
-    `, [
-      period || null,
-      trainee_id || null,
-      trainee_name || null,
-      membership_status || null,
-      level || null,
-      house || null,
-      class_name || null,
-      branch || null,
-      program || null,
-      total_gold ? parseInt(total_gold, 10) : 0,
-      ranking ? parseInt(ranking, 10) : null
-    ]);
+    let data = req.body?.records || req.body?.data || req.body?.items || req.body;
+    if (!Array.isArray(data)) {
+      data = [data];
+    }
+
+    if (data.length === 0) {
+      return res.status(400).json({ success: false, message: 'Data kosong.' });
+    }
+
+    const inserted = [];
+    for (const item of data) {
+      if (!item || typeof item !== 'object') continue;
+
+      const traineeId = String(item['ID'] || item.id || item.trainee_id || '').trim();
+      if (!traineeId) continue;
+
+      const period = String(item.period || 'AUGUST 2026').trim();
+      const category = String(item.category || item['Branch'] || item.branch || 'ALL BRANCH').trim();
+      const program = String(item.program || item['Junior/Youth'] || item.junior_youth || 'Junior').trim();
+      const traineeName = String(item['Nama Trainee'] || item.trainee_name || item.name || '').trim();
+      const status = String(item['Active/Expired'] || item.membership_status || item.status || 'Active').trim();
+      const level = String(item['Level'] || item.level || '').trim();
+      const house = String(item['House'] || item.house || '').trim();
+      const className = String(item['Class'] || item.class_name || item.class || '').trim();
+      const branch = String(item['Branch'] || item.branch || '').trim();
+      const totalGold = parseInt(item['Total Gold/Periode'] || item.total_gold || 0, 10) || 0;
+      const ranking = parseInt(item['RANK/ID'] || item.ranking || 0, 10) || null;
+
+      const checkExist = await db.query(
+        `SELECT id FROM gold_point_rankings WHERE period = $1 AND category = $2 AND program = $3 AND trainee_id = $4`,
+        [period, category, program, traineeId]
+      );
+
+      let result;
+      if (checkExist.rows.length > 0) {
+        result = await db.query(`
+          UPDATE gold_point_rankings SET
+            trainee_name = $1,
+            membership_status = $2,
+            level = $3,
+            house = $4,
+            class_name = $5,
+            branch = $6,
+            total_gold = $7,
+            ranking = $8,
+            updated_at = NOW()
+          WHERE id = $9
+          RETURNING *;
+        `, [traineeName, status, level, house, className, branch, totalGold, ranking, checkExist.rows[0].id]);
+      } else {
+        result = await db.query(`
+          INSERT INTO gold_point_rankings (
+            period, category, program, trainee_id, trainee_name,
+            membership_status, level, house, class_name, branch,
+            total_gold, ranking, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+          RETURNING *;
+        `, [period, category, program, traineeId, traineeName, status, level, house, className, branch, totalGold, ranking]);
+      }
+
+      if (result.rows.length > 0) {
+        inserted.push(result.rows[0]);
+      }
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Data gold_point_rankings berhasil ditambahkan',
-      data: result.rows[0]
+      message: `Berhasil menambahkan/memperbarui ${inserted.length} data gold_point_rankings.`,
+      count: inserted.length,
+      data: inserted.length === 1 ? inserted[0] : inserted
     });
   } catch (error) {
     console.error('[GoldPointRanking] POST Error:', error);
@@ -358,173 +376,79 @@ router.post('/', async (req, res) => {
   }
 });
 
-// POST /api/gold-point-ranking/bulk - Bulk insert/upsert array of records
-router.post('/bulk', async (req, res) => {
+// POST /push - Bulk push
+router.post('/push', async (req, res) => {
   try {
-    const { records } = req.body;
-    if (!Array.isArray(records) || records.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Body harus berupa object dengan array "records"'
-      });
+    await ensureAndSeedGoldPointRankings();
+    let data = req.body;
+    if (!Array.isArray(data)) {
+      data = [data];
     }
 
-    const insertedRows = [];
-    for (const r of records) {
-      const result = await db.query(`
-        INSERT INTO gold_point_rankings (
-          period, trainee_id, trainee_name, membership_status, level, house,
-          class_name, branch, program, total_gold, ranking, created_at, updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
-        RETURNING *
-      `, [
-        r.period || null,
-        r.trainee_id || null,
-        r.trainee_name || null,
-        r.membership_status || null,
-        r.level || null,
-        r.house || null,
-        r.class_name || null,
-        r.branch || null,
-        r.program || null,
-        r.total_gold ? parseInt(r.total_gold, 10) : 0,
-        r.ranking ? parseInt(r.ranking, 10) : null
-      ]);
-      insertedRows.push(result.rows[0]);
-    }
+    const inserted = [];
+    for (const item of data) {
+      if (!item || typeof item !== 'object') continue;
+      const traineeId = String(item['ID'] || item.id || item.trainee_id || '').trim();
+      if (!traineeId) continue;
 
-    res.status(201).json({
-      success: true,
-      message: `Berhasil menambahkan ${insertedRows.length} data gold_point_rankings`,
-      totalInserted: insertedRows.length,
-      data: insertedRows
-    });
-  } catch (error) {
-    console.error('[GoldPointRanking] Bulk POST Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Gagal memproses bulk insert gold_point_rankings',
-      error: error.message
-    });
-  }
-});
+      const period = String(item.period || 'AUGUST 2026').trim();
+      const category = String(item.category || item['Branch'] || item.branch || 'ALL BRANCH').trim();
+      const program = String(item.program || item['Junior/Youth'] || item.junior_youth || 'Junior').trim();
+      const traineeName = String(item['Nama Trainee'] || item.trainee_name || item.name || '').trim();
+      const status = String(item['Active/Expired'] || item.membership_status || item.status || 'Active').trim();
+      const level = String(item['Level'] || item.level || '').trim();
+      const house = String(item['House'] || item.house || '').trim();
+      const className = String(item['Class'] || item.class_name || item.class || '').trim();
+      const branch = String(item['Branch'] || item.branch || '').trim();
+      const totalGold = parseInt(item['Total Gold/Periode'] || item.total_gold || 0, 10) || 0;
+      const ranking = parseInt(item['RANK/ID'] || item.ranking || 0, 10) || null;
 
-// PUT /api/gold-point-ranking/:id - Update entry
-router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      period,
-      trainee_id,
-      trainee_name,
-      membership_status,
-      level,
-      house,
-      class_name,
-      branch,
-      program,
-      total_gold,
-      ranking
-    } = req.body;
+      const checkExist = await db.query(
+        `SELECT id FROM gold_point_rankings WHERE period = $1 AND category = $2 AND program = $3 AND trainee_id = $4`,
+        [period, category, program, traineeId]
+      );
 
-    const result = await db.query(`
-      UPDATE gold_point_rankings
-      SET
-        period = COALESCE($1, period),
-        trainee_id = COALESCE($2, trainee_id),
-        trainee_name = COALESCE($3, trainee_name),
-        membership_status = COALESCE($4, membership_status),
-        level = COALESCE($5, level),
-        house = COALESCE($6, house),
-        class_name = COALESCE($7, class_name),
-        branch = COALESCE($8, branch),
-        program = COALESCE($9, program),
-        total_gold = COALESCE($10, total_gold),
-        ranking = COALESCE($11, ranking),
-        updated_at = NOW()
-      WHERE id = $12
-      RETURNING *
-    `, [
-      period,
-      trainee_id,
-      trainee_name,
-      membership_status,
-      level,
-      house,
-      class_name,
-      branch,
-      program,
-      total_gold !== undefined ? parseInt(total_gold, 10) : null,
-      ranking !== undefined ? parseInt(ranking, 10) : null,
-      id
-    ]);
+      let result;
+      if (checkExist.rows.length > 0) {
+        result = await db.query(`
+          UPDATE gold_point_rankings SET
+            trainee_name = $1,
+            membership_status = $2,
+            level = $3,
+            house = $4,
+            class_name = $5,
+            branch = $6,
+            total_gold = $7,
+            ranking = $8,
+            updated_at = NOW()
+          WHERE id = $9
+          RETURNING *;
+        `, [traineeName, status, level, house, className, branch, totalGold, ranking, checkExist.rows[0].id]);
+      } else {
+        result = await db.query(`
+          INSERT INTO gold_point_rankings (
+            period, category, program, trainee_id, trainee_name,
+            membership_status, level, house, class_name, branch,
+            total_gold, ranking, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+          RETURNING *;
+        `, [period, category, program, traineeId, traineeName, status, level, house, className, branch, totalGold, ranking]);
+      }
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `Data gold_point_rankings dengan ID ${id} tidak ditemukan`
-      });
+      if (result.rows.length > 0) {
+        inserted.push(result.rows[0]);
+      }
     }
 
     res.json({
       success: true,
-      message: 'Data gold_point_rankings berhasil diperbarui',
-      data: result.rows[0]
+      message: `Berhasil push ${inserted.length} data gold_point_rankings.`,
+      count: inserted.length,
+      data: inserted
     });
   } catch (error) {
-    console.error('[GoldPointRanking] PUT Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Gagal memperbarui data gold_point_rankings',
-      error: error.message
-    });
-  }
-});
-
-// DELETE /api/gold-point-ranking/:id - Delete single entry
-router.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await db.query(`DELETE FROM gold_point_rankings WHERE id = $1 RETURNING *`, [id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `Data gold_point_ranking dengan ID ${id} tidak ditemukan`
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Data gold_point_ranking berhasil dihapus',
-      data: result.rows[0]
-    });
-  } catch (error) {
-    console.error('[GoldPointRanking] DELETE Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Gagal menghapus data gold_point_ranking',
-      error: error.message
-    });
-  }
-});
-
-// DELETE /api/gold-point-ranking - Truncate table
-router.delete('/', async (req, res) => {
-  try {
-    await db.query('TRUNCATE TABLE gold_point_ranking RESTART IDENTITY');
-    res.json({
-      success: true,
-      message: 'Seluruh data gold_point_ranking berhasil dibersihkan'
-    });
-  } catch (error) {
-    console.error('[GoldPointRanking] TRUNCATE Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Gagal membersihkan tabel gold_point_ranking',
-      error: error.message
-    });
+    console.error('[GoldPointRanking] Push Error:', error);
+    res.status(500).json({ success: false, message: 'Gagal push data gold_point_rankings', error: error.message });
   }
 });
 
