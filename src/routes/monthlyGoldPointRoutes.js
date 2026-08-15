@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../db/neonClient');
 const Ably = require('ably');
 
-// Helper to ensure monthly_gold_point table exists
+// Helper to ensure monthly_gold_point table exists with exact 10 columns
 async function ensureMonthlyGoldPointTable() {
   try {
     await db.query(`
@@ -17,7 +17,7 @@ async function ensureMonthlyGoldPointTable() {
         "Branch" TEXT,
         "Total Gold/Periode" TEXT,
         "Junior/Youth" TEXT,
-        "RANK/ID" TEXT,
+        "Rank/ID" TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -84,7 +84,7 @@ setInterval(() => {
   });
 }, 20000);
 
-// Helper to extract fields from request body (supporting 10 exact column names & aliases)
+// Helper to extract fields from request body (supporting exact 10 column names & aliases)
 function extractMonthlyGoldFields(row) {
   const id                 = String(row['ID']                 ?? row['id']                 ?? row['trainee_id'] ?? '').trim();
   const nama               = String(row['Nama']               ?? row['Nama Trainee']       ?? row['nama']       ?? row['nama_trainee'] ?? row['name'] ?? row['trainee_name'] ?? '').trim();
@@ -95,7 +95,7 @@ function extractMonthlyGoldFields(row) {
   const branch             = String(row['Branch']             ?? row['branch']             ?? '').trim();
   const total_gold_periode = String(row['Total Gold/Periode'] ?? row['total_gold_periode'] ?? row['gp_month'] ?? row['total_gold'] ?? '').trim();
   const junior_youth       = String(row['Junior/Youth']       ?? row['junior_youth']       ?? row['kategori'] ?? row['program'] ?? '').trim();
-  const rank_id            = String(row['RANK/ID']            ?? row['rank_id']            ?? row['rank'] ?? '').trim();
+  const rank_id            = String(row['Rank/ID']            ?? row['RANK/ID']            ?? row['rank_id']            ?? row['rank'] ?? '').trim();
 
   return {
     id,
@@ -128,7 +128,7 @@ const handleStream = async (req, res) => {
     const result = await db.query(`
       SELECT 
         "ID", "Nama", "Active/Expired", "Level", "House",
-        "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
+        "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "Rank/ID"
       FROM monthly_gold_point 
       ORDER BY "ID" ASC 
       LIMIT 100
@@ -164,7 +164,7 @@ router.get('/', async (req, res) => {
     let query = `
       SELECT 
         "ID", "Nama", "Active/Expired", "Level", "House",
-        "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
+        "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "Rank/ID"
       FROM monthly_gold_point
       WHERE 1=1
     `;
@@ -271,7 +271,7 @@ router.get('/:id', async (req, res) => {
     const result = await db.query(`
       SELECT 
         "ID", "Nama", "Active/Expired", "Level", "House",
-        "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
+        "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "Rank/ID"
       FROM monthly_gold_point
       WHERE "ID" = $1
     `, [cleanId]);
@@ -312,7 +312,7 @@ router.post('/', async (req, res) => {
     const result = await db.query(`
       INSERT INTO monthly_gold_point (
         "ID", "Nama", "Active/Expired", "Level", "House",
-        "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
+        "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "Rank/ID"
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       ON CONFLICT ("ID") DO UPDATE SET
         "Nama"               = EXCLUDED."Nama",
@@ -323,7 +323,7 @@ router.post('/', async (req, res) => {
         "Branch"             = EXCLUDED."Branch",
         "Total Gold/Periode" = EXCLUDED."Total Gold/Periode",
         "Junior/Youth"       = EXCLUDED."Junior/Youth",
-        "RANK/ID"            = EXCLUDED."RANK/ID"
+        "Rank/ID"            = EXCLUDED."Rank/ID"
       RETURNING *
     `, [
       fields.id, fields.nama, fields.active_expired, fields.level, fields.house,
@@ -384,7 +384,7 @@ router.post('/push', async (req, res) => {
         const result = await db.query(`
           INSERT INTO monthly_gold_point (
             "ID", "Nama", "Active/Expired", "Level", "House",
-            "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
+            "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "Rank/ID"
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           ON CONFLICT ("ID") DO UPDATE SET
             "Nama"               = EXCLUDED."Nama",
@@ -395,7 +395,7 @@ router.post('/push', async (req, res) => {
             "Branch"             = EXCLUDED."Branch",
             "Total Gold/Periode" = EXCLUDED."Total Gold/Periode",
             "Junior/Youth"       = EXCLUDED."Junior/Youth",
-            "RANK/ID"            = EXCLUDED."RANK/ID"
+            "Rank/ID"            = EXCLUDED."Rank/ID"
           RETURNING *
         `, [
           fields.id, fields.nama, fields.active_expired, fields.level, fields.house,
@@ -445,7 +445,7 @@ const handleUpdate = async (req, res) => {
         "Branch"             = COALESCE(NULLIF($6, ''), "Branch"),
         "Total Gold/Periode" = COALESCE(NULLIF($7, ''), "Total Gold/Periode"),
         "Junior/Youth"       = COALESCE(NULLIF($8, ''), "Junior/Youth"),
-        "RANK/ID"            = COALESCE(NULLIF($9, ''), "RANK/ID")
+        "Rank/ID"            = COALESCE(NULLIF($9, ''), "Rank/ID")
       WHERE "ID" = $10
       RETURNING *
     `, [
