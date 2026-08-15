@@ -339,9 +339,14 @@ app.use('/api/admin/credential-portal', credentialRoutes);
 
 app.use('/api/monthly-gold-point', monthlyGoldPointRoutes);
 app.use('/api/monthly_gold_point', monthlyGoldPointRoutes);
+app.use('/api/monthly-gold-points', monthlyGoldPointRoutes);
+app.use('/api/monthly_gold_points', monthlyGoldPointRoutes);
 app.use('/monthly-gold-point', monthlyGoldPointRoutes);
 app.use('/monthly_gold_point', monthlyGoldPointRoutes);
+app.use('/monthly-gold-points', monthlyGoldPointRoutes);
+app.use('/monthly_gold_points', monthlyGoldPointRoutes);
 app.use('/api/admin/monthly-gold-point', monthlyGoldPointRoutes);
+app.use('/api/admin/monthly-gold-points', monthlyGoldPointRoutes);
 app.use('/api/gp-month', monthlyGoldPointRoutes);
 app.use('/api/gp_month', monthlyGoldPointRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
