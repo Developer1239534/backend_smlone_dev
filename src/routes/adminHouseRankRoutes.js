@@ -29,10 +29,23 @@ router.get('/', async (req, res) => {
     query += ' ORDER BY "Rank" ASC NULLS LAST, "Total Gold" DESC';
 
     const result = await db.query(query, params);
+
+    // Deduplicate records based on ("Nama House", "Class", "Cabang", "Program", "Total Gold")
+    const uniqueRows = [];
+    const seenKeys = new Set();
+
+    for (const row of result.rows) {
+      const key = `${(row['Nama House'] || '').trim()}|${(row['Class'] || '').trim()}|${(row['Cabang'] || '').trim()}|${(row['Program'] || '').trim()}|${row['Total Gold']}`;
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        uniqueRows.push(row);
+      }
+    }
+
     res.json({
       success: true,
-      count: result.rows.length,
-      data: result.rows
+      count: uniqueRows.length,
+      data: uniqueRows
     });
   } catch (err) {
     console.error('[House Rank] GET Error:', err.message);
