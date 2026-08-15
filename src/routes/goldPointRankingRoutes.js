@@ -1,61 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
-const goldpointSeed = require('../db/goldpointSeed');
-
-// Helper to ensure gold_point_rankings has data
-let isSeeded = false;
-async function ensureAndSeedGoldPointRankings() {
-  if (isSeeded) return;
-  try {
-    const countRes = await db.query('SELECT COUNT(*) FROM gold_point_rankings').catch(() => ({ rows: [{ count: 0 }] }));
-    const count = parseInt(countRes.rows[0]?.count || 0, 10);
-    if (count > 0) {
-      isSeeded = true;
-      return;
-    }
-
-    if (Array.isArray(goldpointSeed) && goldpointSeed.length > 0) {
-      console.log(`[GoldPointRanking] Fast batch seeding ${goldpointSeed.length} records into gold_point_rankings...`);
-      const valueRows = [];
-      const queryParams = [];
-      let paramIdx = 1;
-
-      for (const item of goldpointSeed) {
-        const traineeId = String(item['ID'] || item.id || item.trainee_id || '').trim();
-        if (!traineeId) continue;
-
-        const period = String(item.period || 'AUGUST 2026').trim();
-        const category = String(item.category || item['Branch'] || item.branch || 'ALL BRANCH').trim();
-        const program = String(item.program || item['Junior/Youth'] || item.junior_youth || 'Junior').trim();
-        const traineeName = String(item['Nama Trainee'] || item.trainee_name || item.name || '').trim();
-        const status = String(item['Active/Expired'] || item.membership_status || item.status || 'Active').trim();
-        const level = String(item['Level'] || item.level || '').trim();
-        const house = String(item['House'] || item.house || '').trim();
-        const className = String(item['Class'] || item.class_name || item.class || '').trim();
-        const branch = String(item['Branch'] || item.branch || '').trim();
-        const totalGold = parseInt(item['Total Gold/Periode'] || item.total_gold || 0, 10) || 0;
-        const ranking = parseInt(item['RANK/ID'] || item.ranking || 0, 10) || null;
-
-        valueRows.push(`($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, NOW(), NOW())`);
-        queryParams.push(period, category, program, traineeId, traineeName, status, level, house, className, branch, totalGold, ranking);
-      }
-
-      if (valueRows.length > 0) {
-        await db.query(`
-          INSERT INTO gold_point_rankings (
-            period, category, program, trainee_id, trainee_name,
-            membership_status, level, house, class_name, branch,
-            total_gold, ranking, created_at, updated_at
-          ) VALUES ${valueRows.join(',')}
-        `).catch((e) => console.error('[GoldPointRanking] Batch seed insert error:', e.message));
-        isSeeded = true;
-      }
-    }
-  } catch (err) {
-    console.error('[GoldPointRanking] Ensure & Seed error:', err.message);
-  }
-}
 
     if (count === 0 && Array.isArray(goldpointSeed) && goldpointSeed.length > 0) {
       console.log(`[GoldPointRanking] Fast batch seeding ${goldpointSeed.length} records into gold_point_rankings...`);

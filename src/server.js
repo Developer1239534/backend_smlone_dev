@@ -100,6 +100,7 @@ const { getDbMetrics } = require('./db/neonClient');
     await db.query('DROP TABLE IF EXISTS data_form_lama CASCADE');
     await db.query('DROP TABLE IF EXISTS sml_report CASCADE');
     await db.query('DROP TABLE IF EXISTS gold_point_ranking CASCADE');
+    await db.query('DROP TABLE IF EXISTS gold_point_rankings CASCADE');
     await db.query('DROP TABLE IF EXISTS ranking_houses CASCADE');
     await db.query('DROP TABLE IF EXISTS registrasi_ca CASCADE');
     await db.query('DROP TABLE IF EXISTS registrasi_cp CASCADE');
