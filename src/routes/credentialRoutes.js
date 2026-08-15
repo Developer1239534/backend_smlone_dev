@@ -216,7 +216,8 @@ router.post('/', async (req, res) => {
     const id = String(row['ID'] ?? row['id'] ?? '').trim();
     const name = String(row['Name'] ?? row['name'] ?? row['Nama'] ?? row['nama'] ?? '').trim();
     const membershipStatus = String(row['MEMBERSHIP STATUS'] ?? row['Membership Status'] ?? row['membership_status'] ?? row['membership'] ?? '').trim();
-    const password = String(row['Password'] ?? row['password'] ?? '').trim();
+    const rawPass = String(row['Password'] ?? row['password'] ?? '').trim();
+    const password = rawPass || (id ? `SML${id}` : '');
 
     if (!id) {
       return res.status(400).json({
@@ -283,7 +284,8 @@ router.post('/push', async (req, res) => {
       const id = String(row['ID'] ?? row['id'] ?? '').trim();
       const name = String(row['Name'] ?? row['name'] ?? row['Nama'] ?? row['nama'] ?? '').trim();
       const membershipStatus = String(row['MEMBERSHIP STATUS'] ?? row['Membership Status'] ?? row['membership_status'] ?? row['membership'] ?? '').trim();
-      const password = String(row['Password'] ?? row['password'] ?? '').trim();
+      const rawPass = String(row['Password'] ?? row['password'] ?? '').trim();
+      const password = rawPass || (id ? `SML${id}` : '');
 
       if (!id) {
         skippedCount++;
