@@ -31,7 +31,7 @@ function parseOptions(rawOptions) {
 router.get('/', async (req, res) => {
   try {
     const { search } = req.query;
-    let query = 'SELECT "number", "question", "options" FROM house_allegiance WHERE 1=1';
+    let query = 'SELECT "id", "question", "options" FROM house_allegiance WHERE 1=1';
     const params = [];
 
     if (search) {
@@ -39,13 +39,22 @@ router.get('/', async (req, res) => {
       query += ` AND ("question" ILIKE $${params.length})`;
     }
 
-    query += ' ORDER BY "number" ASC';
+    query += ' ORDER BY "id" ASC';
 
     const result = await db.query(query, params);
+
+    // Map rows so both id and number are provided for backwards compatibility
+    const mapped = result.rows.map(row => ({
+      id: row.id,
+      number: row.id,
+      question: row.question,
+      options: row.options
+    }));
+
     res.json({
       success: true,
-      count: result.rows.length,
-      data: result.rows
+      count: mapped.length,
+      data: mapped
     });
   } catch (err) {
     console.error('[House Allegiance] GET Error:', err.message);
@@ -53,26 +62,35 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. GET /:number - Get single question by number
-router.get('/:number', async (req, res) => {
+// 2. GET /:id - Get single question by ID
+router.get('/:id', async (req, res) => {
   try {
-    const numberVal = parseInt(req.params.number, 10);
-    if (isNaN(numberVal)) {
-      return res.status(400).json({ success: false, message: 'Parameter number harus berupa angka.' });
+    const idVal = parseInt(req.params.id, 10);
+    if (isNaN(idVal)) {
+      return res.status(400).json({ success: false, message: 'Parameter id harus berupa angka.' });
     }
 
     const result = await db.query(
-      'SELECT "number", "question", "options" FROM house_allegiance WHERE "number" = $1',
-      [numberVal]
+      'SELECT "id", "question", "options" FROM house_allegiance WHERE "id" = $1',
+      [idVal]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: `Pertanyaan nomor ${numberVal} tidak ditemukan.` });
+      return res.status(404).json({ success: false, message: `Pertanyaan ID ${idVal} tidak ditemukan.` });
     }
 
-    res.json({ success: true, data: result.rows[0] });
+    const row = result.rows[0];
+    res.json({
+      success: true,
+      data: {
+        id: row.id,
+        number: row.id,
+        question: row.question,
+        options: row.options
+      }
+    });
   } catch (err) {
-    console.error('[House Allegiance] GET BY NUMBER Error:', err.message);
+    console.error('[House Allegiance] GET BY ID Error:', err.message);
     res.status(500).json({ success: false, message: 'Gagal mengambil data house_allegiance', error: err.message });
   }
 });
@@ -94,27 +112,43 @@ router.post('/', async (req, res) => {
 
       const replaceMode = req.query.replace === 'true' || req.body?.replace === true;
       if (replaceMode) {
-        await db.query('TRUNCATE TABLE house_allegiance;');
+        await db.query('TRUNCATE TABLE house_allegiance RESTART IDENTITY;');
       }
 
       const inserted = [];
       for (const item of bodyData) {
-        const rawNumber = item['number'] ?? item.number ?? item.no ?? item.id;
-        const numberVal = parseInt(rawNumber, 10);
+        const rawId = item['id'] ?? item.id ?? item.number ?? item.no;
+        const idVal = rawId !== undefined && rawId !== null ? parseInt(rawId, 10) : null;
         const question = cleanStr(item['question'] || item.question || item.pertanyaan);
         const options = parseOptions(item['options'] ?? item.options);
 
-        if (!isNaN(numberVal) && question) {
-          const insertQuery = `
-            INSERT INTO house_allegiance ("number", "question", "options")
-            VALUES ($1, $2, $3)
-            ON CONFLICT ("number") DO UPDATE SET
-              "question" = EXCLUDED."question",
-              "options" = EXCLUDED."options"
-            RETURNING "number", "question", "options";
-          `;
-          const resQ = await db.query(insertQuery, [numberVal, question, JSON.stringify(options)]);
-          inserted.push(resQ.rows[0]);
+        if (question) {
+          let resQ;
+          if (idVal && !isNaN(idVal)) {
+            const insertQuery = `
+              INSERT INTO house_allegiance ("id", "question", "options")
+              VALUES ($1, $2, $3)
+              ON CONFLICT ("id") DO UPDATE SET
+                "question" = EXCLUDED."question",
+                "options" = EXCLUDED."options"
+              RETURNING "id", "question", "options";
+            `;
+            resQ = await db.query(insertQuery, [idVal, question, JSON.stringify(options)]);
+          } else {
+            const insertQuery = `
+              INSERT INTO house_allegiance ("question", "options")
+              VALUES ($1, $2)
+              RETURNING "id", "question", "options";
+            `;
+            resQ = await db.query(insertQuery, [question, JSON.stringify(options)]);
+          }
+          const row = resQ.rows[0];
+          inserted.push({
+            id: row.id,
+            number: row.id,
+            question: row.question,
+            options: row.options
+          });
         }
       }
 
@@ -127,29 +161,45 @@ router.post('/', async (req, res) => {
     }
 
     // Handle Single Object Insert
-    const rawNumber = bodyData['number'] ?? bodyData.number ?? bodyData.no ?? bodyData.id;
-    const numberVal = parseInt(rawNumber, 10);
+    const rawId = bodyData['id'] ?? bodyData.id ?? bodyData.number ?? bodyData.no;
+    const idVal = rawId !== undefined && rawId !== null ? parseInt(rawId, 10) : null;
     const question = cleanStr(bodyData['question'] || bodyData.question || bodyData.pertanyaan);
     const options = parseOptions(bodyData['options'] ?? bodyData.options);
 
-    if (isNaN(numberVal) || !question) {
-      return res.status(400).json({ success: false, message: 'Field "number" dan "question" wajib diisi.' });
+    if (!question) {
+      return res.status(400).json({ success: false, message: 'Field "question" wajib diisi.' });
     }
 
-    const insertQuery = `
-      INSERT INTO house_allegiance ("number", "question", "options")
-      VALUES ($1, $2, $3)
-      ON CONFLICT ("number") DO UPDATE SET
-        "question" = EXCLUDED."question",
-        "options" = EXCLUDED."options"
-      RETURNING "number", "question", "options";
-    `;
-    const result = await db.query(insertQuery, [numberVal, question, JSON.stringify(options)]);
+    let result;
+    if (idVal && !isNaN(idVal)) {
+      const insertQuery = `
+        INSERT INTO house_allegiance ("id", "question", "options")
+        VALUES ($1, $2, $3)
+        ON CONFLICT ("id") DO UPDATE SET
+          "question" = EXCLUDED."question",
+          "options" = EXCLUDED."options"
+        RETURNING "id", "question", "options";
+      `;
+      result = await db.query(insertQuery, [idVal, question, JSON.stringify(options)]);
+    } else {
+      const insertQuery = `
+        INSERT INTO house_allegiance ("question", "options")
+        VALUES ($1, $2)
+        RETURNING "id", "question", "options";
+      `;
+      result = await db.query(insertQuery, [question, JSON.stringify(options)]);
+    }
 
+    const row = result.rows[0];
     res.status(201).json({
       success: true,
       message: 'Data house_allegiance berhasil disimpan.',
-      data: result.rows[0]
+      data: {
+        id: row.id,
+        number: row.id,
+        question: row.question,
+        options: row.options
+      }
     });
   } catch (err) {
     console.error('[House Allegiance] POST Error:', err.message);
@@ -157,12 +207,12 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 4. PUT /:number - Update question and options by number
-router.put('/:number', async (req, res) => {
+// 4. PUT /:id - Update question and options by ID
+router.put('/:id', async (req, res) => {
   try {
-    const numberVal = parseInt(req.params.number, 10);
-    if (isNaN(numberVal)) {
-      return res.status(400).json({ success: false, message: 'Parameter number harus berupa angka.' });
+    const idVal = parseInt(req.params.id, 10);
+    if (isNaN(idVal)) {
+      return res.status(400).json({ success: false, message: 'Parameter id harus berupa angka.' });
     }
 
     const body = req.body || {};
@@ -173,41 +223,61 @@ router.put('/:number', async (req, res) => {
       UPDATE house_allegiance SET
         "question" = COALESCE($1, "question"),
         "options" = COALESCE($2, "options")
-      WHERE "number" = $3
-      RETURNING "number", "question", "options";
+      WHERE "id" = $3
+      RETURNING "id", "question", "options";
     `;
     const result = await db.query(updateQuery, [
       question,
       options ? JSON.stringify(options) : null,
-      numberVal
+      idVal
     ]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: `Pertanyaan nomor ${numberVal} tidak ditemukan.` });
+      return res.status(404).json({ success: false, message: `Pertanyaan ID ${idVal} tidak ditemukan.` });
     }
 
-    res.json({ success: true, message: 'Data house_allegiance berhasil diperbarui.', data: result.rows[0] });
+    const row = result.rows[0];
+    res.json({
+      success: true,
+      message: 'Data house_allegiance berhasil diperbarui.',
+      data: {
+        id: row.id,
+        number: row.id,
+        question: row.question,
+        options: row.options
+      }
+    });
   } catch (err) {
     console.error('[House Allegiance] PUT Error:', err.message);
     res.status(500).json({ success: false, message: 'Gagal memperbarui data house_allegiance', error: err.message });
   }
 });
 
-// 5. DELETE /:number - Delete question by number
-router.delete('/:number', async (req, res) => {
+// 5. DELETE /:id - Delete question by ID
+router.delete('/:id', async (req, res) => {
   try {
-    const numberVal = parseInt(req.params.number, 10);
-    if (isNaN(numberVal)) {
-      return res.status(400).json({ success: false, message: 'Parameter number harus berupa angka.' });
+    const idVal = parseInt(req.params.id, 10);
+    if (isNaN(idVal)) {
+      return res.status(400).json({ success: false, message: 'Parameter id harus berupa angka.' });
     }
 
-    const result = await db.query('DELETE FROM house_allegiance WHERE "number" = $1 RETURNING *', [numberVal]);
+    const result = await db.query('DELETE FROM house_allegiance WHERE "id" = $1 RETURNING *', [idVal]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: `Pertanyaan nomor ${numberVal} tidak ditemukan.` });
+      return res.status(404).json({ success: false, message: `Pertanyaan ID ${idVal} tidak ditemukan.` });
     }
 
-    res.json({ success: true, message: `Data house_allegiance nomor ${numberVal} berhasil dihapus.`, data: result.rows[0] });
+    const row = result.rows[0];
+    res.json({
+      success: true,
+      message: `Data house_allegiance ID ${idVal} berhasil dihapus.`,
+      data: {
+        id: row.id,
+        number: row.id,
+        question: row.question,
+        options: row.options
+      }
+    });
   } catch (err) {
     console.error('[House Allegiance] DELETE Error:', err.message);
     res.status(500).json({ success: false, message: 'Gagal menghapus data house_allegiance', error: err.message });

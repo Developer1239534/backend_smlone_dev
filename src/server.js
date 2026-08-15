@@ -155,7 +155,7 @@ const { getDbMetrics } = require('./db/neonClient');
 
       -- Create house_allegiance table
       CREATE TABLE IF NOT EXISTS house_allegiance (
-        "number" INT PRIMARY KEY,
+        "id" SERIAL PRIMARY KEY,
         "question" TEXT NOT NULL,
         "options" JSONB
       );
