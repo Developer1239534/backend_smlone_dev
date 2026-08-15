@@ -66,11 +66,15 @@ router.post('/', async (req, res) => {
 
       const inserted = [];
       for (const item of bodyData) {
-        const namaHouse = item['Nama House'] || item.nama_house || item.namaHouse || item.house_name;
+        const rawNamaHouse = item['Nama House'] || item.nama_house || item.namaHouse || item.house_name;
+        const namaHouse = typeof rawNamaHouse === 'string' ? rawNamaHouse.trim() : rawNamaHouse;
         const totalGold = item['Total Gold'] ?? item.total_gold ?? item.totalGold ?? 0;
-        const className = item['Class'] || item.class || item.className || null;
-        const cabang = item['Cabang'] || item.cabang || null;
-        const program = item['Program'] || item.program || null;
+        const rawClass = item['Class'] || item.class || item.className || null;
+        const className = typeof rawClass === 'string' ? rawClass.trim() : rawClass;
+        const rawCabang = item['Cabang'] || item.cabang || null;
+        const cabang = typeof rawCabang === 'string' ? rawCabang.trim() : rawCabang;
+        const rawProgram = item['Program'] || item.program || null;
+        const program = typeof rawProgram === 'string' ? rawProgram.trim() : rawProgram;
         const rank = item['Rank'] ?? item.rank ?? null;
 
         if (namaHouse) {
