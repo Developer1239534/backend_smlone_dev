@@ -1,34 +1,132 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
+const Ably = require('ably');
 
-// GET /api/report-trainee - Get all report_trainee entries
+// Initialize Ably if API key is provided in environment
+let ably;
+try {
+  const ablyKey = process.env.ABLY_API_KEY ? process.env.ABLY_API_KEY.trim() : null;
+  if (ablyKey) {
+    ably = new Ably.Rest(ablyKey);
+    console.log('✅ Ably real-time initialized for report_trainee.');
+  }
+} catch (err) {
+  console.warn('⚠️ Ably real-time warning for report_trainee:', err.message);
+}
+
+// Store active Server-Sent Events (SSE) clients
+const sseClients = new Set();
+
+/**
+ * Broadcast event to all SSE clients and Ably channel
+ */
+async function broadcast(eventType, data) {
+  const payload = {
+    event: eventType,
+    timestamp: new Date().toISOString(),
+    data: data
+  };
+
+  // 1. Broadcast via Server-Sent Events (SSE)
+  const message = `event: ${eventType}\ndata: ${JSON.stringify(payload)}\n\n`;
+  sseClients.forEach((client) => {
+    try {
+      client.write(message);
+    } catch (e) {
+      sseClients.delete(client);
+    }
+  });
+
+  // 2. Broadcast via Ably Realtime
+  if (ably) {
+    try {
+      const channel = ably.channels.get('report_trainee');
+      await channel.publish(eventType, payload);
+    } catch (err) {
+      console.error('[Ably Publish Error]:', err.message);
+    }
+  }
+}
+
+// Send periodic SSE keep-alive heartbeat ping every 20 seconds
+setInterval(() => {
+  sseClients.forEach((client) => {
+    try {
+      client.write(': ping\n\n');
+    } catch (e) {
+      sseClients.delete(client);
+    }
+  });
+}, 20000);
+
+// ==========================================
+// REAL-TIME SSE ENDPOINTS
+// GET /api/report-trainee/stream or GET /api/report-trainee/live
+// ==========================================
+const handleStream = async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering
+  res.flushHeaders && res.flushHeaders();
+
+  // Add client to active SSE subscribers
+  sseClients.add(res);
+
+  // Send initial data state on connection
+  try {
+    const result = await db.query('SELECT "ID", reports, created_at, updated_at FROM report_trainee ORDER BY "ID" ASC');
+    const initPayload = {
+      event: 'init',
+      timestamp: new Date().toISOString(),
+      data: result.rows
+    };
+    res.write(`event: init\ndata: ${JSON.stringify(initPayload)}\n\n`);
+  } catch (err) {
+    res.write(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`);
+  }
+
+  // Remove client when connection closes
+  req.on('close', () => {
+    sseClients.delete(res);
+  });
+};
+
+router.get('/stream', handleStream);
+router.get('/live', handleStream);
+
+// ==========================================
+// RESTful CRUD ENDPOINTS
+// ==========================================
+
+// GET /api/report-trainee - Fetch all records
 router.get('/', async (req, res) => {
   try {
-    const { id, trainee_id, search, page = 1, limit = 100 } = req.query;
+    const { id, search, page = 1, limit = 100 } = req.query;
 
-    let query = `SELECT * FROM report_trainee`;
+    let query = `SELECT "ID", reports, created_at, updated_at FROM report_trainee`;
     const conditions = [];
     const params = [];
 
-    const targetId = id || trainee_id;
-    if (targetId) {
-      params.push(targetId);
-      conditions.push(`(id = $${params.length} OR trainee_id = $${params.length})`);
+    if (id) {
+      params.push(parseInt(id, 10) || id);
+      conditions.push(`"ID" = $${params.length}`);
     }
 
     if (search) {
       params.push(`%${search}%`);
-      conditions.push(`(id ILIKE $${params.length} OR trainee_id ILIKE $${params.length} OR report_title ILIKE $${params.length} OR link_yt ILIKE $${params.length})`);
+      conditions.push(`(CAST("ID" AS TEXT) ILIKE $${params.length} OR reports ILIKE $${params.length})`);
     }
 
     if (conditions.length > 0) {
       query += ` WHERE ` + conditions.join(' AND ');
     }
 
-    query += ` ORDER BY id ASC`;
+    query += ` ORDER BY "ID" ASC`;
 
-    const countResult = await db.query(`SELECT COUNT(*) FROM report_trainee` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : ''), params);
+    const countQuery = `SELECT COUNT(*) FROM report_trainee` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : '');
+    const countResult = await db.query(countQuery, params);
     const totalItems = parseInt(countResult.rows[0].count, 10);
 
     if (req.query.all === 'true' || limit === '0') {
@@ -62,7 +160,7 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (error) {
-    if (error.code === '42P01' || (error.message && error.message.includes('does not exist'))) {
+    if (error.code === '42P01') {
       return res.json({ success: true, data: [], total: 0 });
     }
     console.error('[ReportTrainee] Fetch error:', error);
@@ -74,117 +172,162 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/report-trainee/trainee/:id & /api/report-trainee/:id
-router.get('/trainee/:id', getSingleReportTrainee);
-router.get('/:id', getSingleReportTrainee);
-
-async function getSingleReportTrainee(req, res) {
+// GET /api/report-trainee/:id - Fetch single record by ID
+router.get('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    const cleanId = String(id).trim();
+    const targetId = parseInt(req.params.id, 10);
+    if (isNaN(targetId)) {
+      return res.status(400).json({ success: false, message: 'ID tidak valid' });
+    }
 
     const result = await db.query(
-      `SELECT * FROM report_trainee WHERE id = $1 OR trainee_id = $1`,
-      [cleanId]
+      `SELECT "ID", reports, created_at, updated_at FROM report_trainee WHERE "ID" = $1`,
+      [targetId]
     );
 
-    if (result.rows.length > 0) {
-      return res.json({
-        success: true,
-        data: result.rows[0]
-      });
-    }
-
-    // Search name in login_portalllll for fallback
-    const fixResult = await db.query(`SELECT name FROM login_portalllll WHERE id = $1`, [cleanId]).catch(() => ({ rows: [] }));
-    const nameFallback = fixResult.rows[0]?.name || 'Trainee ' + cleanId;
-
-    // 200 OK Fallback to prevent 404 errors
-    return res.json({
-      success: true,
-      data: {
-        id: cleanId,
-        trainee_id: cleanId,
-        name: nameFallback,
-        report_title: "▶️ Progress Video",
-        link_yt: "",
-        report_title_2: "May 2026 - Jun 2026",
-        link_term: "",
-        link_terms: [],
-        report_title_4: "REFERRAL CODE",
-        referral_code: ""
-      }
-    });
-  } catch (error) {
-    return res.json({
-      success: true,
-      data: {
-        id: req.params.id,
-        trainee_id: req.params.id,
-        name: 'Trainee ' + req.params.id,
-        report_title: "▶️ Progress Video",
-        link_yt: "",
-        report_title_2: "",
-        link_term: "",
-        link_terms: [],
-        report_title_4: "",
-        referral_code: ""
-      }
-    });
-  }
-}
-
-// POST /api/report-trainee - Create or Update report_trainee
-router.post('/', async (req, res) => {
-  try {
-    const { id, trainee_id, report_title, link_yt } = req.body;
-    const targetId = String(id || trainee_id || '').trim();
-
-    if (!targetId) {
-      return res.status(400).json({
+    if (result.rows.length === 0) {
+      return res.status(404).json({
         success: false,
-        message: 'ID / trainee_id wajib diisi'
+        message: `Data report_trainee dengan ID ${targetId} tidak ditemukan`
       });
     }
-
-    const result = await db.query(`
-      INSERT INTO report_trainee (id, trainee_id, report_title, link_yt, updated_at)
-      VALUES ($1, $2, $3, $4, NOW())
-      ON CONFLICT (id)
-      DO UPDATE SET
-        trainee_id = EXCLUDED.trainee_id,
-        report_title = EXCLUDED.report_title,
-        link_yt = EXCLUDED.link_yt,
-        updated_at = NOW()
-      RETURNING *
-    `, [targetId, targetId, report_title || '▶️ Progress Video', link_yt || '']);
 
     res.json({
       success: true,
-      message: 'Berhasil menyimpan data report_trainee',
       data: result.rows[0]
     });
   } catch (error) {
-    console.error('[ReportTrainee] Create/Update error:', error);
+    console.error('[ReportTrainee] Get single error:', error);
     res.status(500).json({
       success: false,
-      message: 'Gagal menyimpan data report_trainee',
+      message: 'Gagal mengambil data report_trainee',
       error: error.message
     });
   }
 });
 
-// DELETE /api/report-trainee/:id - Delete report_trainee
-router.delete('/:id', async (req, res) => {
+// POST /api/report-trainee - Create new record (Real-time broadcast)
+router.post('/', async (req, res) => {
   try {
-    const { id } = req.params;
-    const cleanId = String(id).trim();
+    const { reports, ID, id } = req.body;
+    const customId = ID || id;
 
-    await db.query(`DELETE FROM report_trainee WHERE id = $1 OR trainee_id = $1`, [cleanId]);
+    let result;
+    if (customId) {
+      result = await db.query(
+        `INSERT INTO report_trainee ("ID", reports, created_at, updated_at)
+         VALUES ($1, $2, NOW(), NOW())
+         ON CONFLICT ("ID") DO UPDATE SET
+           reports = EXCLUDED.reports,
+           updated_at = NOW()
+         RETURNING "ID", reports, created_at, updated_at`,
+        [parseInt(customId, 10), reports || '']
+      );
+    } else {
+      result = await db.query(
+        `INSERT INTO report_trainee (reports, created_at, updated_at)
+         VALUES ($1, NOW(), NOW())
+         RETURNING "ID", reports, created_at, updated_at`,
+        [reports || '']
+      );
+    }
+
+    const newRecord = result.rows[0];
+
+    // Real-time notification broadcast
+    broadcast('INSERT', newRecord);
+
+    res.status(201).json({
+      success: true,
+      message: 'Berhasil menambahkan data report_trainee',
+      data: newRecord
+    });
+  } catch (error) {
+    console.error('[ReportTrainee] Create error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal menambahkan data report_trainee',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/report-trainee/:id & PATCH /api/report-trainee/:id - Update record (Real-time broadcast)
+const handleUpdate = async (req, res) => {
+  try {
+    const targetId = parseInt(req.params.id, 10);
+    if (isNaN(targetId)) {
+      return res.status(400).json({ success: false, message: 'ID tidak valid' });
+    }
+
+    const { reports } = req.body;
+
+    const result = await db.query(
+      `UPDATE report_trainee
+       SET reports = COALESCE($1, reports),
+           updated_at = NOW()
+       WHERE "ID" = $2
+       RETURNING "ID", reports, created_at, updated_at`,
+      [reports, targetId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Data report_trainee dengan ID ${targetId} tidak ditemukan`
+      });
+    }
+
+    const updatedRecord = result.rows[0];
+
+    // Real-time notification broadcast
+    broadcast('UPDATE', updatedRecord);
 
     res.json({
       success: true,
-      message: `Berhasil menghapus data report_trainee ${cleanId}`
+      message: `Berhasil mengupdate data report_trainee ID ${targetId}`,
+      data: updatedRecord
+    });
+  } catch (error) {
+    console.error('[ReportTrainee] Update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengupdate data report_trainee',
+      error: error.message
+    });
+  }
+};
+
+router.put('/:id', handleUpdate);
+router.patch('/:id', handleUpdate);
+
+// DELETE /api/report-trainee/:id - Delete record (Real-time broadcast)
+router.delete('/:id', async (req, res) => {
+  try {
+    const targetId = parseInt(req.params.id, 10);
+    if (isNaN(targetId)) {
+      return res.status(400).json({ success: false, message: 'ID tidak valid' });
+    }
+
+    const result = await db.query(
+      `DELETE FROM report_trainee WHERE "ID" = $1 RETURNING "ID"`,
+      [targetId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Data report_trainee dengan ID ${targetId} tidak ditemukan`
+      });
+    }
+
+    // Real-time notification broadcast
+    broadcast('DELETE', { ID: targetId });
+
+    res.json({
+      success: true,
+      message: `Berhasil menghapus data report_trainee ID ${targetId}`,
+      data: { ID: targetId }
     });
   } catch (error) {
     console.error('[ReportTrainee] Delete error:', error);
