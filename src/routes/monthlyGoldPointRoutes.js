@@ -2,6 +2,75 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 const Ably = require('ably');
+const goldpointSeed = require('../db/goldpointSeed');
+
+// Helper to ensure monthly_gold_point table exists and has seed data
+async function ensureAndSeedMonthlyGoldPointTable() {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS monthly_gold_point (
+        "ID" TEXT PRIMARY KEY,
+        "Nama Trainee" TEXT,
+        "Active/Expired" TEXT,
+        "Level" TEXT,
+        "House" TEXT,
+        "Class" TEXT,
+        "Branch" TEXT,
+        "Total Gold/Periode" TEXT,
+        "Junior/Youth" TEXT,
+        "RANK/ID" TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    const countCheck = await db.query('SELECT COUNT(*) FROM monthly_gold_point');
+    if (parseInt(countCheck.rows[0].count, 10) === 0 && Array.isArray(goldpointSeed) && goldpointSeed.length > 0) {
+      console.log(`[Monthly Gold Point] Auto-seeding ${goldpointSeed.length} records into monthly_gold_point...`);
+      for (const row of goldpointSeed) {
+        const id                 = String(row['ID']                 || row['id']                 || '').trim();
+        const nama_trainee       = String(row['Nama Trainee']       || row['nama_trainee']       || '').trim();
+        const active_expired     = String(row['Active/Expired']     || row['active_expired']     || '').trim();
+        const level              = String(row['Level']              || row['level']              || '').trim();
+        const house              = String(row['House']              || row['house']              || '').trim();
+        const class_val          = String(row['Class']              || row['class']              || '').trim();
+        const branch             = String(row['Branch']             || row['branch']             || '').trim();
+        const total_gold_periode = String(row['Total Gold/Periode'] || row['total_gold_periode'] || '').trim();
+        const junior_youth       = String(row['Junior/Youth']       || row['junior_youth']       || '').trim();
+        const rank_id            = String(row['RANK/ID']            || row['rank_id']            || '').trim();
+
+        if (!id) continue;
+
+        try {
+          await db.query(
+            `INSERT INTO monthly_gold_point (
+               "ID", "Nama Trainee", "Active/Expired", "Level", "House",
+               "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             ON CONFLICT ("ID") DO UPDATE SET
+               "Nama Trainee"       = EXCLUDED."Nama Trainee",
+               "Active/Expired"     = EXCLUDED."Active/Expired",
+               "Level"              = EXCLUDED."Level",
+               "House"              = EXCLUDED."House",
+               "Class"              = EXCLUDED."Class",
+               "Branch"             = EXCLUDED."Branch",
+               "Total Gold/Periode" = EXCLUDED."Total Gold/Periode",
+               "Junior/Youth"       = EXCLUDED."Junior/Youth",
+               "RANK/ID"            = EXCLUDED."RANK/ID"`,
+            [
+              id, nama_trainee, active_expired, level, house,
+              class_val, branch, total_gold_periode, junior_youth, rank_id
+            ]
+          );
+        } catch (e) {
+          // ignore single row seed error
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Monthly Gold Point] Ensure & Seed error:', err.message);
+  }
+}
 
 // Initialize Ably if API key is provided
 let ably;
@@ -134,6 +203,7 @@ router.get('/live', handleStream);
 // 1. GET /api/monthly-gold-point - Fetch all records (with pagination & search)
 router.get('/', async (req, res) => {
   try {
+    await ensureAndSeedMonthlyGoldPointTable();
     const { id, trainee_id, student_id, search, branch, cabang, category, house, level, junior_youth, program, kategori, page = 1, limit = 100, all } = req.query;
 
     let query = `
@@ -237,6 +307,7 @@ router.get('/', async (req, res) => {
 // 2. GET /api/monthly-gold-point/:id - Get single record by ID
 router.get('/:id', async (req, res) => {
   try {
+    await ensureAndSeedMonthlyGoldPointTable();
     const cleanId = String(req.params.id).trim();
 
     const result = await db.query(`
