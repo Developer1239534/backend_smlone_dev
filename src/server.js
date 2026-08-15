@@ -46,6 +46,7 @@ const reportTraineeDataRoutes = require('./routes/reportTraineeDataRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const credentialRoutes = require('./routes/credentialRoutes');
+const monthlyGoldPointRoutes = require('./routes/monthlyGoldPointRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -334,6 +335,12 @@ app.use('/api/credential_portal', credentialRoutes);
 app.use('/credential-portal', credentialRoutes);
 app.use('/credential_portal', credentialRoutes);
 app.use('/api/admin/credential-portal', credentialRoutes);
+
+app.use('/api/monthly-gold-point', monthlyGoldPointRoutes);
+app.use('/api/monthly_gold_point', monthlyGoldPointRoutes);
+app.use('/monthly-gold-point', monthlyGoldPointRoutes);
+app.use('/monthly_gold_point', monthlyGoldPointRoutes);
+app.use('/api/admin/monthly-gold-point', monthlyGoldPointRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/login', authRoutes);
