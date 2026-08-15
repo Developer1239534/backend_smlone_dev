@@ -134,7 +134,7 @@ router.get('/live', handleStream);
 // 1. GET /api/monthly-gold-point - Fetch all records (with pagination & search)
 router.get('/', async (req, res) => {
   try {
-    const { id, search, branch, house, level, junior_youth, page = 1, limit = 100, all } = req.query;
+    const { id, trainee_id, student_id, search, branch, cabang, category, house, level, junior_youth, program, kategori, page = 1, limit = 100, all } = req.query;
 
     let query = `
       SELECT 
@@ -146,8 +146,9 @@ router.get('/', async (req, res) => {
     const conditions = [];
     const params = [];
 
-    if (id) {
-      params.push(String(id).trim());
+    const targetId = id || trainee_id || student_id;
+    if (targetId) {
+      params.push(String(targetId).trim());
       conditions.push(`"ID" = $${params.length}`);
     }
 
@@ -156,8 +157,9 @@ router.get('/', async (req, res) => {
       conditions.push(`("ID" ILIKE $${params.length} OR "Nama Trainee" ILIKE $${params.length} OR "Class" ILIKE $${params.length} OR "House" ILIKE $${params.length})`);
     }
 
-    if (branch) {
-      params.push(branch.trim());
+    const targetBranch = branch || cabang || category;
+    if (targetBranch && targetBranch.toUpperCase() !== 'ALL' && targetBranch.toUpperCase() !== 'ALL BRANCH') {
+      params.push(targetBranch.trim());
       conditions.push(`"Branch" ILIKE $${params.length}`);
     }
 
@@ -171,8 +173,9 @@ router.get('/', async (req, res) => {
       conditions.push(`"Level" ILIKE $${params.length}`);
     }
 
-    if (junior_youth) {
-      params.push(junior_youth.trim());
+    const targetProgram = junior_youth || program || kategori;
+    if (targetProgram && targetProgram.toUpperCase() !== 'ALL') {
+      params.push(targetProgram.trim());
       conditions.push(`"Junior/Youth" ILIKE $${params.length}`);
     }
 

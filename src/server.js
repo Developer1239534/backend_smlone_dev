@@ -262,22 +262,22 @@ app.use('/api/report_trainee_data', reportTraineeDataRoutes);
 app.use('/report-trainee-data', reportTraineeDataRoutes);
 app.use('/report_trainee_data', reportTraineeDataRoutes);
 
-app.use('/api/goldpoint-trainee', goldPointRankingRoutes);
-app.use('/api/goldpoint_trainee', goldPointRankingRoutes);
-app.use('/api/admin/goldpoint-trainee', goldPointRankingRoutes);
-app.use('/api/admin/goldpoint_trainee', goldPointRankingRoutes);
-app.use('/api/dashboard/goldpoint-trainee', goldPointRankingRoutes);
-app.use('/api/dashboard/goldpoint_trainee', goldPointRankingRoutes);
-app.use('/api/gold-point-rankings', goldPointRankingRoutes);
-app.use('/api/gold_point_rankings', goldPointRankingRoutes);
-app.use('/api/gold-point-ranking', goldPointRankingRoutes);
-app.use('/api/gold_point_ranking', goldPointRankingRoutes);
-app.use('/api/admin/gold-point-ranking', goldPointRankingRoutes);
-app.use('/api/admin/gold-point-rankings', goldPointRankingRoutes);
-app.use('/api/portal-trainee/gold-point-rankings', goldPointRankingRoutes);
-app.use('/api/portal-admin/gold-point-rankings', goldPointRankingRoutes);
-app.use('/gold-point-ranking', goldPointRankingRoutes);
-app.use('/gold-point-rankings', goldPointRankingRoutes);
+app.use('/api/goldpoint-trainee', monthlyGoldPointRoutes);
+app.use('/api/goldpoint_trainee', monthlyGoldPointRoutes);
+app.use('/api/admin/goldpoint-trainee', monthlyGoldPointRoutes);
+app.use('/api/admin/goldpoint_trainee', monthlyGoldPointRoutes);
+app.use('/api/dashboard/goldpoint-trainee', monthlyGoldPointRoutes);
+app.use('/api/dashboard/goldpoint_trainee', monthlyGoldPointRoutes);
+app.use('/api/gold-point-rankings', monthlyGoldPointRoutes);
+app.use('/api/gold_point_rankings', monthlyGoldPointRoutes);
+app.use('/api/gold-point-ranking', monthlyGoldPointRoutes);
+app.use('/api/gold_point_ranking', monthlyGoldPointRoutes);
+app.use('/api/admin/gold-point-ranking', monthlyGoldPointRoutes);
+app.use('/api/admin/gold-point-rankings', monthlyGoldPointRoutes);
+app.use('/api/portal-trainee/gold-point-rankings', monthlyGoldPointRoutes);
+app.use('/api/portal-admin/gold-point-rankings', monthlyGoldPointRoutes);
+app.use('/gold-point-ranking', monthlyGoldPointRoutes);
+app.use('/gold-point-rankings', monthlyGoldPointRoutes);
 
 // Public Feedback Routes (Table feedback - 20 columns, id primary key)
 app.use('/api/feedback', feedbackRoutes);
