@@ -98,84 +98,114 @@ async function ensureAndSeedGoldPointRankings() {
   }
 }
 
-// GET /api/gold-point-rankings - List with filter, search, pagination
+// GET /api/gold-point-rankings - List with filter, search, pagination from monthly_gold_point table
 router.get('/', async (req, res) => {
   try {
-    ensureAndSeedGoldPointRankings().catch(() => null);
+    const { id, trainee_id, student_id, search, branch, cabang, category, house, level, junior_youth, program, kategori, page = 1, limit = 100, all } = req.query;
 
-    const { period, category, branch, cabang, program, kategori, junior_youth, trainee_id, id, search, page = 1, limit = 100 } = req.query;
-
-    let query = `SELECT * FROM gold_point_rankings`;
+    let query = `
+      SELECT 
+        "ID", 
+        "Nama Trainee", 
+        "Active/Expired", 
+        "Level", 
+        "House", 
+        "Class", 
+        "Branch", 
+        "Total Gold/Periode", 
+        "Junior/Youth", 
+        "RANK/ID" 
+      FROM monthly_gold_point
+      WHERE 1=1
+    `;
     const conditions = [];
     const params = [];
 
-    if (period) {
-      params.push(period);
-      conditions.push(`period = $${params.length}`);
-    }
-
-    const targetCategory = category || branch || cabang;
-    if (targetCategory && targetCategory.toUpperCase() !== 'ALL' && targetCategory.toUpperCase() !== 'ALL BRANCH') {
-      params.push(targetCategory);
-      conditions.push(`category = $${params.length}`);
-    }
-
-    const targetProgram = program || kategori || junior_youth;
-    if (targetProgram && targetProgram.toUpperCase() !== 'ALL') {
-      params.push(targetProgram);
-      conditions.push(`program ILIKE $${params.length}`);
-    }
-
-    const targetTraineeId = trainee_id || id;
-    if (targetTraineeId) {
-      params.push(targetTraineeId);
-      conditions.push(`trainee_id = $${params.length}`);
+    const targetId = id || trainee_id || student_id;
+    if (targetId) {
+      params.push(String(targetId).trim());
+      conditions.push(`"ID" = $${params.length}`);
     }
 
     if (search) {
-      params.push(`%${search}%`);
-      conditions.push(`(trainee_id ILIKE $${params.length} OR trainee_name ILIKE $${params.length} OR class_name ILIKE $${params.length} OR house ILIKE $${params.length} OR branch ILIKE $${params.length})`);
+      params.push(`%${search.trim()}%`);
+      conditions.push(`("ID" ILIKE $${params.length} OR "Nama Trainee" ILIKE $${params.length} OR "Class" ILIKE $${params.length} OR "House" ILIKE $${params.length})`);
+    }
+
+    const targetBranch = branch || cabang || category;
+    if (targetBranch && targetBranch.toUpperCase() !== 'ALL' && targetBranch.toUpperCase() !== 'ALL BRANCH') {
+      params.push(targetBranch.trim());
+      conditions.push(`"Branch" ILIKE $${params.length}`);
+    }
+
+    if (house) {
+      params.push(house.trim());
+      conditions.push(`"House" ILIKE $${params.length}`);
+    }
+
+    if (level) {
+      params.push(level.trim());
+      conditions.push(`"Level" ILIKE $${params.length}`);
+    }
+
+    const targetProgram = junior_youth || program || kategori;
+    if (targetProgram && targetProgram.toUpperCase() !== 'ALL') {
+      params.push(targetProgram.trim());
+      conditions.push(`"Junior/Youth" ILIKE $${params.length}`);
     }
 
     if (conditions.length > 0) {
-      query += ` WHERE ` + conditions.join(' AND ');
+      query += ` AND ` + conditions.join(' AND ');
     }
 
-    query += ` ORDER BY ranking ASC NULLS LAST, total_gold DESC, id ASC`;
+    query += ` ORDER BY "ID" ASC`;
 
-    const countResult = await db.query(`SELECT COUNT(*) FROM gold_point_rankings` + (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : ''), params);
-    const totalItems = parseInt(countResult.rows[0].count, 10);
+    const countQuery = `SELECT COUNT(*) FROM monthly_gold_point WHERE 1=1` + (conditions.length > 0 ? ` AND ` + conditions.join(' AND ') : '');
+    const countResult = await db.query(countQuery, params).catch(() => ({ rows: [{ count: 0 }] }));
+    const totalItems = parseInt(countResult.rows[0]?.count || 0, 10);
 
     const mapRow = (r) => ({
-      ...r,
-      ID: r.trainee_id,
-      'Nama Trainee': r.trainee_name,
-      'Active/Expired': r.membership_status,
-      Level: r.level,
-      House: r.house,
-      Class: r.class_name,
-      Branch: r.branch,
-      'Total Gold/Periode': String(r.total_gold || 0),
-      'Junior/Youth': r.program,
-      'RANK/ID': String(r.ranking || 0),
-      nama_trainee: r.trainee_name,
-      class: r.class_name,
-      nama_kelas: r.class_name,
-      status: r.membership_status,
-      total_gold_periode: r.total_gold,
-      gp_month: r.total_gold,
-      rank: r.ranking,
-      kategori: r.program,
-      junior_youth: r.program
+      ID: r.ID,
+      id: r.ID,
+      trainee_id: r.ID,
+      'Nama Trainee': r['Nama Trainee'],
+      nama_trainee: r['Nama Trainee'],
+      trainee_name: r['Nama Trainee'],
+      'Active/Expired': r['Active/Expired'],
+      membership_status: r['Active/Expired'],
+      status: r['Active/Expired'],
+      Level: r.Level,
+      level: r.Level,
+      House: r.House,
+      house: r.House,
+      Class: r.Class,
+      class_name: r.Class,
+      class: r.Class,
+      nama_kelas: r.Class,
+      Branch: r.Branch,
+      branch: r.Branch,
+      cabang: r.Branch,
+      'Total Gold/Periode': r['Total Gold/Periode'],
+      total_gold_periode: parseInt(r['Total Gold/Periode'] || '0', 10),
+      total_gold: parseInt(r['Total Gold/Periode'] || '0', 10),
+      gp_month: parseInt(r['Total Gold/Periode'] || '0', 10),
+      'Junior/Youth': r['Junior/Youth'],
+      program: r['Junior/Youth'],
+      kategori: r['Junior/Youth'],
+      junior_youth: r['Junior/Youth'],
+      'RANK/ID': r['RANK/ID'],
+      rank: parseInt(r['RANK/ID'] || '0', 10),
+      ranking: parseInt(r['RANK/ID'] || '0', 10)
     });
 
-    if (req.query.all === 'true' || req.query.all === '1' || limit === '0') {
+    if (all === 'true' || all === '1' || limit === '0') {
       const result = await db.query(query, params);
       const formatted = result.rows.map(mapRow);
       return res.json({
         success: true,
         data: formatted,
-        total: totalItems
+        total: formatted.length,
+        count: formatted.length
       });
     }
 
@@ -194,6 +224,8 @@ router.get('/', async (req, res) => {
     res.json({
       success: true,
       data: formatted,
+      count: formatted.length,
+      total: totalItems,
       pagination: {
         total: totalItems,
         page: pageNum,
@@ -205,86 +237,70 @@ router.get('/', async (req, res) => {
     console.error('[GoldPointRanking] GET Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Gagal mengambil data gold_point_rankings',
+      message: 'Gagal mengambil data monthly_gold_point',
       error: error.message
     });
   }
 });
 
-// GET /api/gold-point-ranking/:id - Single item by ID
+// GET /api/gold-point-ranking/:id - Single item by ID from monthly_gold_point
 router.get('/:id', async (req, res) => {
   try {
-    ensureAndSeedGoldPointRankings().catch(() => null);
     const { id } = req.params;
     const cleanId = String(id).trim();
 
-    const result = await db.query(`SELECT * FROM gold_point_rankings WHERE id::text = $1 OR trainee_id = $1`, [cleanId]);
+    const result = await db.query(`
+      SELECT 
+        "ID", "Nama Trainee", "Active/Expired", "Level", "House",
+        "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
+      FROM monthly_gold_point
+      WHERE "ID" = $1
+    `, [cleanId]);
 
     if (result.rows.length > 0) {
       const r = result.rows[0];
       const formatted = {
-        ...r,
-        ID: r.trainee_id,
-        'Nama Trainee': r.trainee_name,
-        'Active/Expired': r.membership_status,
-        Level: r.level,
-        House: r.house,
-        Class: r.class_name,
-        Branch: r.branch,
-        'Total Gold/Periode': String(r.total_gold || 0),
-        'Junior/Youth': r.program,
-        'RANK/ID': String(r.ranking || 0),
-        nama_trainee: r.trainee_name,
-        class: r.class_name,
-        nama_kelas: r.class_name,
-        status: r.membership_status,
-        total_gold_periode: r.total_gold,
-        gp_month: r.total_gold,
-        rank: r.ranking,
-        kategori: r.program,
-        junior_youth: r.program
+        ID: r.ID,
+        id: r.ID,
+        trainee_id: r.ID,
+        'Nama Trainee': r['Nama Trainee'],
+        nama_trainee: r['Nama Trainee'],
+        trainee_name: r['Nama Trainee'],
+        'Active/Expired': r['Active/Expired'],
+        membership_status: r['Active/Expired'],
+        status: r['Active/Expired'],
+        Level: r.Level,
+        level: r.Level,
+        House: r.House,
+        house: r.House,
+        Class: r.Class,
+        class_name: r.Class,
+        class: r.Class,
+        nama_kelas: r.Class,
+        Branch: r.Branch,
+        branch: r.Branch,
+        cabang: r.Branch,
+        'Total Gold/Periode': r['Total Gold/Periode'],
+        total_gold_periode: parseInt(r['Total Gold/Periode'] || '0', 10),
+        total_gold: parseInt(r['Total Gold/Periode'] || '0', 10),
+        gp_month: parseInt(r['Total Gold/Periode'] || '0', 10),
+        'Junior/Youth': r['Junior/Youth'],
+        program: r['Junior/Youth'],
+        kategori: r['Junior/Youth'],
+        junior_youth: r['Junior/Youth'],
+        'RANK/ID': r['RANK/ID'],
+        rank: parseInt(r['RANK/ID'] || '0', 10),
+        ranking: parseInt(r['RANK/ID'] || '0', 10)
       };
       return res.json({ success: true, data: formatted });
     }
 
-    return res.json({
-      success: true,
-      data: {
-        id: cleanId,
-        ID: cleanId,
-        trainee_id: cleanId,
-        trainee_name: 'Trainee ' + cleanId,
-        'Nama Trainee': 'Trainee ' + cleanId,
-        membership_status: 'Active',
-        'Active/Expired': 'Active',
-        status: 'Active',
-        level: 'Private',
-        Level: 'Private',
-        house: 'House of Creanova',
-        House: 'House of Creanova',
-        class_name: 'Mandela',
-        Class: 'Mandela',
-        nama_kelas: 'Mandela',
-        branch: 'TIMOR',
-        Branch: 'TIMOR',
-        total_gold: 0,
-        'Total Gold/Periode': '0',
-        total_gold_periode: 0,
-        gp_month: 0,
-        ranking: 0,
-        'RANK/ID': '0',
-        rank: 0,
-        program: 'Junior',
-        'Junior/Youth': 'Junior',
-        kategori: 'Junior',
-        junior_youth: 'Junior'
-      }
-    });
+    return res.status(404).json({ success: false, message: `Data Monthly Gold Point ID ${cleanId} tidak ditemukan.` });
   } catch (error) {
     console.error('[GoldPointRanking] GET Single Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Gagal mengambil data single gold_point_rankings',
+      message: 'Gagal mengambil data single monthly_gold_point',
       error: error.message
     });
   }
