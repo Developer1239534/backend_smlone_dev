@@ -1,8 +1,66 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
+const Ably = require('ably');
 
-// Helper to sanitize string inputs (removes trailing \n, \r, and spaces)
+// Initialize Ably if API key is provided
+let ably;
+try {
+  const ablyKey = process.env.ABLY_API_KEY ? process.env.ABLY_API_KEY.trim() : null;
+  if (ablyKey) {
+    ably = new Ably.Rest(ablyKey);
+    console.log('✅ Ably real-time initialized for profile_trainee.');
+  }
+} catch (err) {
+  console.warn('⚠️ Ably warning for profile_trainee:', err.message);
+}
+
+// Active Server-Sent Events (SSE) subscribers
+const sseClients = new Set();
+
+/**
+ * Broadcast event to all active SSE subscribers and Ably channel
+ */
+async function broadcast(eventType, data) {
+  const payload = {
+    event: eventType,
+    timestamp: new Date().toISOString(),
+    data: data
+  };
+
+  // 1. Broadcast to SSE subscribers
+  const message = `event: ${eventType}\ndata: ${JSON.stringify(payload)}\n\n`;
+  sseClients.forEach((client) => {
+    try {
+      client.write(message);
+    } catch (e) {
+      sseClients.delete(client);
+    }
+  });
+
+  // 2. Broadcast to Ably channel
+  if (ably) {
+    try {
+      const channel = ably.channels.get('profile_trainee');
+      await channel.publish(eventType, payload);
+    } catch (err) {
+      console.error('[Ably Publish Error]:', err.message);
+    }
+  }
+}
+
+// SSE Keep-alive heartbeat ping (every 20s)
+setInterval(() => {
+  sseClients.forEach((client) => {
+    try {
+      client.write(': ping\n\n');
+    } catch (e) {
+      sseClients.delete(client);
+    }
+  });
+}, 20000);
+
+// Helper to sanitize string inputs
 const cleanStr = (v) => {
   if (v === null || v === undefined || v === 'null') return null;
   const str = String(v).trim();
@@ -45,6 +103,51 @@ function extractProfileFields(item) {
     namaSekolah: cleanStr(rawNamaSekolah)
   };
 }
+
+// ==========================================
+// REAL-TIME SSE STREAM ENDPOINT
+// GET /api/profile-trainee/stream or GET /api/profile-trainee/live
+// ==========================================
+const handleStream = async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders && res.flushHeaders();
+
+  sseClients.add(res);
+
+  try {
+    const result = await db.query(`
+      SELECT 
+        "ID", "Nama", "Gender", "Membership", "Start Date", "Expiry Date",
+        "Class", "House", "Trainer Homeroom", "Date of Birthday", "Kelas",
+        "Email Account Parents", "Nomor WA Parent", "Nomor WA Trainee", "Nama Sekolah"
+      FROM profile_trainee 
+      ORDER BY "ID" ASC 
+      LIMIT 100
+    `);
+    const initPayload = {
+      event: 'init',
+      timestamp: new Date().toISOString(),
+      data: result.rows
+    };
+    res.write(`event: init\ndata: ${JSON.stringify(initPayload)}\n\n`);
+  } catch (err) {
+    res.write(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`);
+  }
+
+  req.on('close', () => {
+    sseClients.delete(res);
+  });
+};
+
+router.get('/stream', handleStream);
+router.get('/live', handleStream);
+
+// ==========================================
+// RESTful CRUD ENDPOINTS
+// ==========================================
 
 // 1. GET /api/profile-trainee - Retrieve profile trainee records
 router.get('/', async (req, res) => {
@@ -151,7 +254,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3. POST /api/profile-trainee - Insert Single or Batch Profile Trainee Data
+// 3. POST /api/profile-trainee - Insert Single or Batch Profile Trainee Data (Real-time broadcast)
 router.post('/', async (req, res) => {
   try {
     const bodyData = req.body?.data || req.body?.items || req.body;
@@ -207,6 +310,8 @@ router.post('/', async (req, res) => {
         }
       }
 
+      broadcast('BULK_INSERT', { count: inserted.length, sample: inserted.slice(0, 5) });
+
       return res.status(201).json({
         success: true,
         message: `Berhasil menambahkan/memperbarui ${inserted.length} data profile_trainee.`,
@@ -251,10 +356,13 @@ router.post('/', async (req, res) => {
       fields.dob, fields.kelas, fields.emailParents, fields.waParent, fields.waTrainee, fields.namaSekolah
     ]);
 
+    const newRecord = result.rows[0];
+    broadcast('INSERT', newRecord);
+
     res.status(201).json({
       success: true,
       message: 'Data profile_trainee berhasil disimpan.',
-      data: result.rows[0]
+      data: newRecord
     });
   } catch (err) {
     console.error('[ProfileTrainee] POST Error:', err.message);
@@ -262,8 +370,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 4. PUT /api/profile-trainee/:id - Update profile trainee record
-router.put('/:id', async (req, res) => {
+// 4. PUT /api/profile-trainee/:id & PATCH /api/profile-trainee/:id - Update profile trainee record
+const handleUpdate = async (req, res) => {
   try {
     const targetId = req.params.id;
     const body = req.body || {};
@@ -299,12 +407,18 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: `Data trainee dengan ID "${targetId}" tidak ditemukan.` });
     }
 
-    res.json({ success: true, message: 'Data profile_trainee berhasil diperbarui.', data: result.rows[0] });
+    const updatedRecord = result.rows[0];
+    broadcast('UPDATE', updatedRecord);
+
+    res.json({ success: true, message: 'Data profile_trainee berhasil diperbarui.', data: updatedRecord });
   } catch (err) {
     console.error('[ProfileTrainee] PUT Error:', err.message);
     res.status(500).json({ success: false, message: 'Gagal memperbarui data profile_trainee', error: err.message });
   }
-});
+};
+
+router.put('/:id', handleUpdate);
+router.patch('/:id', handleUpdate);
 
 // 5. DELETE /api/profile-trainee/:id - Delete profile trainee record
 router.delete('/:id', async (req, res) => {
@@ -315,6 +429,8 @@ router.delete('/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Data trainee dengan ID "${targetId}" tidak ditemukan.` });
     }
+
+    broadcast('DELETE', { ID: targetId });
 
     res.json({ success: true, message: `Data profile_trainee "${targetId}" berhasil dihapus.`, data: result.rows[0] });
   } catch (err) {
