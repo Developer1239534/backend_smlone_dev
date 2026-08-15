@@ -14,6 +14,7 @@ const adminAwardsRoutes = require('./routes/adminAwardsRoutes');
 const adminQuizHistoryRoutes = require('./routes/adminQuizHistoryRoutes');
 const adminGpMonthRoutes = require('./routes/adminGpMonthRoutes');
 const adminHouseRankRoutes = require('./routes/adminHouseRankRoutes');
+const houseAllegianceRoutes = require('./routes/houseAllegianceRoutes');
 const adminHouseRoutes = require('./routes/adminHouseRoutes');
 const adminMybyCoinRoutes = require('./routes/adminMybyCoinRoutes');
 const adminQuestionsRoutes = require('./routes/adminQuestionsRoutes');
@@ -150,6 +151,13 @@ const { getDbMetrics } = require('./db/neonClient');
         "Cabang" VARCHAR(255),
         "Program" VARCHAR(255),
         "Rank" INT
+      );
+
+      -- Create house_allegiance table
+      CREATE TABLE IF NOT EXISTS house_allegiance (
+        "number" INT PRIMARY KEY,
+        "question" TEXT NOT NULL,
+        "options" JSONB
       );
     `);
 
@@ -425,6 +433,11 @@ app.use('/house-rank', adminHouseRankRoutes);
 app.use('/house_rank', adminHouseRankRoutes);
 app.use('/api/admin/house-rank', adminHouseRankRoutes);
 app.use('/api/admin/house_rank', adminHouseRankRoutes);
+
+app.use('/api/house-allegiance', houseAllegianceRoutes);
+app.use('/api/house_allegiance', houseAllegianceRoutes);
+app.use('/house-allegiance', houseAllegianceRoutes);
+app.use('/house_allegiance', houseAllegianceRoutes);
 app.use('/api/admin/houses', verifyToken, adminHouseRoutes);
 app.use('/api/admin/myby-coin', verifyToken, adminMybyCoinRoutes);
 app.use('/api/admin/sml-feedback', verifyToken, smlFeedbackRoutes);
