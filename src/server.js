@@ -371,11 +371,7 @@ app.get('/api/metrics', (req, res) => {
 // Global mutation auto-invalidation middleware
 app.use((req, res, next) => {
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
-    const parts = req.path.split('/').filter(Boolean);
-    if (parts.length > 0) {
-      invalidateCache(`/api/${parts[0]}`);
-      invalidateCache(`/${parts[0]}`);
-    }
+    invalidateCache(); // Clear all memory cache on any data mutation
   }
   next();
 });
