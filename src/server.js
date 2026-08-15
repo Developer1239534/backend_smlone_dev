@@ -106,16 +106,38 @@ const { getDbMetrics } = require('./db/neonClient');
 
 
 
-    await db.query('DROP TABLE IF EXISTS profile_trainee CASCADE');
-    // Drop all requested old tables so database remains clean for new custom tables
-    await db.query('DROP TABLE IF EXISTS feedback CASCADE;');
-    await db.query('DROP TABLE IF EXISTS gold_poin_setahun CASCADE;');
-    await db.query('DROP TABLE IF EXISTS gold_point_rankings CASCADE;');
-    await db.query('DROP TABLE IF EXISTS gold_point_setahun CASCADE;');
-    await db.query('DROP TABLE IF EXISTS ranking_house CASCADE;');
-    await db.query('DROP TABLE IF EXISTS report_trainee CASCADE;');
-    await db.query('DROP TABLE IF EXISTS login_portal_fix CASCADE;');
-    await db.query('DROP TABLE IF EXISTS login_portalllll CASCADE;');
+    // Auto-create profile_trainee table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS profile_trainee (
+        trainee_id VARCHAR(100) PRIMARY KEY,
+        name VARCHAR(255),
+        personal_email VARCHAR(255),
+        school VARCHAR(255),
+        birthday VARCHAR(100),
+        trainee_wa_number VARCHAR(100),
+        parent_wa_number VARCHAR(100),
+        house VARCHAR(100),
+        house_role VARCHAR(100),
+        membership_status VARCHAR(100),
+        first_enroll VARCHAR(100),
+        membership_expired_date VARCHAR(100),
+        class_name VARCHAR(255),
+        level VARCHAR(100),
+        newest_grade VARCHAR(100),
+        branch VARCHAR(100),
+        room VARCHAR(100),
+        day VARCHAR(100),
+        time VARCHAR(100),
+        trainer VARCHAR(100),
+        trainee_homeroom VARCHAR(255),
+        homeroom_kelas VARCHAR(255),
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_profile_trainee_name ON profile_trainee(name);
+      CREATE INDEX IF NOT EXISTS idx_profile_trainee_branch ON profile_trainee(branch);
+    `);
 
 
 
