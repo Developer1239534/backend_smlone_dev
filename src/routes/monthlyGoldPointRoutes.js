@@ -4,8 +4,8 @@ const db = require('../db/neonClient');
 const Ably = require('ably');
 const goldpointSeed = require('../db/goldpointSeed');
 
-// Helper to ensure monthly_gold_point table exists and has seed data
-async function ensureAndSeedMonthlyGoldPointTable() {
+// Helper to ensure monthly_gold_point table exists
+async function ensureMonthlyGoldPointTable() {
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS monthly_gold_point (
@@ -23,52 +23,8 @@ async function ensureAndSeedMonthlyGoldPointTable() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-
-    const countCheck = await db.query('SELECT COUNT(*) FROM monthly_gold_point');
-    if (parseInt(countCheck.rows[0].count, 10) === 0 && Array.isArray(goldpointSeed) && goldpointSeed.length > 0) {
-      console.log(`[Monthly Gold Point] Auto-seeding ${goldpointSeed.length} records into monthly_gold_point...`);
-      for (const row of goldpointSeed) {
-        const id                 = String(row['ID']                 || row['id']                 || '').trim();
-        const nama_trainee       = String(row['Nama Trainee']       || row['nama_trainee']       || '').trim();
-        const active_expired     = String(row['Active/Expired']     || row['active_expired']     || '').trim();
-        const level              = String(row['Level']              || row['level']              || '').trim();
-        const house              = String(row['House']              || row['house']              || '').trim();
-        const class_val          = String(row['Class']              || row['class']              || '').trim();
-        const branch             = String(row['Branch']             || row['branch']             || '').trim();
-        const total_gold_periode = String(row['Total Gold/Periode'] || row['total_gold_periode'] || '').trim();
-        const junior_youth       = String(row['Junior/Youth']       || row['junior_youth']       || '').trim();
-        const rank_id            = String(row['RANK/ID']            || row['rank_id']            || '').trim();
-
-        if (!id) continue;
-
-        try {
-          await db.query(
-            `INSERT INTO monthly_gold_point (
-               "ID", "Nama Trainee", "Active/Expired", "Level", "House",
-               "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-             ON CONFLICT ("ID") DO UPDATE SET
-               "Nama Trainee"       = EXCLUDED."Nama Trainee",
-               "Active/Expired"     = EXCLUDED."Active/Expired",
-               "Level"              = EXCLUDED."Level",
-               "House"              = EXCLUDED."House",
-               "Class"              = EXCLUDED."Class",
-               "Branch"             = EXCLUDED."Branch",
-               "Total Gold/Periode" = EXCLUDED."Total Gold/Periode",
-               "Junior/Youth"       = EXCLUDED."Junior/Youth",
-               "RANK/ID"            = EXCLUDED."RANK/ID"`,
-            [
-              id, nama_trainee, active_expired, level, house,
-              class_val, branch, total_gold_periode, junior_youth, rank_id
-            ]
-          );
-        } catch (e) {
-          // ignore single row seed error
-        }
-      }
-    }
   } catch (err) {
-    console.error('[Monthly Gold Point] Ensure & Seed error:', err.message);
+    console.error('[Monthly Gold Point] Ensure Table error:', err.message);
   }
 }
 
