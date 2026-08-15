@@ -341,6 +341,8 @@ app.use('/api/monthly_gold_point', monthlyGoldPointRoutes);
 app.use('/monthly-gold-point', monthlyGoldPointRoutes);
 app.use('/monthly_gold_point', monthlyGoldPointRoutes);
 app.use('/api/admin/monthly-gold-point', monthlyGoldPointRoutes);
+app.use('/api/gp-month', monthlyGoldPointRoutes);
+app.use('/api/gp_month', monthlyGoldPointRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/login', authRoutes);
