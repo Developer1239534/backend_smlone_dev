@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/neonClient');
 const Ably = require('ably');
-const goldpointSeed = require('../db/goldpointSeed');
 
 // Helper to ensure monthly_gold_point table exists
 async function ensureMonthlyGoldPointTable() {
@@ -10,7 +9,7 @@ async function ensureMonthlyGoldPointTable() {
     await db.query(`
       CREATE TABLE IF NOT EXISTS monthly_gold_point (
         "ID" TEXT PRIMARY KEY,
-        "Nama Trainee" TEXT,
+        "Nama" TEXT,
         "Active/Expired" TEXT,
         "Level" TEXT,
         "House" TEXT,
@@ -88,7 +87,7 @@ setInterval(() => {
 // Helper to extract fields from request body (supporting 10 exact column names & aliases)
 function extractMonthlyGoldFields(row) {
   const id                 = String(row['ID']                 ?? row['id']                 ?? row['trainee_id'] ?? '').trim();
-  const nama_trainee       = String(row['Nama Trainee']       ?? row['nama_trainee']       ?? row['trainee_name'] ?? row['name'] ?? '').trim();
+  const nama               = String(row['Nama']               ?? row['Nama Trainee']       ?? row['nama']       ?? row['nama_trainee'] ?? row['name'] ?? row['trainee_name'] ?? '').trim();
   const active_expired     = String(row['Active/Expired']     ?? row['active_expired']     ?? row['status'] ?? '').trim();
   const level              = String(row['Level']              ?? row['level']              ?? '').trim();
   const house              = String(row['House']              ?? row['house']              ?? '').trim();
@@ -100,7 +99,7 @@ function extractMonthlyGoldFields(row) {
 
   return {
     id,
-    nama_trainee,
+    nama,
     active_expired,
     level,
     house,
@@ -128,7 +127,7 @@ const handleStream = async (req, res) => {
   try {
     const result = await db.query(`
       SELECT 
-        "ID", "Nama Trainee", "Active/Expired", "Level", "House",
+        "ID", "Nama", "Active/Expired", "Level", "House",
         "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
       FROM monthly_gold_point 
       ORDER BY "ID" ASC 
@@ -159,12 +158,12 @@ router.get('/live', handleStream);
 // 1. GET /api/monthly-gold-point - Fetch all records (with pagination & search)
 router.get('/', async (req, res) => {
   try {
-    await ensureAndSeedMonthlyGoldPointTable();
+    await ensureMonthlyGoldPointTable();
     const { id, trainee_id, student_id, search, branch, cabang, category, house, level, junior_youth, program, kategori, page = 1, limit = 100, all } = req.query;
 
     let query = `
       SELECT 
-        "ID", "Nama Trainee", "Active/Expired", "Level", "House",
+        "ID", "Nama", "Active/Expired", "Level", "House",
         "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
       FROM monthly_gold_point
       WHERE 1=1
@@ -180,7 +179,7 @@ router.get('/', async (req, res) => {
 
     if (search) {
       params.push(`%${search.trim()}%`);
-      conditions.push(`("ID" ILIKE $${params.length} OR "Nama Trainee" ILIKE $${params.length} OR "Class" ILIKE $${params.length} OR "House" ILIKE $${params.length})`);
+      conditions.push(`("ID" ILIKE $${params.length} OR "Nama" ILIKE $${params.length} OR "Class" ILIKE $${params.length} OR "House" ILIKE $${params.length})`);
     }
 
     const targetBranch = branch || cabang || category;
@@ -212,8 +211,8 @@ router.get('/', async (req, res) => {
     query += ` ORDER BY "ID" ASC`;
 
     const countQuery = `SELECT COUNT(*) FROM monthly_gold_point WHERE 1=1` + (conditions.length > 0 ? ` AND ` + conditions.join(' AND ') : '');
-    const countResult = await db.query(countQuery, params);
-    const totalItems = parseInt(countResult.rows[0].count, 10);
+    const countResult = await db.query(countQuery, params).catch(() => ({ rows: [{ count: 0 }] }));
+    const totalItems = parseInt(countResult.rows[0]?.count || 0, 10);
 
     if (all === 'true' || all === '1' || limit === '0') {
       const result = await db.query(query, params);
@@ -221,6 +220,7 @@ router.get('/', async (req, res) => {
         success: true,
         message: 'Berhasil mengambil semua data Monthly Gold Point.',
         total: totalItems,
+        count: result.rows.length,
         data: result.rows
       });
     }
@@ -240,6 +240,8 @@ router.get('/', async (req, res) => {
       success: true,
       message: 'Berhasil mengambil data Monthly Gold Point.',
       data: result.rows,
+      count: result.rows.length,
+      total: totalItems,
       pagination: {
         total: totalItems,
         page: pageNum,
@@ -263,12 +265,12 @@ router.get('/', async (req, res) => {
 // 2. GET /api/monthly-gold-point/:id - Get single record by ID
 router.get('/:id', async (req, res) => {
   try {
-    await ensureAndSeedMonthlyGoldPointTable();
+    await ensureMonthlyGoldPointTable();
     const cleanId = String(req.params.id).trim();
 
     const result = await db.query(`
       SELECT 
-        "ID", "Nama Trainee", "Active/Expired", "Level", "House",
+        "ID", "Nama", "Active/Expired", "Level", "House",
         "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
       FROM monthly_gold_point
       WHERE "ID" = $1
@@ -309,11 +311,11 @@ router.post('/', async (req, res) => {
 
     const result = await db.query(`
       INSERT INTO monthly_gold_point (
-        "ID", "Nama Trainee", "Active/Expired", "Level", "House",
+        "ID", "Nama", "Active/Expired", "Level", "House",
         "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       ON CONFLICT ("ID") DO UPDATE SET
-        "Nama Trainee"       = EXCLUDED."Nama Trainee",
+        "Nama"               = EXCLUDED."Nama",
         "Active/Expired"     = EXCLUDED."Active/Expired",
         "Level"              = EXCLUDED."Level",
         "House"              = EXCLUDED."House",
@@ -324,7 +326,7 @@ router.post('/', async (req, res) => {
         "RANK/ID"            = EXCLUDED."RANK/ID"
       RETURNING *
     `, [
-      fields.id, fields.nama_trainee, fields.active_expired, fields.level, fields.house,
+      fields.id, fields.nama, fields.active_expired, fields.level, fields.house,
       fields.class_val, fields.branch, fields.total_gold_periode, fields.junior_youth, fields.rank_id
     ]);
 
@@ -381,11 +383,11 @@ router.post('/push', async (req, res) => {
       try {
         const result = await db.query(`
           INSERT INTO monthly_gold_point (
-            "ID", "Nama Trainee", "Active/Expired", "Level", "House",
+            "ID", "Nama", "Active/Expired", "Level", "House",
             "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID"
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           ON CONFLICT ("ID") DO UPDATE SET
-            "Nama Trainee"       = EXCLUDED."Nama Trainee",
+            "Nama"               = EXCLUDED."Nama",
             "Active/Expired"     = EXCLUDED."Active/Expired",
             "Level"              = EXCLUDED."Level",
             "House"              = EXCLUDED."House",
@@ -396,7 +398,7 @@ router.post('/push', async (req, res) => {
             "RANK/ID"            = EXCLUDED."RANK/ID"
           RETURNING *
         `, [
-          fields.id, fields.nama_trainee, fields.active_expired, fields.level, fields.house,
+          fields.id, fields.nama, fields.active_expired, fields.level, fields.house,
           fields.class_val, fields.branch, fields.total_gold_periode, fields.junior_youth, fields.rank_id
         ]);
 
@@ -435,7 +437,7 @@ const handleUpdate = async (req, res) => {
 
     const result = await db.query(`
       UPDATE monthly_gold_point SET
-        "Nama Trainee"       = COALESCE(NULLIF($1, ''), "Nama Trainee"),
+        "Nama"               = COALESCE(NULLIF($1, ''), "Nama"),
         "Active/Expired"     = COALESCE(NULLIF($2, ''), "Active/Expired"),
         "Level"              = COALESCE(NULLIF($3, ''), "Level"),
         "House"              = COALESCE(NULLIF($4, ''), "House"),
@@ -447,7 +449,7 @@ const handleUpdate = async (req, res) => {
       WHERE "ID" = $10
       RETURNING *
     `, [
-      fields.nama_trainee, fields.active_expired, fields.level, fields.house,
+      fields.nama, fields.active_expired, fields.level, fields.house,
       fields.class_val, fields.branch, fields.total_gold_periode, fields.junior_youth, fields.rank_id,
       cleanId
     ]);

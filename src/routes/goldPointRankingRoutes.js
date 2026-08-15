@@ -51,7 +51,7 @@ router.get('/', async (req, res) => {
     let query = `
       SELECT 
         "ID", 
-        "Nama Trainee", 
+        "Nama", 
         "Active/Expired", 
         "Level", 
         "House", 
@@ -74,7 +74,7 @@ router.get('/', async (req, res) => {
 
     if (search) {
       params.push(`%${search.trim()}%`);
-      conditions.push(`("ID" ILIKE $${params.length} OR "Nama Trainee" ILIKE $${params.length} OR "Class" ILIKE $${params.length} OR "House" ILIKE $${params.length})`);
+      conditions.push(`("ID" ILIKE $${params.length} OR "Nama" ILIKE $${params.length} OR "Class" ILIKE $${params.length} OR "House" ILIKE $${params.length})`);
     }
 
     const targetBranch = branch || cabang || category;
@@ -109,39 +109,45 @@ router.get('/', async (req, res) => {
     const countResult = await db.query(countQuery, params).catch(() => ({ rows: [{ count: 0 }] }));
     const totalItems = parseInt(countResult.rows[0]?.count || 0, 10);
 
-    const mapRow = (r) => ({
-      ID: r.ID,
-      id: r.ID,
-      trainee_id: r.ID,
-      'Nama Trainee': r['Nama Trainee'],
-      nama_trainee: r['Nama Trainee'],
-      trainee_name: r['Nama Trainee'],
-      'Active/Expired': r['Active/Expired'],
-      membership_status: r['Active/Expired'],
-      status: r['Active/Expired'],
-      Level: r.Level,
-      level: r.Level,
-      House: r.House,
-      house: r.House,
-      Class: r.Class,
-      class_name: r.Class,
-      class: r.Class,
-      nama_kelas: r.Class,
-      Branch: r.Branch,
-      branch: r.Branch,
-      cabang: r.Branch,
-      'Total Gold/Periode': r['Total Gold/Periode'],
-      total_gold_periode: parseInt(r['Total Gold/Periode'] || '0', 10),
-      total_gold: parseInt(r['Total Gold/Periode'] || '0', 10),
-      gp_month: parseInt(r['Total Gold/Periode'] || '0', 10),
-      'Junior/Youth': r['Junior/Youth'],
-      program: r['Junior/Youth'],
-      kategori: r['Junior/Youth'],
-      junior_youth: r['Junior/Youth'],
-      'RANK/ID': r['RANK/ID'],
-      rank: parseInt(r['RANK/ID'] || '0', 10),
-      ranking: parseInt(r['RANK/ID'] || '0', 10)
-    });
+    const mapRow = (r) => {
+      const nameVal = r['Nama'] || r['Nama Trainee'] || '';
+      return {
+        ID: r.ID,
+        id: r.ID,
+        trainee_id: r.ID,
+        Nama: nameVal,
+        nama: nameVal,
+        'Nama Trainee': nameVal,
+        nama_trainee: nameVal,
+        trainee_name: nameVal,
+        name: nameVal,
+        'Active/Expired': r['Active/Expired'],
+        membership_status: r['Active/Expired'],
+        status: r['Active/Expired'],
+        Level: r.Level,
+        level: r.Level,
+        House: r.House,
+        house: r.House,
+        Class: r.Class,
+        class_name: r.Class,
+        class: r.Class,
+        nama_kelas: r.Class,
+        Branch: r.Branch,
+        branch: r.Branch,
+        cabang: r.Branch,
+        'Total Gold/Periode': r['Total Gold/Periode'],
+        total_gold_periode: parseInt(r['Total Gold/Periode'] || '0', 10),
+        total_gold: parseInt(r['Total Gold/Periode'] || '0', 10),
+        gp_month: parseInt(r['Total Gold/Periode'] || '0', 10),
+        'Junior/Youth': r['Junior/Youth'],
+        program: r['Junior/Youth'],
+        kategori: r['Junior/Youth'],
+        junior_youth: r['Junior/Youth'],
+        'RANK/ID': r['RANK/ID'],
+        rank: parseInt(r['RANK/ID'] || '0', 10),
+        ranking: parseInt(r['RANK/ID'] || '0', 10)
+      };
+    };
 
     if (all === 'true' || all === '1' || limit === '0') {
       const result = await db.query(query, params);
