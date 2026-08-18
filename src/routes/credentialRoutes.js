@@ -60,6 +60,45 @@ setInterval(() => {
   });
 }, 20000);
 
+// Helper to sanitize string inputs
+const cleanStr = (v) => {
+  if (v === null || v === undefined || v === 'null') return null;
+  const str = String(v).trim();
+  return str === '' ? null : str;
+};
+
+// Helper to extract fields from request body (supporting 10 exact column names & aliases)
+function extractCredentialFields(row) {
+  const id = String(row['ID'] ?? row['id'] ?? row['trainee_id'] ?? '').trim();
+  const name = String(row['Name'] ?? row['name'] ?? row['Nama'] ?? row['nama'] ?? '').trim();
+  const membershipStatus = String(row['MEMBERSHIP STATUS'] ?? row['Membership Status'] ?? row['membership_status'] ?? row['membership'] ?? '').trim();
+  const rawPass = String(row['Password'] ?? row['password'] ?? '').trim();
+  const password = rawPass || (id ? `SML${id}` : '');
+
+  const namaSekolah = cleanStr(row['Nama Sekolah'] ?? row['nama_sekolah'] ?? row['school_name'] ?? row['school'] ?? row['School Name']);
+  const waTrainee = cleanStr(row['Nomor WA Trainee'] ?? row['nomor_wa_trainee'] ?? row['wa_trainee'] ?? row['trainee_wa_number'] ?? row["Trainee's WA Number"]);
+  const waParent = cleanStr(row['Nomor WA Parent'] ?? row['nomor_wa_parent'] ?? row['wa_parent'] ?? row['parent_wa_number'] ?? row["Parent's WA Number"]);
+  const emailParents = cleanStr(row['Email Account Parents'] ?? row['email_account_parents'] ?? row['email_parents'] ?? row['parent_email'] ?? row['Email Account']);
+  const dob = cleanStr(row['Date of Birthday'] ?? row['date_of_birthday'] ?? row['birth_date'] ?? row['birthday'] ?? row['Birth Date']);
+  const kelas = cleanStr(row['Kelas'] ?? row['kelas'] ?? row['newest_grade'] ?? row['grade'] ?? row['Newest Grade']);
+
+  return {
+    id,
+    name,
+    membershipStatus,
+    password,
+    namaSekolah,
+    waTrainee,
+    waParent,
+    emailParents,
+    dob,
+    kelas
+  };
+}
+
+// SELECT query column list
+const SELECT_COLUMNS = `"ID", "Name", "MEMBERSHIP STATUS", "Password", "Nama Sekolah", "Nomor WA Trainee", "Nomor WA Parent", "Email Account Parents", "Date of Birthday", "Kelas"`;
+
 // ==========================================
 // REAL-TIME SSE STREAM ENDPOINT
 // GET /api/credential-portal/stream or GET /api/credential-portal/live
@@ -75,7 +114,7 @@ const handleStream = async (req, res) => {
 
   try {
     const result = await db.query(`
-      SELECT "ID", "Name", "MEMBERSHIP STATUS", "Password" 
+      SELECT ${SELECT_COLUMNS}
       FROM credential_portal 
       ORDER BY "ID" ASC 
       LIMIT 100
@@ -107,7 +146,7 @@ router.get('/', async (req, res) => {
   try {
     const { id, search, page = 1, limit = 100 } = req.query;
 
-    let query = `SELECT "ID", "Name", "MEMBERSHIP STATUS", "Password" FROM credential_portal`;
+    let query = `SELECT ${SELECT_COLUMNS} FROM credential_portal`;
     const conditions = [];
     const params = [];
 
@@ -118,7 +157,7 @@ router.get('/', async (req, res) => {
 
     if (search) {
       params.push(`%${search.trim()}%`);
-      conditions.push(`("ID" ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR "MEMBERSHIP STATUS" ILIKE $${params.length})`);
+      conditions.push(`("ID" ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR "MEMBERSHIP STATUS" ILIKE $${params.length} OR "Nama Sekolah" ILIKE $${params.length})`);
     }
 
     if (conditions.length > 0) {
@@ -182,7 +221,7 @@ router.get('/:id', async (req, res) => {
     const cleanId = String(req.params.id).trim();
 
     const result = await db.query(
-      `SELECT "ID", "Name", "MEMBERSHIP STATUS", "Password" 
+      `SELECT ${SELECT_COLUMNS}
        FROM credential_portal 
        WHERE "ID" = $1`,
       [cleanId]
@@ -212,14 +251,9 @@ router.get('/:id', async (req, res) => {
 // POST /api/credential-portal - Create or update single credential (Real-time broadcast)
 router.post('/', async (req, res) => {
   try {
-    const row = req.body;
-    const id = String(row['ID'] ?? row['id'] ?? '').trim();
-    const name = String(row['Name'] ?? row['name'] ?? row['Nama'] ?? row['nama'] ?? '').trim();
-    const membershipStatus = String(row['MEMBERSHIP STATUS'] ?? row['Membership Status'] ?? row['membership_status'] ?? row['membership'] ?? '').trim();
-    const rawPass = String(row['Password'] ?? row['password'] ?? '').trim();
-    const password = rawPass || (id ? `SML${id}` : '');
+    const fields = extractCredentialFields(req.body);
 
-    if (!id) {
+    if (!fields.id) {
       return res.status(400).json({
         success: false,
         message: 'ID wajib diisi'
@@ -227,14 +261,28 @@ router.post('/', async (req, res) => {
     }
 
     const result = await db.query(`
-      INSERT INTO credential_portal ("ID", "Name", "MEMBERSHIP STATUS", "Password")
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO credential_portal (
+        "ID", "Name", "MEMBERSHIP STATUS", "Password",
+        "Nama Sekolah", "Nomor WA Trainee", "Nomor WA Parent",
+        "Email Account Parents", "Date of Birthday", "Kelas"
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       ON CONFLICT ("ID") DO UPDATE SET
-        "Name" = EXCLUDED."Name",
-        "MEMBERSHIP STATUS" = EXCLUDED."MEMBERSHIP STATUS",
-        "Password" = EXCLUDED."Password"
-      RETURNING "ID", "Name", "MEMBERSHIP STATUS", "Password"
-    `, [id, name, membershipStatus, password]);
+        "Name" = COALESCE(EXCLUDED."Name", credential_portal."Name"),
+        "MEMBERSHIP STATUS" = COALESCE(EXCLUDED."MEMBERSHIP STATUS", credential_portal."MEMBERSHIP STATUS"),
+        "Password" = COALESCE(EXCLUDED."Password", credential_portal."Password"),
+        "Nama Sekolah" = COALESCE(EXCLUDED."Nama Sekolah", credential_portal."Nama Sekolah"),
+        "Nomor WA Trainee" = COALESCE(EXCLUDED."Nomor WA Trainee", credential_portal."Nomor WA Trainee"),
+        "Nomor WA Parent" = COALESCE(EXCLUDED."Nomor WA Parent", credential_portal."Nomor WA Parent"),
+        "Email Account Parents" = COALESCE(EXCLUDED."Email Account Parents", credential_portal."Email Account Parents"),
+        "Date of Birthday" = COALESCE(EXCLUDED."Date of Birthday", credential_portal."Date of Birthday"),
+        "Kelas" = COALESCE(EXCLUDED."Kelas", credential_portal."Kelas")
+      RETURNING ${SELECT_COLUMNS};
+    `, [
+      fields.id, fields.name, fields.membershipStatus, fields.password,
+      fields.namaSekolah, fields.waTrainee, fields.waParent,
+      fields.emailParents, fields.dob, fields.kelas
+    ]);
 
     const savedRecord = result.rows[0];
 
@@ -243,7 +291,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: `Berhasil menyimpan data Credential Portal ID ${id}`,
+      message: `Berhasil menyimpan data Credential Portal ID ${fields.id}`,
       data: savedRecord
     });
   } catch (error) {
@@ -281,33 +329,43 @@ router.post('/push', async (req, res) => {
         continue;
       }
 
-      const id = String(row['ID'] ?? row['id'] ?? '').trim();
-      const name = String(row['Name'] ?? row['name'] ?? row['Nama'] ?? row['nama'] ?? '').trim();
-      const membershipStatus = String(row['MEMBERSHIP STATUS'] ?? row['Membership Status'] ?? row['membership_status'] ?? row['membership'] ?? '').trim();
-      const rawPass = String(row['Password'] ?? row['password'] ?? '').trim();
-      const password = rawPass || (id ? `SML${id}` : '');
+      const fields = extractCredentialFields(row);
 
-      if (!id) {
+      if (!fields.id) {
         skippedCount++;
         continue;
       }
 
       try {
         const result = await db.query(`
-          INSERT INTO credential_portal ("ID", "Name", "MEMBERSHIP STATUS", "Password")
-          VALUES ($1, $2, $3, $4)
+          INSERT INTO credential_portal (
+            "ID", "Name", "MEMBERSHIP STATUS", "Password",
+            "Nama Sekolah", "Nomor WA Trainee", "Nomor WA Parent",
+            "Email Account Parents", "Date of Birthday", "Kelas"
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           ON CONFLICT ("ID") DO UPDATE SET
-            "Name" = EXCLUDED."Name",
-            "MEMBERSHIP STATUS" = EXCLUDED."MEMBERSHIP STATUS",
-            "Password" = EXCLUDED."Password"
-          RETURNING "ID", "Name", "MEMBERSHIP STATUS", "Password"
-        `, [id, name, membershipStatus, password]);
+            "Name" = COALESCE(EXCLUDED."Name", credential_portal."Name"),
+            "MEMBERSHIP STATUS" = COALESCE(EXCLUDED."MEMBERSHIP STATUS", credential_portal."MEMBERSHIP STATUS"),
+            "Password" = COALESCE(EXCLUDED."Password", credential_portal."Password"),
+            "Nama Sekolah" = COALESCE(EXCLUDED."Nama Sekolah", credential_portal."Nama Sekolah"),
+            "Nomor WA Trainee" = COALESCE(EXCLUDED."Nomor WA Trainee", credential_portal."Nomor WA Trainee"),
+            "Nomor WA Parent" = COALESCE(EXCLUDED."Nomor WA Parent", credential_portal."Nomor WA Parent"),
+            "Email Account Parents" = COALESCE(EXCLUDED."Email Account Parents", credential_portal."Email Account Parents"),
+            "Date of Birthday" = COALESCE(EXCLUDED."Date of Birthday", credential_portal."Date of Birthday"),
+            "Kelas" = COALESCE(EXCLUDED."Kelas", credential_portal."Kelas")
+          RETURNING ${SELECT_COLUMNS};
+        `, [
+          fields.id, fields.name, fields.membershipStatus, fields.password,
+          fields.namaSekolah, fields.waTrainee, fields.waParent,
+          fields.emailParents, fields.dob, fields.kelas
+        ]);
 
         insertedCount++;
         processedRows.push(result.rows[0]);
       } catch (rowError) {
         errorCount++;
-        errors.push({ index: i, id, error: rowError.message });
+        errors.push({ index: i, id: fields.id, error: rowError.message });
       }
     }
 
@@ -334,20 +392,27 @@ router.post('/push', async (req, res) => {
 const handleUpdate = async (req, res) => {
   try {
     const cleanId = String(req.params.id).trim();
-    const { name, Name, membershipStatus, 'MEMBERSHIP STATUS': memStat, password, Password } = req.body;
-
-    const newName = name ?? Name;
-    const newMem = membershipStatus ?? memStat;
-    const newPass = password ?? Password;
+    const fields = extractCredentialFields(req.body);
 
     const result = await db.query(`
       UPDATE credential_portal
-      SET "Name" = COALESCE($1, "Name"),
-          "MEMBERSHIP STATUS" = COALESCE($2, "MEMBERSHIP STATUS"),
-          "Password" = COALESCE($3, "Password")
-      WHERE "ID" = $4
-      RETURNING "ID", "Name", "MEMBERSHIP STATUS", "Password"
-    `, [newName, newMem, newPass, cleanId]);
+      SET "Name" = COALESCE(NULLIF($1, ''), "Name"),
+          "MEMBERSHIP STATUS" = COALESCE(NULLIF($2, ''), "MEMBERSHIP STATUS"),
+          "Password" = COALESCE(NULLIF($3, ''), "Password"),
+          "Nama Sekolah" = COALESCE(NULLIF($4, ''), "Nama Sekolah"),
+          "Nomor WA Trainee" = COALESCE(NULLIF($5, ''), "Nomor WA Trainee"),
+          "Nomor WA Parent" = COALESCE(NULLIF($6, ''), "Nomor WA Parent"),
+          "Email Account Parents" = COALESCE(NULLIF($7, ''), "Email Account Parents"),
+          "Date of Birthday" = COALESCE(NULLIF($8, ''), "Date of Birthday"),
+          "Kelas" = COALESCE(NULLIF($9, ''), "Kelas")
+      WHERE "ID" = $10
+      RETURNING ${SELECT_COLUMNS};
+    `, [
+      fields.name, fields.membershipStatus, fields.password,
+      fields.namaSekolah, fields.waTrainee, fields.waParent,
+      fields.emailParents, fields.dob, fields.kelas,
+      cleanId
+    ]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -367,7 +432,7 @@ const handleUpdate = async (req, res) => {
       data: updatedRecord
     });
   } catch (error) {
-    console.error('[Credential Portal] Update error:', error);
+    console.error('[Credential Portal Update] Error:', error);
     res.status(500).json({
       success: false,
       message: 'Gagal mengupdate data Credential Portal',
@@ -379,38 +444,31 @@ const handleUpdate = async (req, res) => {
 router.put('/:id', handleUpdate);
 router.patch('/:id', handleUpdate);
 
-// DELETE /api/credential-portal/:id - Delete credential by ID (Real-time broadcast)
-router.delete('/:id', async (req, res) => {
+// DELETE /api/credential-portal/truncate - Clear table
+router.delete('/truncate', async (req, res) => {
   try {
-    const cleanId = String(req.params.id).trim();
+    await db.query('TRUNCATE TABLE credential_portal;');
+    broadcast('TRUNCATE', { message: 'All credential_portal records cleared' });
+    res.json({ success: true, message: 'Seluruh isi tabel credential_portal berhasil dikosongkan.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Gagal mengosongkan tabel.', error: error.message });
+  }
+});
 
-    const result = await db.query(
-      'DELETE FROM credential_portal WHERE "ID" = $1 RETURNING "ID"',
-      [cleanId]
-    );
-
+// DELETE /api/credential-portal/:id - Delete single record by ID
+router.delete('/:id', async (req, res) => {
+  const cleanId = String(req.params.id).trim();
+  try {
+    const result = await db.query('DELETE FROM credential_portal WHERE "ID" = $1 RETURNING *', [cleanId]);
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `Tidak ada data Credential Portal dengan ID: ${cleanId}`
-      });
+      return res.status(404).json({ success: false, message: `Tidak ada data Credential Portal dengan ID: ${cleanId}` });
     }
 
-    // Real-time broadcast
     broadcast('DELETE', { ID: cleanId });
 
-    res.json({
-      success: true,
-      message: `Data Credential Portal ID ${cleanId} berhasil dihapus.`,
-      deleted: { ID: cleanId }
-    });
+    res.json({ success: true, message: `Data Credential Portal ID ${cleanId} berhasil dihapus.`, deleted: result.rows[0] });
   } catch (error) {
-    console.error('[Credential Portal] DELETE error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Gagal menghapus data.',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Gagal menghapus data.', error: error.message });
   }
 });
 
