@@ -3,32 +3,31 @@ const router = express.Router();
 const db = require('../db/neonClient');
 const Ably = require('ably');
 
-// Helper to ensure award_2025 table exists
+// Helper to ensure award_2025 table exists with JSONB types
 async function ensureAward2025Table() {
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS award_2025 (
         "No" TEXT PRIMARY KEY,
-        "Trainee of the Season" TEXT,
-        "Most Active Trainee (OSJ/Y)" TEXT,
-        "The Most Creative Trainee (OSJ/Y)" TEXT,
-        "The Most Supportive Trainee (OSJ/Y)" TEXT,
-        "The Most Improved (OSJ/Y)" TEXT,
-        "The Most Inspirational Trainee (OSJ/Y)" TEXT,
-        "The Most Discipline (OSJ/Y)" TEXT,
-        "The Most Initiative (OSJ/Y)" TEXT,
-        "The Most Favorite (OSJ/Y)" TEXT,
-        "Best House Leader (OSJ/Y)" TEXT,
-        "SMLONE Manner Award (OSJ/Y)" TEXT,
-        "Skill Manner Life Award (OSJ/Y)" TEXT,
-        "The Most Initiative Apprentice Trainee" TEXT,
-        "SMLONE Skill Award (OSJ/Y) (Highest #speaking project)" TEXT,
-        "SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed" TEXT,
-        "SMLONE Life Award (OSJ/Y)" TEXT,
-        "THE OSJ TOP SCORER (Highest  Gold Points)" TEXT,
-        "THE OSY TOP SCORER (Highest  Gold Points)" TEXT,
-        "The Most Discipline Apprentice Trainee (HIghest attendance)" TEXT,
-        "THE OSJ & OSY TOP HOUSE" TEXT,
+        "Trainee of the Season" JSONB,
+        "Most Active Trainee (OSJ/Y)" JSONB,
+        "The Most Creative Trainee (OSJ/Y)" JSONB,
+        "The Most Supportive Trainee (OSJ/Y)" JSONB,
+        "The Most Improved (OSJ/Y)" JSONB,
+        "The Most Inspirational Trainee (OSJ/Y)" JSONB,
+        "The Most Discipline (OSJ/Y)" JSONB,
+        "The Most Initiative (OSJ/Y)" JSONB,
+        "The Most Favorite (OSJ/Y)" JSONB,
+        "Best House Leader (OSJ/Y)" JSONB,
+        "SMLONE Manner Award (OSJ/Y)" JSONB,
+        "Skill Manner Life Award (OSJ/Y)" JSONB,
+        "The Most Initiative Apprentice Trainee" JSONB,
+        "SMLONE Skill Award (OSJ/Y) (Highest #speaking project)" JSONB,
+        "SMLONE Life Award (OSJ/Y)" JSONB,
+        "THE OSJ TOP SCORER (Highest  Gold Points)" JSONB,
+        "THE OSY TOP SCORER (Highest  Gold Points)" JSONB,
+        "The Most Discipline Apprentice Trainee (HIghest attendance)" JSONB,
+        "THE OSJ & OSY TOP HOUSE" JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -95,51 +94,65 @@ setInterval(() => {
   });
 }, 20000);
 
+// Helper to format JSONB value cleanly
+function parseJsonbField(val) {
+  if (val === null || val === undefined || val === '') return null;
+  if (typeof val === 'object') return JSON.stringify(val);
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      return trimmed;
+    }
+    return JSON.stringify({ name: trimmed });
+  }
+  return JSON.stringify(val);
+}
+
 // Helper to extract fields from request body (supporting all exact column names & aliases)
 function extractAward2025Fields(row) {
   const no = String(row['No'] ?? row['no'] ?? row['ID'] ?? row['id'] ?? '').trim();
   
-  const skillAward = String(
+  const skillAward = parseJsonbField(
     row['SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed)'] ??
     row['SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed'] ??
     row['SMLONE Skill Award (OSJ/Y) (Highest #speaking project)'] ??
     row['SMLONE Skill Award (OSJ/Y)'] ??
-    row['smlone_skill_award'] ?? ''
-  ).trim();
+    row['smlone_skill_award']
+  );
 
-  const osjTopScorer = String(
+  const osjTopScorer = parseJsonbField(
     row['THE OSJ TOP SCORER (Highest  Gold Points)'] ??
     row['THE OSJ TOP SCORER (Highest Gold Points)'] ??
-    row['the_osj_top_scorer'] ?? ''
-  ).trim();
+    row['the_osj_top_scorer']
+  );
 
-  const osyTopScorer = String(
+  const osyTopScorer = parseJsonbField(
     row['THE OSY TOP SCORER (Highest  Gold Points)'] ??
     row['THE OSY TOP SCORER (Highest Gold Points)'] ??
-    row['the_osy_top_scorer'] ?? ''
-  ).trim();
+    row['the_osy_top_scorer']
+  );
 
   return {
     no,
-    traineeOfSeason:         String(row['Trainee of the Season'] ?? row['trainee_of_the_season'] ?? '').trim(),
-    mostActive:              String(row['Most Active Trainee (OSJ/Y)'] ?? row['most_active_trainee'] ?? '').trim(),
-    mostCreative:            String(row['The Most Creative Trainee (OSJ/Y)'] ?? row['the_most_creative_trainee'] ?? '').trim(),
-    mostSupportive:          String(row['The Most Supportive Trainee (OSJ/Y)'] ?? row['the_most_supportive_trainee'] ?? '').trim(),
-    mostImproved:            String(row['The Most Improved (OSJ/Y)'] ?? row['the_most_improved'] ?? '').trim(),
-    mostInspirational:       String(row['The Most Inspirational Trainee (OSJ/Y)'] ?? row['the_most_inspirational_trainee'] ?? '').trim(),
-    mostDiscipline:          String(row['The Most Discipline (OSJ/Y)'] ?? row['the_most_discipline'] ?? '').trim(),
-    mostInitiative:          String(row['The Most Initiative (OSJ/Y)'] ?? row['the_most_initiative'] ?? '').trim(),
-    mostFavorite:            String(row['The Most Favorite (OSJ/Y)'] ?? row['the_most_favorite'] ?? '').trim(),
-    bestHouseLeader:         String(row['Best House Leader (OSJ/Y)'] ?? row['best_house_leader'] ?? '').trim(),
-    mannerAward:             String(row['SMLONE Manner Award (OSJ/Y)'] ?? row['smlone_manner_award'] ?? '').trim(),
-    skillMannerLifeAward:    String(row['Skill Manner Life Award (OSJ/Y)'] ?? row['skill_manner_life_award'] ?? '').trim(),
-    mostInitiativeApprentice:String(row['The Most Initiative Apprentice Trainee'] ?? row['the_most_initiative_apprentice_trainee'] ?? '').trim(),
+    traineeOfSeason:         parseJsonbField(row['Trainee of the Season'] ?? row['trainee_of_the_season']),
+    mostActive:              parseJsonbField(row['Most Active Trainee (OSJ/Y)'] ?? row['most_active_trainee']),
+    mostCreative:            parseJsonbField(row['The Most Creative Trainee (OSJ/Y)'] ?? row['the_most_creative_trainee']),
+    mostSupportive:          parseJsonbField(row['The Most Supportive Trainee (OSJ/Y)'] ?? row['the_most_supportive_trainee']),
+    mostImproved:            parseJsonbField(row['The Most Improved (OSJ/Y)'] ?? row['the_most_improved']),
+    mostInspirational:       parseJsonbField(row['The Most Inspirational Trainee (OSJ/Y)'] ?? row['the_most_inspirational_trainee']),
+    mostDiscipline:          parseJsonbField(row['The Most Discipline (OSJ/Y)'] ?? row['the_most_discipline']),
+    mostInitiative:          parseJsonbField(row['The Most Initiative (OSJ/Y)'] ?? row['the_most_initiative']),
+    mostFavorite:            parseJsonbField(row['The Most Favorite (OSJ/Y)'] ?? row['the_most_favorite']),
+    bestHouseLeader:         parseJsonbField(row['Best House Leader (OSJ/Y)'] ?? row['best_house_leader']),
+    mannerAward:             parseJsonbField(row['SMLONE Manner Award (OSJ/Y)'] ?? row['smlone_manner_award']),
+    skillMannerLifeAward:    parseJsonbField(row['Skill Manner Life Award (OSJ/Y)'] ?? row['skill_manner_life_award']),
+    mostInitiativeApprentice:parseJsonbField(row['The Most Initiative Apprentice Trainee'] ?? row['the_most_initiative_apprentice_trainee']),
     skillAwardSpeaking:      skillAward,
-    lifeAward:               String(row['SMLONE Life Award (OSJ/Y)'] ?? row['smlone_life_award'] ?? '').trim(),
+    lifeAward:               parseJsonbField(row['SMLONE Life Award (OSJ/Y)'] ?? row['smlone_life_award']),
     osjTopScorer,
     osyTopScorer,
-    disciplineApprentice:    String(row['The Most Discipline Apprentice Trainee (HIghest attendance)'] ?? row['the_most_discipline_apprentice_trainee'] ?? '').trim(),
-    topHouse:                String(row['THE OSJ & OSY TOP HOUSE'] ?? row['the_osj_osy_top_house'] ?? '').trim()
+    disciplineApprentice:    parseJsonbField(row['The Most Discipline Apprentice Trainee (HIghest attendance)'] ?? row['the_most_discipline_apprentice_trainee']),
+    topHouse:                parseJsonbField(row['THE OSJ & OSY TOP HOUSE'] ?? row['the_osj_osy_top_house'])
   };
 }
 
@@ -217,7 +230,7 @@ router.get('/', async (req, res) => {
 
     if (search) {
       params.push(`%${search.trim()}%`);
-      conditions.push(`("No" ILIKE $${params.length} OR "Trainee of the Season" ILIKE $${params.length} OR "Most Active Trainee (OSJ/Y)" ILIKE $${params.length} OR "THE OSJ & OSY TOP HOUSE" ILIKE $${params.length})`);
+      conditions.push(`("No" ILIKE $${params.length})`);
     }
 
     if (conditions.length > 0) {
@@ -339,10 +352,9 @@ router.post('/', async (req, res) => {
         "Best House Leader (OSJ/Y)", "SMLONE Manner Award (OSJ/Y)", "Skill Manner Life Award (OSJ/Y)",
         "The Most Initiative Apprentice Trainee",
         "SMLONE Skill Award (OSJ/Y) (Highest #speaking project)",
-        "SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed",
         "SMLONE Life Award (OSJ/Y)", "THE OSJ TOP SCORER (Highest  Gold Points)", "THE OSY TOP SCORER (Highest  Gold Points)",
         "The Most Discipline Apprentice Trainee (HIghest attendance)", "THE OSJ & OSY TOP HOUSE"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15, $16, $17, $18, $19, $20)
+      ) VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17::jsonb, $18::jsonb, $19::jsonb, $20::jsonb)
       ON CONFLICT ("No") DO UPDATE SET
         "Trainee of the Season"                                           = EXCLUDED."Trainee of the Season",
         "Most Active Trainee (OSJ/Y)"                                     = EXCLUDED."Most Active Trainee (OSJ/Y)",
@@ -358,7 +370,6 @@ router.post('/', async (req, res) => {
         "Skill Manner Life Award (OSJ/Y)"                                 = EXCLUDED."Skill Manner Life Award (OSJ/Y)",
         "The Most Initiative Apprentice Trainee"                          = EXCLUDED."The Most Initiative Apprentice Trainee",
         "SMLONE Skill Award (OSJ/Y) (Highest #speaking project)"          = EXCLUDED."SMLONE Skill Award (OSJ/Y) (Highest #speaking project)",
-        "SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed" = EXCLUDED."SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed",
         "SMLONE Life Award (OSJ/Y)"                                       = EXCLUDED."SMLONE Life Award (OSJ/Y)",
         "THE OSJ TOP SCORER (Highest  Gold Points)"                        = EXCLUDED."THE OSJ TOP SCORER (Highest  Gold Points)",
         "THE OSY TOP SCORER (Highest  Gold Points)"                        = EXCLUDED."THE OSY TOP SCORER (Highest  Gold Points)",
@@ -432,10 +443,9 @@ router.post('/push', async (req, res) => {
             "Best House Leader (OSJ/Y)", "SMLONE Manner Award (OSJ/Y)", "Skill Manner Life Award (OSJ/Y)",
             "The Most Initiative Apprentice Trainee",
             "SMLONE Skill Award (OSJ/Y) (Highest #speaking project)",
-            "SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed",
             "SMLONE Life Award (OSJ/Y)", "THE OSJ TOP SCORER (Highest  Gold Points)", "THE OSY TOP SCORER (Highest  Gold Points)",
             "The Most Discipline Apprentice Trainee (HIghest attendance)", "THE OSJ & OSY TOP HOUSE"
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15, $16, $17, $18, $19, $20)
+          ) VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17::jsonb, $18::jsonb, $19::jsonb, $20::jsonb)
           ON CONFLICT ("No") DO UPDATE SET
             "Trainee of the Season"                                           = EXCLUDED."Trainee of the Season",
             "Most Active Trainee (OSJ/Y)"                                     = EXCLUDED."Most Active Trainee (OSJ/Y)",
@@ -451,7 +461,6 @@ router.post('/push', async (req, res) => {
             "Skill Manner Life Award (OSJ/Y)"                                 = EXCLUDED."Skill Manner Life Award (OSJ/Y)",
             "The Most Initiative Apprentice Trainee"                          = EXCLUDED."The Most Initiative Apprentice Trainee",
             "SMLONE Skill Award (OSJ/Y) (Highest #speaking project)"          = EXCLUDED."SMLONE Skill Award (OSJ/Y) (Highest #speaking project)",
-            "SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed" = EXCLUDED."SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed",
             "SMLONE Life Award (OSJ/Y)"                                       = EXCLUDED."SMLONE Life Award (OSJ/Y)",
             "THE OSJ TOP SCORER (Highest  Gold Points)"                        = EXCLUDED."THE OSJ TOP SCORER (Highest  Gold Points)",
             "THE OSY TOP SCORER (Highest  Gold Points)"                        = EXCLUDED."THE OSY TOP SCORER (Highest  Gold Points)",
@@ -501,26 +510,25 @@ const handleUpdate = async (req, res) => {
 
     const result = await db.query(`
       UPDATE award_2025 SET
-        "Trainee of the Season"                                           = COALESCE(NULLIF($1, ''), "Trainee of the Season"),
-        "Most Active Trainee (OSJ/Y)"                                     = COALESCE(NULLIF($2, ''), "Most Active Trainee (OSJ/Y)"),
-        "The Most Creative Trainee (OSJ/Y)"                               = COALESCE(NULLIF($3, ''), "The Most Creative Trainee (OSJ/Y)"),
-        "The Most Supportive Trainee (OSJ/Y)"                             = COALESCE(NULLIF($4, ''), "The Most Supportive Trainee (OSJ/Y)"),
-        "The Most Improved (OSJ/Y)"                                       = COALESCE(NULLIF($5, ''), "The Most Improved (OSJ/Y)"),
-        "The Most Inspirational Trainee (OSJ/Y)"                          = COALESCE(NULLIF($6, ''), "The Most Inspirational Trainee (OSJ/Y)"),
-        "The Most Discipline (OSJ/Y)"                                     = COALESCE(NULLIF($7, ''), "The Most Discipline (OSJ/Y)"),
-        "The Most Initiative (OSJ/Y)"                                     = COALESCE(NULLIF($8, ''), "The Most Initiative (OSJ/Y)"),
-        "The Most Favorite (OSJ/Y)"                                       = COALESCE(NULLIF($9, ''), "The Most Favorite (OSJ/Y)"),
-        "Best House Leader (OSJ/Y)"                                       = COALESCE(NULLIF($10, ''), "Best House Leader (OSJ/Y)"),
-        "SMLONE Manner Award (OSJ/Y)"                                     = COALESCE(NULLIF($11, ''), "SMLONE Manner Award (OSJ/Y)"),
-        "Skill Manner Life Award (OSJ/Y)"                                 = COALESCE(NULLIF($12, ''), "Skill Manner Life Award (OSJ/Y)"),
-        "The Most Initiative Apprentice Trainee"                          = COALESCE(NULLIF($13, ''), "The Most Initiative Apprentice Trainee"),
-        "SMLONE Skill Award (OSJ/Y) (Highest #speaking project)"          = COALESCE(NULLIF($14, ''), "SMLONE Skill Award (OSJ/Y) (Highest #speaking project)"),
-        "SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed" = COALESCE(NULLIF($14, ''), "SMLONE Skill Award (OSJ/Y) (Highest #speaking project completed"),
-        "SMLONE Life Award (OSJ/Y)"                                       = COALESCE(NULLIF($15, ''), "SMLONE Life Award (OSJ/Y)"),
-        "THE OSJ TOP SCORER (Highest  Gold Points)"                        = COALESCE(NULLIF($16, ''), "THE OSJ TOP SCORER (Highest  Gold Points)"),
-        "THE OSY TOP SCORER (Highest  Gold Points)"                        = COALESCE(NULLIF($17, ''), "THE OSY TOP SCORER (Highest  Gold Points)"),
-        "The Most Discipline Apprentice Trainee (HIghest attendance)"      = COALESCE(NULLIF($18, ''), "The Most Discipline Apprentice Trainee (HIghest attendance)"),
-        "THE OSJ & OSY TOP HOUSE"                                         = COALESCE(NULLIF($19, ''), "THE OSJ & OSY TOP HOUSE"),
+        "Trainee of the Season"                                           = COALESCE($1::jsonb, "Trainee of the Season"),
+        "Most Active Trainee (OSJ/Y)"                                     = COALESCE($2::jsonb, "Most Active Trainee (OSJ/Y)"),
+        "The Most Creative Trainee (OSJ/Y)"                               = COALESCE($3::jsonb, "The Most Creative Trainee (OSJ/Y)"),
+        "The Most Supportive Trainee (OSJ/Y)"                             = COALESCE($4::jsonb, "The Most Supportive Trainee (OSJ/Y)"),
+        "The Most Improved (OSJ/Y)"                                       = COALESCE($5::jsonb, "The Most Improved (OSJ/Y)"),
+        "The Most Inspirational Trainee (OSJ/Y)"                          = COALESCE($6::jsonb, "The Most Inspirational Trainee (OSJ/Y)"),
+        "The Most Discipline (OSJ/Y)"                                     = COALESCE($7::jsonb, "The Most Discipline (OSJ/Y)"),
+        "The Most Initiative (OSJ/Y)"                                     = COALESCE($8::jsonb, "The Most Initiative (OSJ/Y)"),
+        "The Most Favorite (OSJ/Y)"                                       = COALESCE($9::jsonb, "The Most Favorite (OSJ/Y)"),
+        "Best House Leader (OSJ/Y)"                                       = COALESCE($10::jsonb, "Best House Leader (OSJ/Y)"),
+        "SMLONE Manner Award (OSJ/Y)"                                     = COALESCE($11::jsonb, "SMLONE Manner Award (OSJ/Y)"),
+        "Skill Manner Life Award (OSJ/Y)"                                 = COALESCE($12::jsonb, "Skill Manner Life Award (OSJ/Y)"),
+        "The Most Initiative Apprentice Trainee"                          = COALESCE($13::jsonb, "The Most Initiative Apprentice Trainee"),
+        "SMLONE Skill Award (OSJ/Y) (Highest #speaking project)"          = COALESCE($14::jsonb, "SMLONE Skill Award (OSJ/Y) (Highest #speaking project)"),
+        "SMLONE Life Award (OSJ/Y)"                                       = COALESCE($15::jsonb, "SMLONE Life Award (OSJ/Y)"),
+        "THE OSJ TOP SCORER (Highest  Gold Points)"                        = COALESCE($16::jsonb, "THE OSJ TOP SCORER (Highest  Gold Points)"),
+        "THE OSY TOP SCORER (Highest  Gold Points)"                        = COALESCE($17::jsonb, "THE OSY TOP SCORER (Highest  Gold Points)"),
+        "The Most Discipline Apprentice Trainee (HIghest attendance)"      = COALESCE($18::jsonb, "The Most Discipline Apprentice Trainee (HIghest attendance)"),
+        "THE OSJ & OSY TOP HOUSE"                                         = COALESCE($19::jsonb, "THE OSJ & OSY TOP HOUSE"),
         updated_at                                                        = NOW()
       WHERE "No" = $20
       RETURNING *
