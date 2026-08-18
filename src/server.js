@@ -48,6 +48,7 @@ const requestRoutes = require('./routes/requestRoutes');
 const credentialRoutes = require('./routes/credentialRoutes');
 const monthlyGoldPointRoutes = require('./routes/monthlyGoldPointRoutes');
 const reportProgresRoutes = require('./routes/reportProgresRoutes');
+const historyHouseRoutes = require('./routes/historyHouseRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -342,6 +343,12 @@ app.use('/report-progress', reportProgresRoutes);
 app.use('/report_progress', reportProgresRoutes);
 app.use('/api/admin/report-progres', reportProgresRoutes);
 app.use('/api/admin/report-progress', reportProgresRoutes);
+
+app.use('/api/history-house', historyHouseRoutes);
+app.use('/api/history_house', historyHouseRoutes);
+app.use('/history-house', historyHouseRoutes);
+app.use('/history_house', historyHouseRoutes);
+app.use('/api/admin/history-house', historyHouseRoutes);
 
 app.use('/api/credential-portal', credentialRoutes);
 app.use('/api/credential_portal', credentialRoutes);
