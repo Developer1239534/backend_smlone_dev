@@ -69,10 +69,10 @@ const cleanStr = (v) => {
 
 // Helper to extract fields from request body (supporting 4 exact column names & aliases)
 function extractCredentialFields(row) {
-  const id = String(row['ID'] ?? row['id'] ?? row['trainee_id'] ?? '').trim();
+  const id = String(row['ID'] ?? row['id'] ?? row['trainee_id'] ?? row['student_id'] ?? '').trim();
   const name = String(row['Name'] ?? row['name'] ?? row['Nama'] ?? row['nama'] ?? '').trim();
   const membershipStatus = String(row['MEMBERSHIP STATUS'] ?? row['Membership Status'] ?? row['membership_status'] ?? row['membership'] ?? '').trim();
-  const rawPass = String(row['Password'] ?? row['password'] ?? '').trim();
+  const rawPass = String(row['Password'] ?? row['password'] ?? row['new_password'] ?? '').trim();
   const password = rawPass || (id ? `SML${id}` : '');
 
   return {
@@ -230,6 +230,71 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Gagal mengambil data Credential Portal',
+      error: error.message
+    });
+  }
+});
+
+// =========================================================
+// REAL-TIME RESET PASSWORD ENDPOINT FOR CREDENTIAL PORTAL
+// POST /api/credential-portal/reset-password
+// =========================================================
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { student_id, id, parent_wa, wa_parent, new_password, password } = req.body;
+    const cleanId = String(student_id || id || '').trim();
+    const cleanNewPass = String(new_password || password || '').trim();
+
+    if (!cleanId || !cleanNewPass) {
+      return res.status(400).json({
+        success: false,
+        message: 'Student ID dan Password Baru wajib diisi.'
+      });
+    }
+
+    // 1. Check if trainee exists in credential_portal or profile_trainee
+    const credRes = await db.query(
+      'SELECT * FROM credential_portal WHERE "ID" = $1',
+      [cleanId]
+    );
+
+    if (credRes.rows.length === 0) {
+      const profRes = await db.query(
+        'SELECT * FROM profile_trainee WHERE "ID" = $1',
+        [cleanId]
+      );
+      if (profRes.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: `Student ID "${cleanId}" tidak ditemukan.`
+        });
+      }
+    }
+
+    // 2. Real-time update Password in credential_portal
+    const updateRes = await db.query(`
+      INSERT INTO credential_portal ("ID", "Password")
+      VALUES ($1, $2)
+      ON CONFLICT ("ID") DO UPDATE SET
+        "Password" = EXCLUDED."Password"
+      RETURNING ${SELECT_COLUMNS};
+    `, [cleanId, cleanNewPass]);
+
+    const updatedRecord = updateRes.rows[0];
+
+    // 3. Broadcast Real-time Event (SSE & Ably)
+    broadcast('RESET_PASSWORD', updatedRecord);
+
+    return res.json({
+      success: true,
+      message: `Password untuk Student ID "${cleanId}" berhasil di-reset secara Real-Time!`,
+      data: updatedRecord
+    });
+  } catch (error) {
+    console.error('[Credential Reset Password] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal melakukan reset password.',
       error: error.message
     });
   }
