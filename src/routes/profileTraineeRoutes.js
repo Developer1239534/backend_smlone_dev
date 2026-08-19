@@ -60,10 +60,10 @@ setInterval(() => {
   });
 }, 20000);
 
-// Helper to sanitize string inputs
+// Helper to sanitize string inputs and strip schedule annotations in parentheses e.g. "(Wed 4-6)"
 const cleanStr = (v) => {
   if (v === null || v === undefined || v === 'null') return null;
-  const str = String(v).trim();
+  const str = String(v).replace(/\s*\([^)]*\)/g, '').trim();
   return str === '' ? null : str;
 };
 

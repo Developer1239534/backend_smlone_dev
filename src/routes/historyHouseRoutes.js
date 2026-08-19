@@ -79,11 +79,18 @@ setInterval(() => {
   });
 }, 20000);
 
+// Helper to clean schedule annotations in parentheses e.g. "(Wed 4-6)"
+const cleanClass = (val) => {
+  if (!val) return '';
+  return String(val).replace(/\s*\([^)]*\)/g, '').trim();
+};
+
 // Helper to extract fields from request body (supporting exact 5 column names & aliases)
 function extractHistoryHouseFields(row) {
   const id              = String(row['ID']              ?? row['id']              ?? row['trainee_id'] ?? row['student_id'] ?? '').trim();
   const name_corrected  = String(row['Name Corrected']  ?? row['name_corrected']  ?? row['Nama'] ?? row['nama'] ?? row['Student Name'] ?? row['name'] ?? '').trim();
-  const class_corrected = String(row['Class Corrected'] ?? row['class_corrected'] ?? row['Class'] ?? row['class'] ?? row['class_name'] ?? '').trim();
+  const rawClass        = String(row['Class Corrected'] ?? row['class_corrected'] ?? row['Class'] ?? row['class'] ?? row['class_name'] ?? '').trim();
+  const class_corrected = cleanClass(rawClass);
   const house_corrected = String(row['House Corrected'] ?? row['house_corrected'] ?? '').trim();
   const house           = String(row['House']           ?? row['house']           ?? '').trim();
 
