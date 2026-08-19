@@ -67,7 +67,7 @@ const cleanStr = (v) => {
   return str === '' ? null : str;
 };
 
-// Helper to extract fields from request body (supporting 10 exact column names & aliases)
+// Helper to extract fields from request body (supporting 4 exact column names & aliases)
 function extractCredentialFields(row) {
   const id = String(row['ID'] ?? row['id'] ?? row['trainee_id'] ?? '').trim();
   const name = String(row['Name'] ?? row['name'] ?? row['Nama'] ?? row['nama'] ?? '').trim();
@@ -75,29 +75,16 @@ function extractCredentialFields(row) {
   const rawPass = String(row['Password'] ?? row['password'] ?? '').trim();
   const password = rawPass || (id ? `SML${id}` : '');
 
-  const namaSekolah = cleanStr(row['Nama Sekolah'] ?? row['nama_sekolah'] ?? row['school_name'] ?? row['school'] ?? row['School Name']);
-  const waTrainee = cleanStr(row['Nomor WA Trainee'] ?? row['nomor_wa_trainee'] ?? row['wa_trainee'] ?? row['trainee_wa_number'] ?? row["Trainee's WA Number"]);
-  const waParent = cleanStr(row['Nomor WA Parent'] ?? row['nomor_wa_parent'] ?? row['wa_parent'] ?? row['parent_wa_number'] ?? row["Parent's WA Number"]);
-  const emailParents = cleanStr(row['Email Account Parents'] ?? row['email_account_parents'] ?? row['email_parents'] ?? row['parent_email'] ?? row['Email Account']);
-  const dob = cleanStr(row['Date of Birthday'] ?? row['date_of_birthday'] ?? row['birth_date'] ?? row['birthday'] ?? row['Birth Date']);
-  const kelas = cleanStr(row['Kelas'] ?? row['kelas'] ?? row['newest_grade'] ?? row['grade'] ?? row['Newest Grade']);
-
   return {
     id,
     name,
     membershipStatus,
-    password,
-    namaSekolah,
-    waTrainee,
-    waParent,
-    emailParents,
-    dob,
-    kelas
+    password
   };
 }
 
-// SELECT query column list
-const SELECT_COLUMNS = `"ID", "Name", "MEMBERSHIP STATUS", "Password", "Nama Sekolah", "Nomor WA Trainee", "Nomor WA Parent", "Email Account Parents", "Date of Birthday", "Kelas"`;
+// SELECT query column list (exact 4 columns)
+const SELECT_COLUMNS = `"ID", "Name", "MEMBERSHIP STATUS", "Password"`;
 
 // ==========================================
 // REAL-TIME SSE STREAM ENDPOINT
@@ -157,7 +144,7 @@ router.get('/', async (req, res) => {
 
     if (search) {
       params.push(`%${search.trim()}%`);
-      conditions.push(`("ID" ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR "MEMBERSHIP STATUS" ILIKE $${params.length} OR "Nama Sekolah" ILIKE $${params.length})`);
+      conditions.push(`("ID" ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR "MEMBERSHIP STATUS" ILIKE $${params.length})`);
     }
 
     if (conditions.length > 0) {
@@ -261,28 +248,14 @@ router.post('/', async (req, res) => {
     }
 
     const result = await db.query(`
-      INSERT INTO credential_portal (
-        "ID", "Name", "MEMBERSHIP STATUS", "Password",
-        "Nama Sekolah", "Nomor WA Trainee", "Nomor WA Parent",
-        "Email Account Parents", "Date of Birthday", "Kelas"
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO credential_portal ("ID", "Name", "MEMBERSHIP STATUS", "Password")
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT ("ID") DO UPDATE SET
         "Name" = COALESCE(EXCLUDED."Name", credential_portal."Name"),
         "MEMBERSHIP STATUS" = COALESCE(EXCLUDED."MEMBERSHIP STATUS", credential_portal."MEMBERSHIP STATUS"),
-        "Password" = COALESCE(EXCLUDED."Password", credential_portal."Password"),
-        "Nama Sekolah" = COALESCE(EXCLUDED."Nama Sekolah", credential_portal."Nama Sekolah"),
-        "Nomor WA Trainee" = COALESCE(EXCLUDED."Nomor WA Trainee", credential_portal."Nomor WA Trainee"),
-        "Nomor WA Parent" = COALESCE(EXCLUDED."Nomor WA Parent", credential_portal."Nomor WA Parent"),
-        "Email Account Parents" = COALESCE(EXCLUDED."Email Account Parents", credential_portal."Email Account Parents"),
-        "Date of Birthday" = COALESCE(EXCLUDED."Date of Birthday", credential_portal."Date of Birthday"),
-        "Kelas" = COALESCE(EXCLUDED."Kelas", credential_portal."Kelas")
+        "Password" = COALESCE(EXCLUDED."Password", credential_portal."Password")
       RETURNING ${SELECT_COLUMNS};
-    `, [
-      fields.id, fields.name, fields.membershipStatus, fields.password,
-      fields.namaSekolah, fields.waTrainee, fields.waParent,
-      fields.emailParents, fields.dob, fields.kelas
-    ]);
+    `, [fields.id, fields.name, fields.membershipStatus, fields.password]);
 
     const savedRecord = result.rows[0];
 
@@ -338,28 +311,14 @@ router.post('/push', async (req, res) => {
 
       try {
         const result = await db.query(`
-          INSERT INTO credential_portal (
-            "ID", "Name", "MEMBERSHIP STATUS", "Password",
-            "Nama Sekolah", "Nomor WA Trainee", "Nomor WA Parent",
-            "Email Account Parents", "Date of Birthday", "Kelas"
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          INSERT INTO credential_portal ("ID", "Name", "MEMBERSHIP STATUS", "Password")
+          VALUES ($1, $2, $3, $4)
           ON CONFLICT ("ID") DO UPDATE SET
             "Name" = COALESCE(EXCLUDED."Name", credential_portal."Name"),
             "MEMBERSHIP STATUS" = COALESCE(EXCLUDED."MEMBERSHIP STATUS", credential_portal."MEMBERSHIP STATUS"),
-            "Password" = COALESCE(EXCLUDED."Password", credential_portal."Password"),
-            "Nama Sekolah" = COALESCE(EXCLUDED."Nama Sekolah", credential_portal."Nama Sekolah"),
-            "Nomor WA Trainee" = COALESCE(EXCLUDED."Nomor WA Trainee", credential_portal."Nomor WA Trainee"),
-            "Nomor WA Parent" = COALESCE(EXCLUDED."Nomor WA Parent", credential_portal."Nomor WA Parent"),
-            "Email Account Parents" = COALESCE(EXCLUDED."Email Account Parents", credential_portal."Email Account Parents"),
-            "Date of Birthday" = COALESCE(EXCLUDED."Date of Birthday", credential_portal."Date of Birthday"),
-            "Kelas" = COALESCE(EXCLUDED."Kelas", credential_portal."Kelas")
+            "Password" = COALESCE(EXCLUDED."Password", credential_portal."Password")
           RETURNING ${SELECT_COLUMNS};
-        `, [
-          fields.id, fields.name, fields.membershipStatus, fields.password,
-          fields.namaSekolah, fields.waTrainee, fields.waParent,
-          fields.emailParents, fields.dob, fields.kelas
-        ]);
+        `, [fields.id, fields.name, fields.membershipStatus, fields.password]);
 
         insertedCount++;
         processedRows.push(result.rows[0]);
@@ -398,21 +357,10 @@ const handleUpdate = async (req, res) => {
       UPDATE credential_portal
       SET "Name" = COALESCE(NULLIF($1, ''), "Name"),
           "MEMBERSHIP STATUS" = COALESCE(NULLIF($2, ''), "MEMBERSHIP STATUS"),
-          "Password" = COALESCE(NULLIF($3, ''), "Password"),
-          "Nama Sekolah" = COALESCE(NULLIF($4, ''), "Nama Sekolah"),
-          "Nomor WA Trainee" = COALESCE(NULLIF($5, ''), "Nomor WA Trainee"),
-          "Nomor WA Parent" = COALESCE(NULLIF($6, ''), "Nomor WA Parent"),
-          "Email Account Parents" = COALESCE(NULLIF($7, ''), "Email Account Parents"),
-          "Date of Birthday" = COALESCE(NULLIF($8, ''), "Date of Birthday"),
-          "Kelas" = COALESCE(NULLIF($9, ''), "Kelas")
-      WHERE "ID" = $10
+          "Password" = COALESCE(NULLIF($3, ''), "Password")
+      WHERE "ID" = $4
       RETURNING ${SELECT_COLUMNS};
-    `, [
-      fields.name, fields.membershipStatus, fields.password,
-      fields.namaSekolah, fields.waTrainee, fields.waParent,
-      fields.emailParents, fields.dob, fields.kelas,
-      cleanId
-    ]);
+    `, [fields.name, fields.membershipStatus, fields.password, cleanId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
