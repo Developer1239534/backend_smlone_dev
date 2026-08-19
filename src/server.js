@@ -50,6 +50,7 @@ const monthlyGoldPointRoutes = require('./routes/monthlyGoldPointRoutes');
 const reportProgresRoutes = require('./routes/reportProgresRoutes');
 const historyHouseRoutes = require('./routes/historyHouseRoutes');
 const award2025Routes = require('./routes/award2025Routes');
+const weeklyReportRoutes = require('./routes/weeklyReportRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -356,6 +357,12 @@ app.use('/api/award_2025', award2025Routes);
 app.use('/award-2025', award2025Routes);
 app.use('/award_2025', award2025Routes);
 app.use('/api/admin/award-2025', award2025Routes);
+
+app.use('/api/weekly-report', weeklyReportRoutes);
+app.use('/api/weekly_report', weeklyReportRoutes);
+app.use('/weekly-report', weeklyReportRoutes);
+app.use('/weekly_report', weeklyReportRoutes);
+app.use('/api/admin/weekly-report', weeklyReportRoutes);
 
 app.use('/api/credential-portal', credentialRoutes);
 app.use('/api/credential_portal', credentialRoutes);
