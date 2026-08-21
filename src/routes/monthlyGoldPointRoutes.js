@@ -22,7 +22,7 @@ async function ensureMonthlyGoldPointTable() {
         "Program" TEXT,
         "Rank Scope" TEXT,
         "Month" TEXT,
-        "Source Item" TEXT,
+        "_source_item" TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -112,7 +112,7 @@ function extractMonthlyGoldFields(row) {
   const program            = cleanStr(row['Program']          ?? row['program']);
   const rankScope          = cleanStr(row['Rank Scope']       ?? row['rank_scope']);
   const month              = cleanStr(row['Month']            ?? row['month']              ?? row['Bulan']);
-  const sourceItem         = cleanStr(row['Source Item']      ?? row['source_item']        ?? row['source']);
+  const sourceItem         = cleanStr(row['_source_item']     ?? row['Source Item']        ?? row['source_item']        ?? row['source']);
 
   return {
     id,
@@ -133,7 +133,7 @@ function extractMonthlyGoldFields(row) {
   };
 }
 
-const SELECT_COLUMNS = `"ID", "Nama Trainee", "Active/Expired", "Level", "House", "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "Rank", "Scope", "Program", "Rank Scope", "Month", "Source Item"`;
+const SELECT_COLUMNS = `"ID", "Nama Trainee", "Active/Expired", "Level", "House", "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "Rank", "Scope", "Program", "Rank Scope", "Month", "_source_item"`;
 
 // ==========================================
 // REAL-TIME SSE STREAM ENDPOINT
@@ -299,7 +299,7 @@ router.post('/', async (req, res) => {
       INSERT INTO monthly_gold_point (
         "ID", "Nama Trainee", "Active/Expired", "Level", "House",
         "Class", "Branch", "Total Gold/Periode", "Junior/Youth",
-        "Rank", "Scope", "Program", "Rank Scope", "Month", "Source Item"
+        "Rank", "Scope", "Program", "Rank Scope", "Month", "_source_item"
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       ON CONFLICT ("ID") DO UPDATE SET
         "Nama Trainee"       = EXCLUDED."Nama Trainee",
@@ -315,7 +315,7 @@ router.post('/', async (req, res) => {
         "Program"            = EXCLUDED."Program",
         "Rank Scope"         = EXCLUDED."Rank Scope",
         "Month"              = EXCLUDED."Month",
-        "Source Item"        = EXCLUDED."Source Item",
+        "_source_item"       = EXCLUDED."_source_item",
         updated_at           = NOW()
       RETURNING ${SELECT_COLUMNS};
     `, [
@@ -379,7 +379,7 @@ router.post('/push', async (req, res) => {
           INSERT INTO monthly_gold_point (
             "ID", "Nama Trainee", "Active/Expired", "Level", "House",
             "Class", "Branch", "Total Gold/Periode", "Junior/Youth",
-            "Rank", "Scope", "Program", "Rank Scope", "Month", "Source Item"
+            "Rank", "Scope", "Program", "Rank Scope", "Month", "_source_item"
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
           ON CONFLICT ("ID") DO UPDATE SET
             "Nama Trainee"       = EXCLUDED."Nama Trainee",
@@ -395,7 +395,7 @@ router.post('/push', async (req, res) => {
             "Program"            = EXCLUDED."Program",
             "Rank Scope"         = EXCLUDED."Rank Scope",
             "Month"              = EXCLUDED."Month",
-            "Source Item"        = EXCLUDED."Source Item",
+            "_source_item"       = EXCLUDED."_source_item",
             updated_at           = NOW()
           RETURNING ${SELECT_COLUMNS};
         `, [
@@ -452,7 +452,7 @@ const handleUpdate = async (req, res) => {
         "Program"            = COALESCE(NULLIF($11, ''), "Program"),
         "Rank Scope"         = COALESCE(NULLIF($12, ''), "Rank Scope"),
         "Month"              = COALESCE(NULLIF($13, ''), "Month"),
-        "Source Item"        = COALESCE(NULLIF($14, ''), "Source Item"),
+        "_source_item"       = COALESCE(NULLIF($14, ''), "_source_item"),
         updated_at           = NOW()
       WHERE "ID" = $15
       RETURNING ${SELECT_COLUMNS};
