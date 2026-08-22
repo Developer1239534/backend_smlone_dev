@@ -3,12 +3,18 @@ const router = express.Router();
 const db = require('../db/neonClient');
 const Ably = require('ably');
 
-// Helper to ensure monthly_gold_point table exists with exact 16 columns
+// Helper to ensure monthly_gold_point table exists
 async function ensureMonthlyGoldPointTable() {
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS monthly_gold_point (
         "ID" TEXT PRIMARY KEY,
+        "Month" TEXT,
+        "TOP 25" TEXT,
+        "Scope" TEXT,
+        "Program" TEXT,
+        "Section" TEXT,
+        "Section_No" TEXT,
         "Nama Trainee" TEXT,
         "Active/Expired" TEXT,
         "Level" TEXT,
@@ -16,14 +22,29 @@ async function ensureMonthlyGoldPointTable() {
         "Class" TEXT,
         "Branch" TEXT,
         "Total Gold/Periode" TEXT,
+        "Total Gold Raw" TEXT,
         "Junior/Youth" TEXT,
         "RANK/ID" TEXT,
-        "Scope" TEXT,
-        "Program" TEXT,
-        "Section" TEXT,
-        "Section_No" TEXT,
+        "Rank" TEXT,
+        "RANK/ID Raw" TEXT,
+        "RANK/ID Column" TEXT,
+        "All RANK/ID" TEXT,
+        "All RANK/ID Raw" TEXT,
+        "Expected_Section_Count" TEXT,
+        "Section_Found_Number" TEXT,
         "Source_Item" TEXT,
+        "Source_Input_Item" TEXT,
+        "Source_Row_Number" TEXT,
+        "Source_ID_Column" TEXT,
+        "Source_Name_Column" TEXT,
+        "Source_Rank_Columns" TEXT,
+        "Column_Base" TEXT,
+        "RANK/ID_1" TEXT,
+        "RANK/ID_1_Raw" TEXT,
         "Output_No" TEXT,
+        "_validation" TEXT,
+        "RANK/ID_2" TEXT,
+        "RANK/ID_2_Raw" TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -58,7 +79,6 @@ async function broadcast(eventType, data) {
     data: data
   };
 
-  // 1. Broadcast to SSE subscribers
   const message = `event: ${eventType}\ndata: ${JSON.stringify(payload)}\n\n`;
   sseClients.forEach((client) => {
     try {
@@ -68,7 +88,6 @@ async function broadcast(eventType, data) {
     }
   });
 
-  // 2. Broadcast to Ably channel
   if (ably) {
     try {
       const channel = ably.channels.get('monthly_gold_point');
@@ -97,7 +116,7 @@ const cleanStr = (v) => {
   return str === '' ? null : str;
 };
 
-// Helper to extract fields from request body (supporting exact 16 column names & aliases)
+// Helper to extract fields from request body
 function extractMonthlyGoldFields(row) {
   const id                 = String(row['ID']                 ?? row['id']                 ?? row['trainee_id'] ?? '').trim();
   const namaTrainee        = cleanStr(row['Nama Trainee']     ?? row['Nama']               ?? row['nama_trainee'] ?? row['name'] ?? row['trainee_name']);
@@ -108,12 +127,12 @@ function extractMonthlyGoldFields(row) {
   const branch             = cleanStr(row['Branch']           ?? row['branch']);
   const totalGoldPeriode   = cleanStr(row['Total Gold/Periode'] ?? row['total_gold_periode'] ?? row['gp_month'] ?? row['total_gold']);
   const juniorYouth        = cleanStr(row['Junior/Youth']     ?? row['junior_youth']       ?? row['kategori']);
-  const rankId             = cleanStr(row['RANK/ID']          ?? row['Rank/ID']            ?? row['rank_id'] ?? row['Rank'] ?? row['rank']);
+  const rank               = cleanStr(row['Rank']             ?? row['RANK/ID']            ?? row['rank_id'] ?? row['rank']);
   const scope              = cleanStr(row['Scope']            ?? row['scope']);
   const program            = cleanStr(row['Program']          ?? row['program']);
   const section            = cleanStr(row['Section']          ?? row['section']);
   const sectionNo          = cleanStr(row['Section_No']       ?? row['section_no']         ?? row['Section No']);
-  const sourceItem         = cleanStr(row['Source_Item']      ?? row['source_item']        ?? row['Source Item'] ?? row['source']);
+  const sourceItem         = cleanStr(row['Source_Item']      ?? row['Source_Input_Item']  ?? row['source_item'] ?? row['source']);
   const outputNo           = cleanStr(row['Output_No']       ?? row['output_no']          ?? row['Output No']);
 
   return {
@@ -126,17 +145,16 @@ function extractMonthlyGoldFields(row) {
     branch,
     totalGoldPeriode,
     juniorYouth,
-    rankId,
+    rank,
     scope,
     program,
     section,
     sectionNo,
     sourceItem,
-    outputNo
+    outputNo,
+    rawRow: row
   };
 }
-
-const SELECT_COLUMNS = `"ID", "Nama Trainee", "Active/Expired", "Level", "House", "Class", "Branch", "Total Gold/Periode", "Junior/Youth", "RANK/ID", "Scope", "Program", "Section", "Section_No", "Source_Item", "Output_No"`;
 
 // ==========================================
 // REAL-TIME SSE STREAM ENDPOINT
@@ -152,12 +170,7 @@ const handleStream = async (req, res) => {
   sseClients.add(res);
 
   try {
-    const result = await db.query(`
-      SELECT ${SELECT_COLUMNS}
-      FROM monthly_gold_point 
-      ORDER BY "ID" ASC 
-      LIMIT 100
-    `);
+    const result = await db.query(`SELECT * FROM monthly_gold_point ORDER BY "ID" ASC`);
     const initPayload = {
       event: 'init',
       timestamp: new Date().toISOString(),
@@ -177,73 +190,57 @@ router.get('/stream', handleStream);
 router.get('/live', handleStream);
 
 // ==========================================
-// RESTful CRUD ENDPOINTS
+// UNIFIED GET ENDPOINT - FETCH ALL TRAINEES
+// GET /api/monthly-gold-point or GET /api/goldpoint-trainee
 // ==========================================
-
-// 1. GET /api/monthly-gold-point - Fetch all records (with pagination & search)
 router.get('/', async (req, res) => {
   try {
     await ensureMonthlyGoldPointTable();
-    const { search, page = 1, limit = 100, all } = req.query;
+    const { search } = req.query;
 
-    let query = `SELECT ${SELECT_COLUMNS} FROM monthly_gold_point WHERE 1=1`;
-    const conditions = [];
-    const params = [];
-
+    // 1. Fetch all rows from monthly_gold_point table
+    let query1 = `SELECT * FROM monthly_gold_point WHERE 1=1`;
+    const params1 = [];
     if (search) {
-      params.push(`%${search.trim()}%`);
-      conditions.push(`("ID" ILIKE $${params.length} OR "Nama Trainee" ILIKE $${params.length} OR "House" ILIKE $${params.length} OR "Class" ILIKE $${params.length})`);
+      params1.push(`%${search.trim()}%`);
+      query1 += ` AND ("ID" ILIKE $1 OR "Nama Trainee" ILIKE $1 OR "House" ILIKE $1 OR "Class" ILIKE $1)`;
     }
+    query1 += ` ORDER BY "ID" ASC`;
 
-    if (conditions.length > 0) {
-      query += ` AND ` + conditions.join(' AND ');
-    }
+    const res1 = await db.query(query1, params1).catch(() => ({ rows: [] }));
+    let combinedRows = [...res1.rows];
 
-    query += ` ORDER BY "ID" ASC`;
+    // 2. Also fetch from id_gold_point table if it exists
+    try {
+      let query2 = `SELECT * FROM id_gold_point WHERE 1=1`;
+      const params2 = [];
+      if (search) {
+        params2.push(`%${search.trim()}%`);
+        query2 += ` AND ("ID" ILIKE $1 OR "Nama Trainee" ILIKE $1 OR "House" ILIKE $1 OR "Class" ILIKE $1)`;
+      }
+      query2 += ` ORDER BY "ID" ASC`;
+      const res2 = await db.query(query2, params2);
 
-    const countQuery = `SELECT COUNT(*) FROM monthly_gold_point WHERE 1=1` + (conditions.length > 0 ? ` AND ` + conditions.join(' AND ') : '');
-    const countResult = await db.query(countQuery, params).catch(() => ({ rows: [{ count: 0 }] }));
-    const totalItems = parseInt(countResult.rows[0]?.count || 0, 10);
-
-    if (all === 'true' || all === '1' || limit === '0') {
-      const result = await db.query(query, params);
-      return res.json({
-        success: true,
-        message: 'Berhasil mengambil semua data Monthly Gold Point.',
-        total: totalItems,
-        count: result.rows.length,
-        data: result.rows
+      // Merge rows by ID without duplication
+      const existingIds = new Set(combinedRows.map(r => String(r.ID).trim()));
+      res2.rows.forEach(r => {
+        if (r.ID && !existingIds.has(String(r.ID).trim())) {
+          combinedRows.push(r);
+          existingIds.add(String(r.ID).trim());
+        }
       });
+    } catch (e) {
+      // Ignore if id_gold_point table does not exist
     }
-
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 100;
-    const offset = (pageNum - 1) * limitNum;
-
-    params.push(limitNum);
-    query += ` LIMIT $${params.length}`;
-    params.push(offset);
-    query += ` OFFSET $${params.length}`;
-
-    const result = await db.query(query, params);
 
     res.json({
       success: true,
-      message: 'Berhasil mengambil data Monthly Gold Point.',
-      data: result.rows,
-      count: result.rows.length,
-      total: totalItems,
-      pagination: {
-        total: totalItems,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(totalItems / limitNum) || 1
-      }
+      message: 'Berhasil mengambil seluruh data Gold Points.',
+      total: combinedRows.length,
+      count: combinedRows.length,
+      data: combinedRows
     });
   } catch (error) {
-    if (error.code === '42P01') {
-      return res.json({ success: true, data: [], total: 0 });
-    }
     console.error('[Monthly Gold Point] GET error:', error.message);
     res.status(500).json({
       success: false,
@@ -253,108 +250,86 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. GET /api/monthly-gold-point/:id - Get single record by ID
+// GET /api/monthly-gold-point/:id - Get single record by ID
 router.get('/:id', async (req, res) => {
   try {
     await ensureMonthlyGoldPointTable();
     const cleanId = String(req.params.id).trim();
 
-    const result = await db.query(`
-      SELECT ${SELECT_COLUMNS}
-      FROM monthly_gold_point
-      WHERE "ID" = $1
-    `, [cleanId]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `Data Monthly Gold Point dengan ID "${cleanId}" tidak ditemukan.`
-      });
+    // 1. Search in monthly_gold_point
+    const res1 = await db.query(`SELECT * FROM monthly_gold_point WHERE "ID" = $1`, [cleanId]);
+    if (res1.rows.length > 0) {
+      return res.json({ success: true, data: res1.rows[0] });
     }
 
-    res.json({
-      success: true,
-      data: result.rows[0]
+    // 2. Fallback search in id_gold_point
+    try {
+      const res2 = await db.query(`SELECT * FROM id_gold_point WHERE "ID" = $1`, [cleanId]);
+      if (res2.rows.length > 0) {
+        return res.json({ success: true, data: res2.rows[0] });
+      }
+    } catch (e) {}
+
+    return res.status(404).json({
+      success: false,
+      message: `Data Gold Point dengan ID "${cleanId}" tidak ditemukan.`
     });
   } catch (error) {
     console.error('[Monthly Gold Point] GET ID error:', error.message);
     res.status(500).json({
       success: false,
-      message: 'Gagal mengambil data Monthly Gold Point.',
+      message: 'Gagal mengambil data Gold Point.',
       error: error.message
     });
   }
 });
 
-// 3. POST /api/monthly-gold-point - Create or Update Single Record
+// POST /api/monthly-gold-point - Create or Update Single Record
 router.post('/', async (req, res) => {
   try {
     const fields = extractMonthlyGoldFields(req.body);
 
     if (!fields.id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Field "ID" wajib diisi.'
-      });
+      return res.status(400).json({ success: false, message: 'Field "ID" wajib diisi.' });
     }
 
-    const result = await db.query(`
-      INSERT INTO monthly_gold_point (
-        "ID", "Nama Trainee", "Active/Expired", "Level", "House",
-        "Class", "Branch", "Total Gold/Periode", "Junior/Youth",
-        "RANK/ID", "Scope", "Program", "Section", "Section_No",
-        "Source_Item", "Output_No"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-      ON CONFLICT ("ID") DO UPDATE SET
-        "Nama Trainee"       = EXCLUDED."Nama Trainee",
-        "Active/Expired"     = EXCLUDED."Active/Expired",
-        "Level"              = EXCLUDED."Level",
-        "House"              = EXCLUDED."House",
-        "Class"              = EXCLUDED."Class",
-        "Branch"             = EXCLUDED."Branch",
-        "Total Gold/Periode" = EXCLUDED."Total Gold/Periode",
-        "Junior/Youth"       = EXCLUDED."Junior/Youth",
-        "RANK/ID"            = EXCLUDED."RANK/ID",
-        "Scope"              = EXCLUDED."Scope",
-        "Program"            = EXCLUDED."Program",
-        "Section"            = EXCLUDED."Section",
-        "Section_No"         = EXCLUDED."Section_No",
-        "Source_Item"        = EXCLUDED."Source_Item",
-        "Output_No"          = EXCLUDED."Output_No",
-        updated_at           = NOW()
-      RETURNING ${SELECT_COLUMNS};
-    `, [
-      fields.id, fields.namaTrainee, fields.activeExpired, fields.level, fields.house,
-      fields.classVal, fields.branch, fields.totalGoldPeriode, fields.juniorYouth,
-      fields.rankId, fields.scope, fields.program, fields.section, fields.sectionNo,
-      fields.sourceItem, fields.outputNo
-    ]);
+    // Build dynamic upsert from request body keys
+    const rowKeys = Object.keys(req.body).filter(k => k !== 'created_at' && k !== 'updated_at');
+    const cols = rowKeys.map(k => `"${k}"`).join(', ');
+    const vals = rowKeys.map((_, i) => `$${i + 1}`).join(', ');
+    const updateSet = rowKeys.filter(k => k !== 'ID').map(k => `"${k}" = EXCLUDED."${k}"`).join(', ');
 
+    const params = rowKeys.map(k => req.body[k]);
+
+    const query = `
+      INSERT INTO monthly_gold_point (${cols})
+      VALUES (${vals})
+      ON CONFLICT ("ID") DO UPDATE SET
+        ${updateSet},
+        updated_at = NOW()
+      RETURNING *;
+    `;
+
+    const result = await db.query(query, params);
     const newRecord = result.rows[0];
     broadcast('INSERT', newRecord);
 
     res.status(201).json({
       success: true,
-      message: `Berhasil menyimpan data Monthly Gold Point ID ${fields.id}`,
+      message: `Berhasil menyimpan data Gold Point ID ${fields.id}`,
       data: newRecord
     });
   } catch (error) {
     console.error('[Monthly Gold Point] POST error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Gagal menyimpan data Monthly Gold Point.',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Gagal menyimpan data.', error: error.message });
   }
 });
 
-// 4. POST /api/monthly-gold-point/push - Bulk Upsert Array
+// POST /api/monthly-gold-point/push - Bulk Upsert Array
 router.post('/push', async (req, res) => {
   try {
     let data = req.body;
-    if (!Array.isArray(data)) {
-      data = [data];
-    }
+    if (!Array.isArray(data)) data = [data];
 
     if (data.length === 0) {
       return res.status(400).json({ success: false, message: 'Data kosong.' });
@@ -373,51 +348,35 @@ router.post('/push', async (req, res) => {
         continue;
       }
 
-      const fields = extractMonthlyGoldFields(row);
-
-      if (!fields.id) {
+      const cleanId = String(row['ID'] ?? row['id'] ?? row['trainee_id'] ?? '').trim();
+      if (!cleanId) {
         skippedCount++;
         continue;
       }
 
       try {
-        const result = await db.query(`
-          INSERT INTO monthly_gold_point (
-            "ID", "Nama Trainee", "Active/Expired", "Level", "House",
-            "Class", "Branch", "Total Gold/Periode", "Junior/Youth",
-            "RANK/ID", "Scope", "Program", "Section", "Section_No",
-            "Source_Item", "Output_No"
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-          ON CONFLICT ("ID") DO UPDATE SET
-            "Nama Trainee"       = EXCLUDED."Nama Trainee",
-            "Active/Expired"     = EXCLUDED."Active/Expired",
-            "Level"              = EXCLUDED."Level",
-            "House"              = EXCLUDED."House",
-            "Class"              = EXCLUDED."Class",
-            "Branch"             = EXCLUDED."Branch",
-            "Total Gold/Periode" = EXCLUDED."Total Gold/Periode",
-            "Junior/Youth"       = EXCLUDED."Junior/Youth",
-            "RANK/ID"            = EXCLUDED."RANK/ID",
-            "Scope"              = EXCLUDED."Scope",
-            "Program"            = EXCLUDED."Program",
-            "Section"            = EXCLUDED."Section",
-            "Section_No"         = EXCLUDED."Section_No",
-            "Source_Item"        = EXCLUDED."Source_Item",
-            "Output_No"          = EXCLUDED."Output_No",
-            updated_at           = NOW()
-          RETURNING ${SELECT_COLUMNS};
-        `, [
-          fields.id, fields.namaTrainee, fields.activeExpired, fields.level, fields.house,
-          fields.classVal, fields.branch, fields.totalGoldPeriode, fields.juniorYouth,
-          fields.rankId, fields.scope, fields.program, fields.section, fields.sectionNo,
-          fields.sourceItem, fields.outputNo
-        ]);
+        const rowKeys = Object.keys(row).filter(k => k !== 'created_at' && k !== 'updated_at');
+        const cols = rowKeys.map(k => `"${k}"`).join(', ');
+        const vals = rowKeys.map((_, idx) => `$${idx + 1}`).join(', ');
+        const updateSet = rowKeys.filter(k => k !== 'ID').map(k => `"${k}" = EXCLUDED."${k}"`).join(', ');
 
+        const params = rowKeys.map(k => row[k]);
+
+        const query = `
+          INSERT INTO monthly_gold_point (${cols})
+          VALUES (${vals})
+          ON CONFLICT ("ID") DO UPDATE SET
+            ${updateSet},
+            updated_at = NOW()
+          RETURNING *;
+        `;
+
+        const result = await db.query(query, params);
         insertedCount++;
         processedRows.push(result.rows[0]);
       } catch (rowError) {
         errorCount++;
-        errors.push({ index: i, id: fields.id, error: rowError.message });
+        errors.push({ index: i, id: cleanId, error: rowError.message });
       }
     }
 
@@ -427,103 +386,36 @@ router.post('/push', async (req, res) => {
 
     res.json({
       success: true,
-      message: `Berhasil menyimpan/mengupdate ${insertedCount} data ke Monthly Gold Point, ${skippedCount} di-skip, ${errorCount} error.`,
+      message: `Berhasil menyimpan/mengupdate ${insertedCount} data ke Gold Point, ${skippedCount} di-skip, ${errorCount} error.`,
       details: { insertedCount, skippedCount, errorCount, errors: errors.slice(0, 10) }
     });
   } catch (error) {
     console.error('[Monthly Gold Point Push] Fatal error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Terjadi error saat menyimpan data.',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Terjadi error saat menyimpan data.', error: error.message });
   }
 });
 
-// 5. PUT /api/monthly-gold-point/:id & PATCH /api/monthly-gold-point/:id - Update Single Record
-const handleUpdate = async (req, res) => {
-  try {
-    const cleanId = String(req.params.id).trim();
-    const fields = extractMonthlyGoldFields(req.body);
-
-    const result = await db.query(`
-      UPDATE monthly_gold_point SET
-        "Nama Trainee"       = COALESCE(NULLIF($1, ''), "Nama Trainee"),
-        "Active/Expired"     = COALESCE(NULLIF($2, ''), "Active/Expired"),
-        "Level"              = COALESCE(NULLIF($3, ''), "Level"),
-        "House"              = COALESCE(NULLIF($4, ''), "House"),
-        "Class"              = COALESCE(NULLIF($5, ''), "Class"),
-        "Branch"             = COALESCE(NULLIF($6, ''), "Branch"),
-        "Total Gold/Periode" = COALESCE(NULLIF($7, ''), "Total Gold/Periode"),
-        "Junior/Youth"       = COALESCE(NULLIF($8, ''), "Junior/Youth"),
-        "RANK/ID"            = COALESCE(NULLIF($9, ''), "RANK/ID"),
-        "Scope"              = COALESCE(NULLIF($10, ''), "Scope"),
-        "Program"            = COALESCE(NULLIF($11, ''), "Program"),
-        "Section"            = COALESCE(NULLIF($12, ''), "Section"),
-        "Section_No"         = COALESCE(NULLIF($13, ''), "Section_No"),
-        "Source_Item"        = COALESCE(NULLIF($14, ''), "Source_Item"),
-        "Output_No"          = COALESCE(NULLIF($15, ''), "Output_No"),
-        updated_at           = NOW()
-      WHERE "ID" = $16
-      RETURNING ${SELECT_COLUMNS};
-    `, [
-      fields.namaTrainee, fields.activeExpired, fields.level, fields.house,
-      fields.classVal, fields.branch, fields.totalGoldPeriode, fields.juniorYouth,
-      fields.rankId, fields.scope, fields.program, fields.section, fields.sectionNo,
-      fields.sourceItem, fields.outputNo, cleanId
-    ]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `Data Monthly Gold Point dengan ID "${cleanId}" tidak ditemukan.`
-      });
-    }
-
-    const updatedRecord = result.rows[0];
-    broadcast('UPDATE', updatedRecord);
-
-    res.json({
-      success: true,
-      message: `Berhasil mengupdate data Monthly Gold Point ID ${cleanId}`,
-      data: updatedRecord
-    });
-  } catch (error) {
-    console.error('[Monthly Gold Point] UPDATE error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Gagal mengupdate data.',
-      error: error.message
-    });
-  }
-};
-
-router.put('/:id', handleUpdate);
-router.patch('/:id', handleUpdate);
-
-// 6. DELETE /api/monthly-gold-point/truncate - Clear all table rows
+// DELETE /api/monthly-gold-point/truncate - Clear all table rows
 router.delete('/truncate', async (req, res) => {
   try {
     await db.query('TRUNCATE TABLE monthly_gold_point CASCADE');
-    broadcast('TRUNCATE', { message: 'All monthly_gold_point records cleared' });
-    res.json({ success: true, message: 'Seluruh isi tabel monthly_gold_point berhasil dikosongkan.' });
+    try { await db.query('TRUNCATE TABLE id_gold_point CASCADE'); } catch (e) {}
+    broadcast('TRUNCATE', { message: 'All Gold Point records cleared' });
+    res.json({ success: true, message: 'Seluruh isi tabel Gold Point berhasil dikosongkan.' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Gagal mengosongkan tabel.', error: error.message });
   }
 });
 
-// 7. DELETE /api/monthly-gold-point/:id - Delete single record by ID
+// DELETE /api/monthly-gold-point/:id - Delete single record by ID
 router.delete('/:id', async (req, res) => {
   const cleanId = String(req.params.id).trim();
   try {
     const result = await db.query('DELETE FROM monthly_gold_point WHERE "ID" = $1 RETURNING *', [cleanId]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: `Tidak ada data Monthly Gold Point dengan ID: ${cleanId}` });
-    }
+    try { await db.query('DELETE FROM id_gold_point WHERE "ID" = $1', [cleanId]); } catch (e) {}
 
     broadcast('DELETE', { ID: cleanId });
-
-    res.json({ success: true, message: `Data Monthly Gold Point ID ${cleanId} berhasil dihapus.`, deleted: result.rows[0] });
+    res.json({ success: true, message: `Data Gold Point ID ${cleanId} berhasil dihapus.` });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Gagal menghapus data.', error: error.message });
   }

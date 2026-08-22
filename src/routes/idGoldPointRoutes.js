@@ -187,7 +187,7 @@ router.get('/live', handleStream);
 router.get('/', async (req, res) => {
   try {
     await ensureIdGoldPointTable();
-    const { search, page = 1, limit = 100, all } = req.query;
+    const { search, page, limit = 10000, all } = req.query;
 
     let query = `SELECT ${SELECT_COLUMNS} FROM id_gold_point WHERE 1=1`;
     const conditions = [];
@@ -208,7 +208,7 @@ router.get('/', async (req, res) => {
     const countResult = await db.query(countQuery, params).catch(() => ({ rows: [{ count: 0 }] }));
     const totalItems = parseInt(countResult.rows[0]?.count || 0, 10);
 
-    if (all === 'true' || all === '1' || limit === '0') {
+    if (all === 'true' || all === '1' || limit === '0' || !page) {
       const result = await db.query(query, params);
       return res.json({
         success: true,
