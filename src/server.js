@@ -51,6 +51,7 @@ const reportProgresRoutes = require('./routes/reportProgresRoutes');
 const historyHouseRoutes = require('./routes/historyHouseRoutes');
 const award2025Routes = require('./routes/award2025Routes');
 const weeklyReportRoutes = require('./routes/weeklyReportRoutes');
+const idGoldPointRoutes = require('./routes/idGoldPointRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -386,6 +387,12 @@ app.use('/api/goldpoint-trainee', monthlyGoldPointRoutes);
 app.use('/api/goldpoint_trainee', monthlyGoldPointRoutes);
 app.use('/goldpoint-trainee', monthlyGoldPointRoutes);
 app.use('/goldpoint_trainee', monthlyGoldPointRoutes);
+
+app.use('/api/id-gold-point', idGoldPointRoutes);
+app.use('/api/id_gold_point', idGoldPointRoutes);
+app.use('/id-gold-point', idGoldPointRoutes);
+app.use('/id_gold_point', idGoldPointRoutes);
+app.use('/api/admin/id-gold-point', idGoldPointRoutes);
 app.use('/api/dashboard-trainee', dashboardRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/login', authRoutes);
