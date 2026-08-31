@@ -237,11 +237,9 @@ router.post('/reports/real-stage', async (req, res) => {
     }
 
     await db.query(
-      `INSERT INTO real_stage (trainee_id, periode, url)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (trainee_id, periode)
-       DO UPDATE SET url = EXCLUDED.url`,
-      [id, periode, url || null]
+      `INSERT INTO real_stage ("ID Trainee", "Link Voucher Real Stage")
+       VALUES ($1, $2)`,
+      [id, url || null]
     );
 
     res.json({ success: true, message: 'Real Stage Report berhasil diupload/diperbarui.', data: { id, url, periode } });

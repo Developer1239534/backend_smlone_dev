@@ -150,16 +150,11 @@ router.get('/:id', async (req, res) => {
 
     // Fetch real stage reports if available
     const rsRes = await db.query(
-      'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
+      'SELECT "No. Voucher" as no_voucher, "Link Voucher Real Stage" as url FROM real_stage WHERE "ID Trainee" = $1',
       [id]
     ).catch(() => ({ rows: [] }));
 
-    const parseRealStagePeriod = (periodStr) => {
-      if (!periodStr) return 0;
-      const match = periodStr.match(/\d+/);
-      return match ? parseInt(match[0], 10) : 0;
-    };
-    const sortedRS = rsRes.rows.sort((a, b) => parseRealStagePeriod(b.periode) - parseRealStagePeriod(a.periode));
+    const sortedRS = rsRes.rows;
 
     const latestRsUrl = sortedRS[0]?.url ? sanitizeUrl(sortedRS[0].url) : null;
     const screeningTestUrl = sanitizeUrl(trainee.screening_test || trainee.screening_test_url);

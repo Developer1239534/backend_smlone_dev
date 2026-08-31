@@ -97,10 +97,10 @@ router.get('/profile/:id', async (req, res) => {
 
   try {
     const rsResult = await db.query(
-      'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
+      'SELECT "No. Voucher" as no_voucher, "Link Voucher Real Stage" as url FROM real_stage WHERE "ID Trainee" = $1',
       [trainee.id]
     );
-    const sortedRS = rsResult.rows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
+    const sortedRS = rsResult.rows;
 
     res.json({
       success: true,
@@ -284,10 +284,10 @@ router.get('/reports/:id', async (req, res) => {
 
     // Fetch real stage reports
     const rsResult = await db.query(
-      'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
+      'SELECT "No. Voucher" as no_voucher, "Link Voucher Real Stage" as url FROM real_stage WHERE "ID Trainee" = $1',
       [trainee.id]
     );
-    const sortedRS = rsResult.rows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
+    const sortedRS = rsResult.rows;
 
     res.json({
       success: true,
@@ -349,10 +349,10 @@ router.get('/reports/real-stage/:id', async (req, res) => {
 
   try {
     const reportsResult = await db.query(
-      'SELECT periode, url FROM real_stage WHERE trainee_id = $1',
+      'SELECT "No. Voucher" as no_voucher, "Link Voucher Real Stage" as url FROM real_stage WHERE "ID Trainee" = $1',
       [trainee.id]
     );
-    const sortedReports = reportsResult.rows.sort((a, b) => compareRealStagePeriods(a.periode, b.periode));
+    const sortedReports = reportsResult.rows;
 
     res.json({
       success: true,
