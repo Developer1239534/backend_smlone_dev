@@ -4,18 +4,15 @@ const Ably = require('ably');
 const db = require('../db/neonClient');
 
 // Initialize Ably client with secret key (Only available on backend)
-// Note: If ABLY_API_KEY is not set, it might throw, but we handle it gracefully if possible.
-let ably;
-try {
-  const ablyKey = process.env.ABLY_API_KEY ? process.env.ABLY_API_KEY.trim() : null;
-  if (!ablyKey) {
-    throw new Error('ABLY_API_KEY is not defined in .env');
+// Note: If ABLY_API_KEY is not set, it will be skipped gracefully.
+let ably = null;
+if (process.env.ABLY_API_KEY && process.env.ABLY_API_KEY.trim()) {
+  try {
+    ably = new Ably.Rest(process.env.ABLY_API_KEY.trim());
+    console.log("✅ Ably initialized successfully on backend.");
+  } catch (err) {
+    console.warn("⚠️ Warning: Ably could not be initialized:", err.message);
   }
-  
-  ably = new Ably.Rest(ablyKey);
-  console.log("✅ Ably initialized successfully on backend.");
-} catch (err) {
-  console.error("❌ Failed to initialize Ably:", err.message);
 }
 
 // 1. GET /auth — Provide Ably Token to the frontend securely

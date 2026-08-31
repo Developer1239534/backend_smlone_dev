@@ -33,6 +33,7 @@ const goldpointTraineeRoutes = require('./routes/goldpointTraineeRoutes');
 const credentialRoutes = require('./routes/credentialRoutes');
 const profileTraineeRoutes = require('./routes/profileTraineeRoutes');
 const monthlyGoldPointRoutes = require('./routes/monthlyGoldPointRoutes');
+const realStageRoutes = require('./routes/realStageRoutes');
 const verifyToken = require('./middleware/authMiddleware');
 
 const { rateLimit } = require('express-rate-limit');
@@ -448,11 +449,20 @@ app.use('/api/webhook/monthly-gold-point', (req, res, next) => {
   next();
 }, monthlyGoldPointRoutes);
 
+app.use('/api/webhook/real-stage', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== 'smlone-n8n-secret-key-2026') {
+    return res.status(401).json({ success: false, message: 'Unauthorized Webhook' });
+  }
+  next();
+}, realStageRoutes);
+
 // Credential & Trainee Data Routes (Public GET for Frontend, Auth for Admin Mutations)
 app.use('/api/credential', credentialRoutes);
 app.use('/api/credential-portal', credentialRoutes);
 app.use('/api/profile-trainee', profileTraineeRoutes);
 app.use('/api/monthly-gold-point', monthlyGoldPointRoutes);
+app.use('/api/real-stage', realStageRoutes);
 
 
 
