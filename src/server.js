@@ -150,7 +150,7 @@ const path = require('path');
 
 app.use(helmet({ crossOriginResourcePolicy: false })); // allow static images cross-origin
 app.use(cors({
-  origin: '*',
+  origin: true, // Dynamically reflect request origin, allowing portal.smlone.com and any client
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cache-Control', 'Pragma', 'x-api-key'],
   credentials: true,
