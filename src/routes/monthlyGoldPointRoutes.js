@@ -97,6 +97,16 @@ router.get('/', async (req, res) => {
       total: result.rows.length,
       data: result.rows
     });
+  } catch (error) {
+    console.error('[Monthly Gold Point] GET error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data dari database.',
+      error: error.message
+    });
+  }
+});
+
 // GET /api/monthly-gold-point/stream - Real-time SSE Stream
 router.get('/stream', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
