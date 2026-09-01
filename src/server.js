@@ -381,32 +381,64 @@ app.get('/api/report-trainee/stream', (req, res) => {
   req.on('close', () => clearInterval(interval));
 });
 
-app.get('/api/report-trainee/:id?', async (req, res) => {
-  const { id } = req.params;
+app.get('/api/report-trainee', async (req, res) => {
   try {
-    if (id) {
-      const result = await db.query('SELECT * FROM portal_trainee WHERE trainee_id = $1 OR trainee_id ILIKE $1 LIMIT 1', [id]);
-      if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Report trainee ID ${id} tidak ditemukan` });
-      return res.json({ success: true, data: result.rows[0], ...result.rows[0] });
-    }
     const result = await db.query('SELECT * FROM portal_trainee');
-    res.json({ success: true, count: result.rows.length, data: result.rows });
+    res.json({ success: true, count: result.rows.length, total: result.rows.length, data: result.rows });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// report-progres GET endpoint
-app.get('/api/report-progres/:id?', async (req, res) => {
+app.get('/api/report-trainee/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    if (id) {
-      const result = await db.query('SELECT * FROM portal_trainee WHERE trainee_id = $1 OR trainee_id ILIKE $1 LIMIT 1', [id]);
-      if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Report progres ID ${id} tidak ditemukan` });
+    const result = await db.query('SELECT * FROM portal_trainee WHERE trainee_id = $1 OR trainee_id ILIKE $1 LIMIT 1', [id]);
+    if (result.rows.length > 0) {
       return res.json({ success: true, data: result.rows[0], ...result.rows[0] });
     }
+    const defaultData = {
+      trainee_id: id,
+      name: '',
+      weekly_report_url: null,
+      quarterly_report_url: null,
+      real_stage_report_url: null,
+      progress_video_url: null,
+      screening_test_url: null
+    };
+    return res.json({ success: true, data: defaultData, ...defaultData });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// report-progres GET endpoints
+app.get('/api/report-progres', async (req, res) => {
+  try {
     const result = await db.query('SELECT * FROM portal_trainee');
-    res.json({ success: true, count: result.rows.length, data: result.rows });
+    res.json({ success: true, count: result.rows.length, total: result.rows.length, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get('/api/report-progres/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query('SELECT * FROM portal_trainee WHERE trainee_id = $1 OR trainee_id ILIKE $1 LIMIT 1', [id]);
+    if (result.rows.length > 0) {
+      return res.json({ success: true, data: result.rows[0], ...result.rows[0] });
+    }
+    const defaultData = {
+      trainee_id: id,
+      name: '',
+      weekly_report_url: null,
+      quarterly_report_url: null,
+      real_stage_report_url: null,
+      progress_video_url: null,
+      screening_test_url: null
+    };
+    return res.json({ success: true, data: defaultData, ...defaultData });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -430,16 +462,28 @@ app.get('/api/weekly-report/stream', (req, res) => {
   req.on('close', () => clearInterval(interval));
 });
 
-app.get('/api/weekly-report/:id?', async (req, res) => {
+app.get('/api/weekly-report', async (req, res) => {
+  try {
+    const result = await db.query('SELECT trainee_id, name, weekly_report_url FROM portal_trainee');
+    res.json({ success: true, count: result.rows.length, total: result.rows.length, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get('/api/weekly-report/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    if (id) {
-      const result = await db.query('SELECT * FROM portal_trainee WHERE trainee_id = $1 OR trainee_id ILIKE $1 LIMIT 1', [id]);
-      if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Weekly report ID ${id} tidak ditemukan` });
+    const result = await db.query('SELECT * FROM portal_trainee WHERE trainee_id = $1 OR trainee_id ILIKE $1 LIMIT 1', [id]);
+    if (result.rows.length > 0) {
       return res.json({ success: true, data: result.rows[0], ...result.rows[0] });
     }
-    const result = await db.query('SELECT trainee_id, name, weekly_report_url FROM portal_trainee');
-    res.json({ success: true, count: result.rows.length, data: result.rows });
+    const defaultData = {
+      trainee_id: id,
+      name: '',
+      weekly_report_url: null
+    };
+    return res.json({ success: true, data: defaultData, ...defaultData });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
