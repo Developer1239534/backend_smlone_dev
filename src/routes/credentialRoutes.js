@@ -22,6 +22,46 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /:id - Ambil satu data credential portal berdasarkan ID
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query(
+      'SELECT * FROM credential_portal WHERE "ID" = $1 OR "ID" ILIKE $1 LIMIT 1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Data Credential Portal dengan ID: ${id} tidak ditemukan.`
+      });
+    }
+
+    const row = result.rows[0];
+    res.json({
+      success: true,
+      message: `Berhasil mengambil data Credential Portal ID ${id}.`,
+      data: row,
+      id: row["ID"],
+      ID: row["ID"],
+      name: row["Name"],
+      Name: row["Name"],
+      membership_status: row["MEMBERSHIP STATUS"],
+      "MEMBERSHIP STATUS": row["MEMBERSHIP STATUS"],
+      password: row["Password"],
+      Password: row["Password"]
+    });
+  } catch (error) {
+    console.error('[Credential Portal] GET :id error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data dari database.',
+      error: error.message
+    });
+  }
+});
+
 // POST /push - Terima dan simpan data dari n8n / Google Sheets (bulk upsert)
 router.post('/push', async (req, res) => {
   try {
