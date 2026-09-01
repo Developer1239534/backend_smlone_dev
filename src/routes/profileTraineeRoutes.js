@@ -22,6 +22,64 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /:id - Ambil data profile trainee berdasarkan ID
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query(
+      'SELECT * FROM profile_trainee WHERE "ID" = $1 OR "ID" ILIKE $1 LIMIT 1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Data Profile Trainee dengan ID: ${id} tidak ditemukan.`
+      });
+    }
+
+    const row = result.rows[0];
+    res.json({
+      success: true,
+      message: `Berhasil mengambil data Profile Trainee ID ${id}.`,
+      data: row,
+      id: row["ID"],
+      ID: row["ID"],
+      name: row["Nama"],
+      Nama: row["Nama"],
+      gender: row["Gender"],
+      Gender: row["Gender"],
+      membership: row["Membership"],
+      Membership: row["Membership"],
+      class: row["Class"],
+      Class: row["Class"],
+      house: row["House"],
+      House: row["House"],
+      trainer_homeroom: row["Trainer Homeroom"],
+      "Trainer Homeroom": row["Trainer Homeroom"],
+      date_of_birthday: row["Date of Birthday"],
+      "Date of Birthday": row["Date of Birthday"],
+      kelas: row["Kelas"],
+      Kelas: row["Kelas"],
+      email_account_parents: row["Email Account Parents"],
+      "Email Account Parents": row["Email Account Parents"],
+      nomor_wa_parent: row["Nomor WA Parent"],
+      "Nomor WA Parent": row["Nomor WA Parent"],
+      nomor_wa_trainee: row["Nomor WA Trainee"],
+      "Nomor WA Trainee": row["Nomor WA Trainee"],
+      nama_sekolah: row["Nama Sekolah"],
+      "Nama Sekolah": row["Nama Sekolah"]
+    });
+  } catch (error) {
+    console.error('[Profile Trainee] GET :id error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data dari database.',
+      error: error.message
+    });
+  }
+});
+
 // POST /push - Terima dan simpan data dari n8n / Google Sheets (bulk upsert)
 router.post('/push', async (req, res) => {
   try {

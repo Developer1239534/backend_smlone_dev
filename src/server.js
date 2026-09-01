@@ -335,6 +335,116 @@ app.use('/api/profile-trainee', profileTraineeRoutes);
 app.use('/api/monthly-gold-point', monthlyGoldPointRoutes);
 app.use('/api/real-stage', realStageRoutes);
 
+// House Rank endpoint
+app.use('/api/house-rank', adminHouseRankRoutes);
+
+// id-gold-point endpoint
+app.get('/api/id-gold-point', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM monthly_gold_point');
+    res.json({ success: true, count: result.rows.length, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// award-2025 endpoint
+app.get('/api/award-2025', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM award_2025 ORDER BY "No"::int ASC');
+    res.json({ success: true, count: result.rows.length, data: result.rows });
+  } catch (err) {
+    try {
+      const result = await db.query('SELECT * FROM award_2025');
+      res.json({ success: true, count: result.rows.length, data: result.rows });
+    } catch (e) {
+      res.json({ success: true, count: 0, data: [] });
+    }
+  }
+});
+
+// report-trainee SSE & GET endpoints
+app.get('/api/report-trainee/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  res.write(`data: ${JSON.stringify({ status: 'connected' })}\n\n`);
+  const send = async () => {
+    try {
+      const result = await db.query('SELECT * FROM portal_trainee LIMIT 100');
+      res.write(`data: ${JSON.stringify(result.rows)}\n\n`);
+    } catch (e) {}
+  };
+  send();
+  const interval = setInterval(send, 30000);
+  req.on('close', () => clearInterval(interval));
+});
+
+app.get('/api/report-trainee/:id?', async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (id) {
+      const result = await db.query('SELECT * FROM portal_trainee WHERE trainee_id = $1 OR trainee_id ILIKE $1 LIMIT 1', [id]);
+      if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Report trainee ID ${id} tidak ditemukan` });
+      return res.json({ success: true, data: result.rows[0], ...result.rows[0] });
+    }
+    const result = await db.query('SELECT * FROM portal_trainee');
+    res.json({ success: true, count: result.rows.length, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// report-progres GET endpoint
+app.get('/api/report-progres/:id?', async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (id) {
+      const result = await db.query('SELECT * FROM portal_trainee WHERE trainee_id = $1 OR trainee_id ILIKE $1 LIMIT 1', [id]);
+      if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Report progres ID ${id} tidak ditemukan` });
+      return res.json({ success: true, data: result.rows[0], ...result.rows[0] });
+    }
+    const result = await db.query('SELECT * FROM portal_trainee');
+    res.json({ success: true, count: result.rows.length, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// weekly-report SSE & GET endpoints
+app.get('/api/weekly-report/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  res.write(`data: ${JSON.stringify({ status: 'connected' })}\n\n`);
+  const send = async () => {
+    try {
+      const result = await db.query('SELECT trainee_id, name, weekly_report_url FROM portal_trainee WHERE weekly_report_url IS NOT NULL LIMIT 100');
+      res.write(`data: ${JSON.stringify(result.rows)}\n\n`);
+    } catch (e) {}
+  };
+  send();
+  const interval = setInterval(send, 30000);
+  req.on('close', () => clearInterval(interval));
+});
+
+app.get('/api/weekly-report/:id?', async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (id) {
+      const result = await db.query('SELECT * FROM portal_trainee WHERE trainee_id = $1 OR trainee_id ILIKE $1 LIMIT 1', [id]);
+      if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Weekly report ID ${id} tidak ditemukan` });
+      return res.json({ success: true, data: result.rows[0], ...result.rows[0] });
+    }
+    const result = await db.query('SELECT trainee_id, name, weekly_report_url FROM portal_trainee');
+    res.json({ success: true, count: result.rows.length, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 
 
 

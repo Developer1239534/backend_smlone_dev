@@ -97,8 +97,76 @@ router.get('/', async (req, res) => {
       total: result.rows.length,
       data: result.rows
     });
+// GET /api/monthly-gold-point/stream - Real-time SSE Stream
+router.get('/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  res.write(`data: ${JSON.stringify({ status: 'connected', timestamp: Date.now() })}\n\n`);
+
+  const sendData = async () => {
+    try {
+      const result = await db.query('SELECT * FROM monthly_gold_point ORDER BY "Total Gold/Periode"::int DESC NULLS LAST LIMIT 100');
+      res.write(`data: ${JSON.stringify({ type: 'update', data: result.rows })}\n\n`);
+    } catch (e) {
+      // fallback if total gold is string
+      try {
+        const result = await db.query('SELECT * FROM monthly_gold_point LIMIT 100');
+        res.write(`data: ${JSON.stringify({ type: 'update', data: result.rows })}\n\n`);
+      } catch (err) {}
+    }
+  };
+
+  sendData();
+  const interval = setInterval(sendData, 30000);
+  req.on('close', () => clearInterval(interval));
+});
+
+// GET /api/monthly-gold-point/:id - Ambil satu trainee dari monthly_gold_point
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await ensureAndSeedMonthlyGoldPointTable();
+    const result = await db.query(
+      'SELECT * FROM monthly_gold_point WHERE "ID" = $1 OR "ID" ILIKE $1 LIMIT 1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Data Monthly Gold Point dengan ID: ${id} tidak ditemukan.`
+      });
+    }
+
+    const row = result.rows[0];
+    res.json({
+      success: true,
+      message: `Berhasil mengambil data Monthly Gold Point ID ${id}.`,
+      data: row,
+      id: row["ID"],
+      ID: row["ID"],
+      nama_trainee: row["Nama Trainee"],
+      "Nama Trainee": row["Nama Trainee"],
+      total_gold: row["Total Gold/Periode"],
+      total_gold_periode: row["Total Gold/Periode"],
+      "Total Gold/Periode": row["Total Gold/Periode"],
+      level: row["Level"],
+      Level: row["Level"],
+      house: row["House"],
+      House: row["House"],
+      class: row["Class"],
+      Class: row["Class"],
+      branch: row["Branch"],
+      Branch: row["Branch"],
+      rank: row["RANK/ID"],
+      rank_id: row["RANK/ID"],
+      "RANK/ID": row["RANK/ID"]
+    });
   } catch (error) {
-    console.error('[Monthly Gold Point] GET error:', error.message);
+    console.error('[Monthly Gold Point] GET :id error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Gagal mengambil data dari database.',
