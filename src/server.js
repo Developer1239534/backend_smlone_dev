@@ -137,6 +137,18 @@ const helmet = require('helmet');
       CREATE INDEX IF NOT EXISTS idx_login_trainee_student_id ON login_trainee(student_id);
     `);
 
+    // Ensure credential_portal has "Processing Status" column
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS credential_portal (
+        "ID"                VARCHAR(255) PRIMARY KEY,
+        "Name"              VARCHAR(255),
+        "MEMBERSHIP STATUS" VARCHAR(255),
+        "Password"          VARCHAR(255),
+        "Processing Status" VARCHAR(255)
+      );
+      ALTER TABLE credential_portal ADD COLUMN IF NOT EXISTS "Processing Status" VARCHAR(255);
+    `).catch(() => null);
+
     console.log('✅ Database schema updated successfully.');
   } catch (err) {
     console.error('❌ Error checking/updating database schema:', err.message);
