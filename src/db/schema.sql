@@ -5,8 +5,7 @@ CREATE TABLE IF NOT EXISTS credential_portal (
   "ID"                VARCHAR(255) PRIMARY KEY,
   "Name"              VARCHAR(255),
   "MEMBERSHIP STATUS" VARCHAR(255),
-  "Password"          VARCHAR(255),
-  "Processing Status" VARCHAR(255)
+  "Password"          VARCHAR(255)
 );
 
 -- Tabel profile_trainee

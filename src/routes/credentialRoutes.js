@@ -50,9 +50,7 @@ router.get('/:id', async (req, res) => {
       membership_status: row["MEMBERSHIP STATUS"],
       "MEMBERSHIP STATUS": row["MEMBERSHIP STATUS"],
       password: row["Password"],
-      Password: row["Password"],
-      processing_status: row["Processing Status"],
-      "Processing Status": row["Processing Status"]
+      Password: row["Password"]
     });
   } catch (error) {
     console.error('[Credential Portal] GET :id error:', error.message);
@@ -93,12 +91,11 @@ router.post('/push', async (req, res) => {
         continue;
       }
 
-      // Map exact JSON keys from n8n payload: ID, Name, MEMBERSHIP STATUS, Password, Processing Status
+      // Map exact JSON keys from n8n payload: ID, Name, MEMBERSHIP STATUS, Password
       const id                = String(row['ID']                ?? row['id']                ?? '');
       const name              = String(row['Name']              ?? row['name']              ?? row['Nama'] ?? row['nama'] ?? '');
       const membership_status = String(row['MEMBERSHIP STATUS'] ?? row['Membership Status'] ?? row['membership_status'] ?? row['membership'] ?? '');
       const password          = String(row['Password']          ?? row['password']          ?? '');
-      const processing_status = String(row['Processing Status'] ?? row['processing_status'] ?? row['Processing status'] ?? row['Status'] ?? '');
 
       // Wajib ada ID
       if (!id) {
@@ -109,18 +106,18 @@ router.post('/push', async (req, res) => {
 
       try {
         await db.query(
-          `INSERT INTO credential_portal ("ID", "Name", "MEMBERSHIP STATUS", "Password", "Processing Status")
-           VALUES ($1, $2, $3, $4, $5)`,
-          [id, name, membership_status, password, processing_status]
+          `INSERT INTO credential_portal ("ID", "Name", "MEMBERSHIP STATUS", "Password")
+           VALUES ($1, $2, $3, $4)`,
+          [id, name, membership_status, password]
         );
         insertedCount++;
       } catch (rowError) {
         try {
           await db.query(
             `UPDATE credential_portal 
-             SET "Name" = $2, "MEMBERSHIP STATUS" = $3, "Password" = $4, "Processing Status" = $5
+             SET "Name" = $2, "MEMBERSHIP STATUS" = $3, "Password" = $4
              WHERE "ID" = $1`,
-            [id, name, membership_status, password, processing_status]
+            [id, name, membership_status, password]
           );
           insertedCount++;
         } catch (updateError) {
