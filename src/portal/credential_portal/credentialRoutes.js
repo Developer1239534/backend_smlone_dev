@@ -1,10 +1,27 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db/neonClient');
+const db = require('../../db/neonClient');
+
+// Helper to ensure credential_portal table exists
+async function ensureCredentialPortalTable() {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS credential_portal (
+        "ID"                VARCHAR(255) PRIMARY KEY,
+        "Name"              VARCHAR(255),
+        "MEMBERSHIP STATUS" VARCHAR(255),
+        "Password"          VARCHAR(255)
+      );
+    `);
+  } catch (err) {
+    console.error('[Credential Portal] Ensure table error:', err.message);
+  }
+}
 
 // 1. GET / - Ambil semua data Credential Portal
 router.get('/', async (req, res) => {
   try {
+    await ensureCredentialPortalTable();
     const { search } = req.query;
     let query = 'SELECT * FROM credential_portal';
     let params = [];
