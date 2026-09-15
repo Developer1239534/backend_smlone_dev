@@ -541,17 +541,35 @@ router.delete('/truncate', async (req, res) => {
   }
 });
 
-// 7. DELETE /:id - Hapus data berdasarkan ID
-router.delete('/:id', async (req, res) => {
-  const { id } = req.params;
+// 8. ALL /reset-schema - Hapus dan buat ulang tabel dengan 16 kolom baru
+router.all('/reset-schema', async (req, res) => {
   try {
-    const result = await db.query('DELETE FROM report_progres WHERE "ID" = $1 RETURNING *', [id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: `Tidak ada data dengan ID: ${id}` });
-    }
-    res.json({ success: true, message: `Data Report Progres ID ${id} berhasil dihapus.`, deleted: formatReportProgresRow(result.rows[0]) });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Gagal menghapus data.', error: error.message });
+    await db.query('DROP TABLE IF EXISTS report_progres CASCADE;');
+    await ensureReportProgresTable();
+    res.json({
+      success: true,
+      message: 'Tabel report_progres berhasil di-reset dengan 16 kolom baru.',
+      columns: [
+        'ID',
+        'Student Name',
+        'Class Trainers',
+        'Date',
+        'Coach Feedback',
+        'Challenge',
+        'Speaking Project',
+        'Role 2',
+        'Role 3',
+        'Role 4',
+        'Life Project',
+        'House',
+        'Level',
+        'Latest Speaking Project',
+        'Last Time Speaking',
+        'Class'
+      ]
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal mereset skema tabel.', error: err.message });
   }
 });
 
