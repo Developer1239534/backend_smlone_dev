@@ -4,27 +4,24 @@ const db = require('../../db/neonClient');
 
 /**
  * ============================================================
- * ROUTE: Report Progres / Weekly Report (Multi-Row / Full History)
- * Mendukung 16.000+ data baris riwayat lengkap per ID Trainee.
- *
- * Kolom (16 Kolom Resmi):
- * 1.  row_id (BIGSERIAL Primary Key per baris)
- * 2.  ID (ID Trainee - bisa memiliki banyak baris riwayat)
- * 3.  Student Name
- * 4.  Class Trainers
- * 5.  Date
- * 6.  Coach Feedback
- * 7.  Challenge
- * 8.  Speaking Project
- * 9.  Role 2
- * 10. Role 3
- * 11. Role 4
- * 12. Life Project
- * 13. House
- * 14. Level
- * 15. Latest Speaking Project
- * 16. Last Time Speaking
- * 17. Class
+ * ROUTE: Report Progres / Weekly Report
+ * 16 Kolom Resmi:
+ * 1.  ID
+ * 2.  Student Name
+ * 3.  Class Trainers
+ * 4.  Date
+ * 5.  Coach Feedback
+ * 6.  Challenge
+ * 7.  Speaking Project
+ * 8.  Role 2
+ * 9.  Role 3
+ * 10. Role 4
+ * 11. Life Project
+ * 12. House
+ * 13. Level
+ * 14. Latest Speaking Project
+ * 15. Last Time Speaking
+ * 16. Class
  * ============================================================
  */
 
@@ -33,7 +30,6 @@ function formatReportProgresRow(row) {
   if (!row) return null;
   return {
     ...row,
-    row_id: row["row_id"],
     // ID
     ID: row["ID"],
     id: row["ID"],
@@ -95,13 +91,12 @@ function formatReportProgresRow(row) {
   };
 }
 
-// Helper to ensure report_progres table exists with multi-row history capability
+// Helper to ensure report_progres table exists with exact 16 columns (no row_id)
 async function ensureReportProgresTable() {
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS report_progres (
-        row_id                    BIGSERIAL PRIMARY KEY,
-        "ID"                      VARCHAR(255) NOT NULL,
+        "ID"                      VARCHAR(255),
         "Student Name"            VARCHAR(255),
         "Class Trainers"          TEXT,
         "Date"                    TEXT,
@@ -125,8 +120,9 @@ async function ensureReportProgresTable() {
       CREATE INDEX IF NOT EXISTS idx_report_progres_class ON report_progres ("Class");
     `);
 
-    // Pastikan semua kolom ada
+    // Tambah kolom jika belum ada
     const columnsToAdd = [
+      `ADD COLUMN IF NOT EXISTS "ID" VARCHAR(255)`,
       `ADD COLUMN IF NOT EXISTS "Student Name" VARCHAR(255)`,
       `ADD COLUMN IF NOT EXISTS "Class Trainers" TEXT`,
       `ADD COLUMN IF NOT EXISTS "Date" TEXT`,
@@ -146,8 +142,9 @@ async function ensureReportProgresTable() {
 
     await db.query(`ALTER TABLE report_progres ${columnsToAdd.join(', ')};`);
 
-    // Hapus kolom lama jika ada
+    // Hapus row_id dan kolom usang jika masih ada
     const obsoleteCols = [
+      'row_id',
       'Category',
       'Class Name',
       'Speaking Project to Next Level',
@@ -179,7 +176,6 @@ router.get('/', async (req, res) => {
     const { id, search, class_name, class: classFilter, house, level, date, limit, page } = req.query;
     let query = `
       SELECT 
-        row_id,
         "ID",
         "Student Name",
         "Class Trainers",
@@ -239,7 +235,7 @@ router.get('/', async (req, res) => {
       query += ' WHERE ' + conditions.join(' AND ');
     }
 
-    query += ' ORDER BY row_id DESC';
+    query += ' ORDER BY created_at DESC';
 
     if (limit) {
       const parsedLimit = parseInt(limit, 10) || 50;
@@ -274,7 +270,7 @@ router.get('/stream', (req, res) => {
 
   const send = async () => {
     try {
-      const result = await db.query('SELECT * FROM report_progres ORDER BY row_id DESC LIMIT 50');
+      const result = await db.query('SELECT * FROM report_progres ORDER BY created_at DESC LIMIT 50');
       res.write(`data: ${JSON.stringify(result.rows.map(formatReportProgresRow))}\n\n`);
     } catch (e) {}
   };
@@ -284,27 +280,27 @@ router.get('/stream', (req, res) => {
   req.on('close', () => clearInterval(interval));
 });
 
-// ALL /reset-schema - Reset skema tabel untuk multi-row history
+// ALL /reset-schema - Reset skema tabel 16 kolom
 router.all('/reset-schema', async (req, res) => {
   try {
     await db.query('DROP TABLE IF EXISTS report_progres CASCADE;');
     await ensureReportProgresTable();
     res.json({
       success: true,
-      message: 'Tabel report_progres berhasil di-reset dengan skema multi-row (mendukung 16k+ data).'
+      message: 'Tabel report_progres berhasil di-reset dengan 16 kolom resmi (tanpa row_id).'
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Gagal mereset skema tabel.', error: err.message });
   }
 });
 
-// 2. GET /:id - Detail report progres per ID Trainee (mengembalikan seluruh histori baris & latest)
+// 2. GET /:id - Detail report progres per ID Trainee (mengembalikan histori baris & latest)
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await ensureReportProgresTable();
     const result = await db.query(
-      'SELECT * FROM report_progres WHERE "ID" = $1 OR "ID" ILIKE $1 ORDER BY row_id DESC',
+      'SELECT * FROM report_progres WHERE "ID" = $1 OR "ID" ILIKE $1 ORDER BY created_at DESC',
       [id]
     );
 
@@ -340,10 +336,6 @@ router.post('/', async (req, res) => {
     const row = req.body;
 
     const id = String(row['ID'] ?? row['id'] ?? row['trainee_id'] ?? '').trim();
-    if (!id) {
-      return res.status(400).json({ success: false, message: 'Kolom "ID" wajib diisi.' });
-    }
-
     const studentName = String(row['Student Name'] ?? row['student_name'] ?? row['Name'] ?? row['name'] ?? row['Nama'] ?? '').trim();
     const classTrainers = String(row['Class Trainers'] ?? row['class_trainers'] ?? row['Trainer Homeroom'] ?? row['trainer_homeroom'] ?? '').trim();
     const date = String(row['Date'] ?? row['date'] ?? row['Tanggal'] ?? '').trim();
@@ -389,7 +381,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 4. POST /push - Bulk High-Speed Batch Insert dari Google Sheets / n8n (Mendukung 16k+ baris)
+// 4. POST /push - Bulk High-Speed Batch Insert dari Google Sheets / n8n (Menyimpan seluruh 16k+ baris tanpa batasan ID)
 router.post('/push', async (req, res) => {
   try {
     await ensureReportProgresTable();
@@ -419,11 +411,6 @@ router.post('/push', async (req, res) => {
         }
 
         const id = String(row['ID'] ?? row['id'] ?? row['trainee_id'] ?? '').trim();
-        if (!id) {
-          skippedCount++;
-          continue;
-        }
-
         const studentName = String(row['Student Name'] ?? row['student_name'] ?? row['Name'] ?? row['name'] ?? row['Nama'] ?? '').trim();
         const classTrainers = String(row['Class Trainers'] ?? row['class_trainers'] ?? row['Trainer Homeroom'] ?? row['trainer_homeroom'] ?? '').trim();
         const date = String(row['Date'] ?? row['date'] ?? row['Tanggal'] ?? '').trim();
@@ -439,6 +426,12 @@ router.post('/push', async (req, res) => {
         const latestSpeaking = String(row['Latest Speaking Project'] ?? row['latest_speaking_project'] ?? '').trim();
         const lastTimeSpeaking = String(row['Last Time Speaking'] ?? row['last_time_speaking'] ?? row['last_speaking_time'] ?? '').trim();
         const className = String(row['Class'] ?? row['class'] ?? row['Class Name'] ?? row['class_name'] ?? '').trim();
+
+        // Pastikan bukan baris yang benar-benar kosong total
+        if (!id && !studentName && !coachFeedback && !date && !className) {
+          skippedCount++;
+          continue;
+        }
 
         validRows.push([
           id, studentName, classTrainers, date, coachFeedback,
@@ -492,27 +485,21 @@ router.post('/push', async (req, res) => {
 // 5. DELETE /truncate - Kosongkan seluruh data tabel
 router.delete('/truncate', async (req, res) => {
   try {
-    await db.query('TRUNCATE TABLE report_progres RESTART IDENTITY;');
+    await db.query('TRUNCATE TABLE report_progres;');
     res.json({ success: true, message: 'Seluruh isi tabel report_progres berhasil dikosongkan.' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Gagal mengosongkan tabel.', error: error.message });
   }
 });
 
-// 6. DELETE /:id - Hapus data berdasarkan ID Trainee atau row_id
+// 6. DELETE /:id - Hapus data berdasarkan ID Trainee
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const isNum = /^\d+$/.test(id);
-    let result;
-    if (isNum) {
-      result = await db.query('DELETE FROM report_progres WHERE row_id = $1 OR "ID" = $2 RETURNING *', [parseInt(id, 10), id]);
-    } else {
-      result = await db.query('DELETE FROM report_progres WHERE "ID" = $1 RETURNING *', [id]);
-    }
+    const result = await db.query('DELETE FROM report_progres WHERE "ID" = $1 RETURNING *', [id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: `Tidak ada data dengan ID / row_id: ${id}` });
+      return res.status(404).json({ success: false, message: `Tidak ada data dengan ID: ${id}` });
     }
     res.json({ success: true, message: `Data (${result.rows.length} baris) berhasil dihapus.`, count: result.rows.length });
   } catch (error) {
