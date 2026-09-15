@@ -265,6 +265,38 @@ router.get('/stream', (req, res) => {
   req.on('close', () => clearInterval(interval));
 });
 
+// ALL /reset-schema - Hapus dan buat ulang tabel dengan 16 kolom baru
+router.all('/reset-schema', async (req, res) => {
+  try {
+    await db.query('DROP TABLE IF EXISTS report_progres CASCADE;');
+    await ensureReportProgresTable();
+    res.json({
+      success: true,
+      message: 'Tabel report_progres berhasil di-reset dengan 16 kolom baru.',
+      columns: [
+        'ID',
+        'Student Name',
+        'Class Trainers',
+        'Date',
+        'Coach Feedback',
+        'Challenge',
+        'Speaking Project',
+        'Role 2',
+        'Role 3',
+        'Role 4',
+        'Life Project',
+        'House',
+        'Level',
+        'Latest Speaking Project',
+        'Last Time Speaking',
+        'Class'
+      ]
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal mereset skema tabel.', error: err.message });
+  }
+});
+
 // 2. GET /:id - Detail report progres per ID Trainee
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
