@@ -137,6 +137,29 @@ async function ensureReportProgresTable() {
     ];
 
     await db.query(`ALTER TABLE report_progres ${columnsToAdd.join(', ')};`);
+
+    // Hapus kolom lama yang sudah tidak digunakan agar tabel bersih
+    const obsoleteCols = [
+      'Category',
+      'Class Name',
+      'Speaking Project to Next Level',
+      'Last Speaker date',
+      'Latest Life Project',
+      'Life Project to Next Level',
+      'Last Life Project Date',
+      'Last Real Stage',
+      'Win',
+      'Fav',
+      'Total Gold'
+    ];
+
+    for (const col of obsoleteCols) {
+      try {
+        await db.query(`ALTER TABLE report_progres DROP COLUMN IF EXISTS "${col}";`);
+      } catch (dropErr) {
+        // ignore if not present
+      }
+    }
   } catch (err) {
     console.error('[Report Progres] Ensure table error:', err.message);
   }
