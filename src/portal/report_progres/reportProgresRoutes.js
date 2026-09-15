@@ -4,49 +4,81 @@ const db = require('../../db/neonClient');
 
 /**
  * ============================================================
- * ROUTE: Report Progres (/api/report-progres & /api/report-trainee)
- * Kolom (12 Kolom Resmi):
- * ID, Student Name, Category, Class Name, Level,
- * Latest Speaking Project, Speaking Project to Next Level, Last Speaker date,
- * Latest Life Project, Life Project to Next Level, Last Life Project Date, Last Real Stage
+ * ROUTE: Report Progres / Weekly Report
+ * (/api/report-progres, /api/report-trainee, /api/weekly-report, /api/portal/report-progres)
+ *
+ * 19 Kolom Resmi:
+ * 1. Student Name
+ * 2. ID (Primary Key)
+ * 3. Class Trainers
+ * 4. Date
+ * 5. Coach Feedback
+ * 6. Challenge
+ * 7. Speaking Project
+ * 8. Role 2
+ * 9. Role 3
+ * 10. Role 4
+ * 11. Life Project
+ * 12. House
+ * 13. Level
+ * 14. Latest Speaking Project
+ * 15. Last Time Speaking
+ * 16. Class
+ * 17. Win
+ * 18. Fav
+ * 19. Total Gold
  * ============================================================
  */
 
-// Helper to ensure report_progres table exists with exact 12 columns
+// Helper to ensure report_progres table exists with exact 19 columns
 async function ensureReportProgresTable() {
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS report_progres (
-        "ID"                              VARCHAR(255) PRIMARY KEY,
         "Student Name"                    VARCHAR(255),
-        "Category"                        VARCHAR(100),
-        "Class Name"                      VARCHAR(100),
+        "ID"                              VARCHAR(255) PRIMARY KEY,
+        "Class Trainers"                  TEXT,
+        "Date"                            TEXT,
+        "Coach Feedback"                  TEXT,
+        "Challenge"                       TEXT,
+        "Speaking Project"                TEXT,
+        "Role 2"                          TEXT,
+        "Role 3"                          TEXT,
+        "Role 4"                          TEXT,
+        "Life Project"                    TEXT,
+        "House"                           VARCHAR(100),
         "Level"                           VARCHAR(100),
         "Latest Speaking Project"         TEXT,
-        "Speaking Project to Next Level"  VARCHAR(50),
-        "Last Speaker date"               TEXT,
-        "Latest Life Project"             TEXT,
-        "Life Project to Next Level"      VARCHAR(50),
-        "Last Life Project Date"          TEXT,
-        "Last Real Stage"                 TEXT,
+        "Last Time Speaking"              TEXT,
+        "Class"                           VARCHAR(100),
+        "Win"                             TEXT,
+        "Fav"                             TEXT,
+        "Total Gold"                      TEXT,
         created_at                        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at                        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
+      );
     `);
 
     // Pastikan semua kolom baru ditambahkan jika tabel sebelumnya sudah ada
     const columnsToAdd = [
       `ADD COLUMN IF NOT EXISTS "Student Name" VARCHAR(255)`,
-      `ADD COLUMN IF NOT EXISTS "Category" VARCHAR(100)`,
-      `ADD COLUMN IF NOT EXISTS "Class Name" VARCHAR(100)`,
+      `ADD COLUMN IF NOT EXISTS "Class Trainers" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Date" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Coach Feedback" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Challenge" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Speaking Project" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Role 2" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Role 3" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Role 4" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Life Project" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "House" VARCHAR(100)`,
       `ADD COLUMN IF NOT EXISTS "Level" VARCHAR(100)`,
       `ADD COLUMN IF NOT EXISTS "Latest Speaking Project" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Speaking Project to Next Level" VARCHAR(50)`,
-      `ADD COLUMN IF NOT EXISTS "Last Speaker date" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Latest Life Project" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Life Project to Next Level" VARCHAR(50)`,
-      `ADD COLUMN IF NOT EXISTS "Last Life Project Date" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Last Real Stage" TEXT`
+      `ADD COLUMN IF NOT EXISTS "Last Time Speaking" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Class" VARCHAR(100)`,
+      `ADD COLUMN IF NOT EXISTS "Win" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Fav" TEXT`,
+      `ADD COLUMN IF NOT EXISTS "Total Gold" TEXT`
     ];
 
     await db.query(`ALTER TABLE report_progres ${columnsToAdd.join(', ')};`);
@@ -55,26 +87,85 @@ async function ensureReportProgresTable() {
   }
 }
 
-// 1. GET / - Ambil semua data Report Progres (search & filter)
+// Format row untuk menghasilkan 19 kolom resmi dan alias kompatibilitas frontend
+function formatReportProgresRow(row) {
+  if (!row) return null;
+  return {
+    "Student Name": row["Student Name"] ?? row.student_name ?? row.name ?? row.Nama ?? '',
+    "ID": row["ID"] ?? row.id ?? row.trainee_id ?? '',
+    "Class Trainers": row["Class Trainers"] ?? row.class_trainers ?? row["Trainer Homeroom"] ?? '',
+    "Date": row["Date"] ?? row.date ?? row.Tanggal ?? '',
+    "Coach Feedback": row["Coach Feedback"] ?? row.coach_feedback ?? row.feedback ?? '',
+    "Challenge": row["Challenge"] ?? row.challenge ?? '',
+    "Speaking Project": row["Speaking Project"] ?? row.speaking_project ?? '',
+    "Role 2": row["Role 2"] ?? row.role_2 ?? row.role2 ?? '',
+    "Role 3": row["Role 3"] ?? row.role_3 ?? row.role3 ?? '',
+    "Role 4": row["Role 4"] ?? row.role_4 ?? row.role4 ?? '',
+    "Life Project": row["Life Project"] ?? row.life_project ?? '',
+    "House": row["House"] ?? row.house ?? row.HOUSE ?? '',
+    "Level": row["Level"] ?? row.level ?? row.LEVEL ?? '',
+    "Latest Speaking Project": row["Latest Speaking Project"] ?? row.latest_speaking_project ?? '',
+    "Last Time Speaking": row["Last Time Speaking"] ?? row.last_time_speaking ?? row.last_speaking_time ?? '',
+    "Class": row["Class"] ?? row.class ?? row["Class Name"] ?? row.class_name ?? '',
+    "Win": row["Win"] ?? row.win ?? '',
+    "Fav": row["Fav"] ?? row.fav ?? row.favorite ?? '',
+    "Total Gold": row["Total Gold"] ?? row.total_gold ?? row.gold_point ?? row.gold ?? '',
+
+    // Kompatibilitas alias untuk frontend
+    id: row["ID"] ?? row.id ?? '',
+    name: row["Student Name"] ?? row.student_name ?? row.name ?? '',
+    Nama: row["Student Name"] ?? row.student_name ?? row.name ?? '',
+    student_name: row["Student Name"] ?? row.student_name ?? row.name ?? '',
+    class: row["Class"] ?? row.class ?? '',
+    "Class Name": row["Class"] ?? row.class ?? '',
+    class_name: row["Class"] ?? row.class ?? '',
+    "Trainer Homeroom": row["Class Trainers"] ?? row.class_trainers ?? '',
+    class_trainers: row["Class Trainers"] ?? row.class_trainers ?? '',
+    date: row["Date"] ?? row.date ?? '',
+    coach_feedback: row["Coach Feedback"] ?? row.coach_feedback ?? '',
+    challenge: row["Challenge"] ?? row.challenge ?? '',
+    speaking_project: row["Speaking Project"] ?? row.speaking_project ?? '',
+    role_2: row["Role 2"] ?? row.role_2 ?? '',
+    role_3: row["Role 3"] ?? row.role_3 ?? '',
+    role_4: row["Role 4"] ?? row.role_4 ?? '',
+    life_project: row["Life Project"] ?? row.life_project ?? '',
+    house: row["House"] ?? row.house ?? '',
+    level: row["Level"] ?? row.level ?? '',
+    latest_speaking_project: row["Latest Speaking Project"] ?? row.latest_speaking_project ?? '',
+    last_time_speaking: row["Last Time Speaking"] ?? row.last_time_speaking ?? '',
+    win: row["Win"] ?? row.win ?? '',
+    fav: row["Fav"] ?? row.fav ?? '',
+    total_gold: row["Total Gold"] ?? row.total_gold ?? ''
+  };
+}
+
+// 1. GET / - Ambil semua data Report Progres (search & filter & pagination)
 router.get('/', async (req, res) => {
   try {
     await ensureReportProgresTable();
 
-    const { search, category, class_name, level, limit, page } = req.query;
+    const { search, class: filterClass, class_name, level, house, limit, page } = req.query;
     let query = `
       SELECT 
-        "ID",
         "Student Name",
-        "Category",
-        "Class Name",
+        "ID",
+        "Class Trainers",
+        "Date",
+        "Coach Feedback",
+        "Challenge",
+        "Speaking Project",
+        "Role 2",
+        "Role 3",
+        "Role 4",
+        "Life Project",
+        "House",
         "Level",
         "Latest Speaking Project",
-        "Speaking Project to Next Level",
-        "Last Speaker date",
-        "Latest Life Project",
-        "Life Project to Next Level",
-        "Last Life Project Date",
-        "Last Real Stage"
+        "Last Time Speaking",
+        "Class",
+        "Win",
+        "Fav",
+        "Total Gold"
       FROM report_progres
     `;
     let conditions = [];
@@ -83,22 +174,23 @@ router.get('/', async (req, res) => {
     if (search) {
       params.push(`%${search.trim()}%`);
       const pIdx = `$${params.length}`;
-      conditions.push(`("ID" ILIKE ${pIdx} OR "Student Name" ILIKE ${pIdx} OR "Class Name" ILIKE ${pIdx})`);
+      conditions.push(`("ID" ILIKE ${pIdx} OR "Student Name" ILIKE ${pIdx} OR "Class" ILIKE ${pIdx})`);
     }
 
-    if (category) {
-      params.push(category.trim());
-      conditions.push(`"Category" ILIKE $${params.length}`);
-    }
-
-    if (class_name) {
-      params.push(class_name.trim());
-      conditions.push(`"Class Name" ILIKE $${params.length}`);
+    const targetClass = filterClass || class_name;
+    if (targetClass) {
+      params.push(targetClass.trim());
+      conditions.push(`"Class" ILIKE $${params.length}`);
     }
 
     if (level) {
       params.push(level.trim());
       conditions.push(`"Level" ILIKE $${params.length}`);
+    }
+
+    if (house) {
+      params.push(house.trim());
+      conditions.push(`"House" ILIKE $${params.length}`);
     }
 
     if (conditions.length > 0) {
@@ -116,13 +208,14 @@ router.get('/', async (req, res) => {
     }
 
     const result = await db.query(query, params);
+    const formattedRows = result.rows.map(formatReportProgresRow);
 
     res.json({
       success: true,
       message: 'Berhasil mengambil data Report Progres.',
-      count: result.rows.length,
-      total: result.rows.length,
-      data: result.rows
+      count: formattedRows.length,
+      total: formattedRows.length,
+      data: formattedRows
     });
   } catch (err) {
     console.error('[Report Progres] GET error:', err.message);
@@ -141,7 +234,7 @@ router.get('/stream', (req, res) => {
   const send = async () => {
     try {
       const result = await db.query('SELECT * FROM report_progres ORDER BY "ID" ASC LIMIT 100');
-      res.write(`data: ${JSON.stringify(result.rows)}\n\n`);
+      res.write(`data: ${JSON.stringify(result.rows.map(formatReportProgresRow))}\n\n`);
     } catch (e) {}
   };
 
@@ -161,35 +254,11 @@ router.get('/:id', async (req, res) => {
     );
 
     if (result.rows.length > 0) {
-      const row = result.rows[0];
+      const formatted = formatReportProgresRow(result.rows[0]);
       return res.json({
         success: true,
-        data: row,
-        // Kompatibilitas frontend camelCase & lowercase
-        id: row["ID"],
-        ID: row["ID"],
-        student_name: row["Student Name"],
-        "Student Name": row["Student Name"],
-        category: row["Category"],
-        Category: row["Category"],
-        class_name: row["Class Name"],
-        "Class Name": row["Class Name"],
-        level: row["Level"],
-        Level: row["Level"],
-        latest_speaking_project: row["Latest Speaking Project"],
-        "Latest Speaking Project": row["Latest Speaking Project"],
-        speaking_project_to_next_level: row["Speaking Project to Next Level"],
-        "Speaking Project to Next Level": row["Speaking Project to Next Level"],
-        last_speaker_date: row["Last Speaker date"],
-        "Last Speaker date": row["Last Speaker date"],
-        latest_life_project: row["Latest Life Project"],
-        "Latest Life Project": row["Latest Life Project"],
-        life_project_to_next_level: row["Life Project to Next Level"],
-        "Life Project to Next Level": row["Life Project to Next Level"],
-        last_life_project_date: row["Last Life Project Date"],
-        "Last Life Project Date": row["Last Life Project Date"],
-        last_real_stage: row["Last Real Stage"],
-        "Last Real Stage": row["Last Real Stage"]
+        data: formatted,
+        ...formatted
       });
     }
 
@@ -203,7 +272,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3. POST / - Input / Upsert single report progres (12 kolom)
+// 3. POST / - Input / Upsert single report progres (19 kolom)
 router.post('/', async (req, res) => {
   try {
     await ensureReportProgresTable();
@@ -214,50 +283,68 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Kolom "ID" wajib diisi.' });
     }
 
-    const studentName = String(row['Student Name'] ?? row['student_name'] ?? row['Name'] ?? row['name'] ?? '').trim();
-    const category = String(row['Category'] ?? row['category'] ?? '').trim();
-    const className = String(row['Class Name'] ?? row['class_name'] ?? row['Class'] ?? row['class'] ?? '').trim();
-    const level = String(row['Level'] ?? row['level'] ?? '').trim();
+    const studentName = String(row['Student Name'] ?? row['student_name'] ?? row['Name'] ?? row['name'] ?? row['Nama'] ?? '').trim();
+    const classTrainers = String(row['Class Trainers'] ?? row['class_trainers'] ?? row['Trainer Homeroom'] ?? '').trim();
+    const date = String(row['Date'] ?? row['date'] ?? row['Tanggal'] ?? '').trim();
+    const coachFeedback = String(row['Coach Feedback'] ?? row['coach_feedback'] ?? row['feedback'] ?? '').trim();
+    const challenge = String(row['Challenge'] ?? row['challenge'] ?? '').trim();
+    const speakingProject = String(row['Speaking Project'] ?? row['speaking_project'] ?? '').trim();
+    const role2 = String(row['Role 2'] ?? row['role_2'] ?? row['role2'] ?? '').trim();
+    const role3 = String(row['Role 3'] ?? row['role_3'] ?? row['role3'] ?? '').trim();
+    const role4 = String(row['Role 4'] ?? row['role_4'] ?? row['role4'] ?? '').trim();
+    const lifeProject = String(row['Life Project'] ?? row['life_project'] ?? '').trim();
+    const house = String(row['House'] ?? row['house'] ?? row['HOUSE'] ?? '').trim();
+    const level = String(row['Level'] ?? row['level'] ?? row['LEVEL'] ?? '').trim();
     const latestSpeaking = String(row['Latest Speaking Project'] ?? row['latest_speaking_project'] ?? '').trim();
-    const speakingToNext = String(row['Speaking Project to Next Level'] ?? row['speaking_project_to_next_level'] ?? '').trim();
-    const lastSpeakerDate = String(row['Last Speaker date'] ?? row['last_speaker_date'] ?? '').trim();
-    const latestLife = String(row['Latest Life Project'] ?? row['latest_life_project'] ?? '').trim();
-    const lifeToNext = String(row['Life Project to Next Level'] ?? row['life_project_to_next_level'] ?? '').trim();
-    const lastLifeDate = String(row['Last Life Project Date'] ?? row['last_life_project_date'] ?? '').trim();
-    const lastRealStage = String(row['Last Real Stage'] ?? row['last_real_stage'] ?? '').trim();
+    const lastTimeSpeaking = String(row['Last Time Speaking'] ?? row['last_time_speaking'] ?? row['last_speaking_time'] ?? '').trim();
+    const className = String(row['Class'] ?? row['class'] ?? row['Class Name'] ?? row['class_name'] ?? '').trim();
+    const win = String(row['Win'] ?? row['win'] ?? '').trim();
+    const fav = String(row['Fav'] ?? row['fav'] ?? row['favorite'] ?? '').trim();
+    const totalGold = String(row['Total Gold'] ?? row['total_gold'] ?? row['gold_point'] ?? row['gold'] ?? '').trim();
 
     const insertRes = await db.query(`
       INSERT INTO report_progres (
-        "ID", "Student Name", "Category", "Class Name", "Level",
-        "Latest Speaking Project", "Speaking Project to Next Level", "Last Speaker date",
-        "Latest Life Project", "Life Project to Next Level", "Last Life Project Date",
-        "Last Real Stage", "updated_at"
+        "Student Name", "ID", "Class Trainers", "Date", "Coach Feedback",
+        "Challenge", "Speaking Project", "Role 2", "Role 3", "Role 4",
+        "Life Project", "House", "Level", "Latest Speaking Project",
+        "Last Time Speaking", "Class", "Win", "Fav", "Total Gold",
+        "updated_at"
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, CURRENT_TIMESTAMP)
       ON CONFLICT ("ID") DO UPDATE SET
-        "Student Name"                    = EXCLUDED."Student Name",
-        "Category"                        = EXCLUDED."Category",
-        "Class Name"                      = EXCLUDED."Class Name",
-        "Level"                           = EXCLUDED."Level",
-        "Latest Speaking Project"         = EXCLUDED."Latest Speaking Project",
-        "Speaking Project to Next Level"  = EXCLUDED."Speaking Project to Next Level",
-        "Last Speaker date"               = EXCLUDED."Last Speaker date",
-        "Latest Life Project"             = EXCLUDED."Latest Life Project",
-        "Life Project to Next Level"      = EXCLUDED."Life Project to Next Level",
-        "Last Life Project Date"          = EXCLUDED."Last Life Project Date",
-        "Last Real Stage"                 = EXCLUDED."Last Real Stage",
-        "updated_at"                      = CURRENT_TIMESTAMP
+        "Student Name"            = EXCLUDED."Student Name",
+        "Class Trainers"          = EXCLUDED."Class Trainers",
+        "Date"                    = EXCLUDED."Date",
+        "Coach Feedback"          = EXCLUDED."Coach Feedback",
+        "Challenge"               = EXCLUDED."Challenge",
+        "Speaking Project"        = EXCLUDED."Speaking Project",
+        "Role 2"                  = EXCLUDED."Role 2",
+        "Role 3"                  = EXCLUDED."Role 3",
+        "Role 4"                  = EXCLUDED."Role 4",
+        "Life Project"            = EXCLUDED."Life Project",
+        "House"                   = EXCLUDED."House",
+        "Level"                   = EXCLUDED."Level",
+        "Latest Speaking Project" = EXCLUDED."Latest Speaking Project",
+        "Last Time Speaking"      = EXCLUDED."Last Time Speaking",
+        "Class"                   = EXCLUDED."Class",
+        "Win"                     = EXCLUDED."Win",
+        "Fav"                     = EXCLUDED."Fav",
+        "Total Gold"              = EXCLUDED."Total Gold",
+        "updated_at"              = CURRENT_TIMESTAMP
       RETURNING *;
     `, [
-      id, studentName, category, className, level,
-      latestSpeaking, speakingToNext, lastSpeakerDate,
-      latestLife, lifeToNext, lastLifeDate, lastRealStage
+      studentName, id, classTrainers, date, coachFeedback,
+      challenge, speakingProject, role2, role3, role4,
+      lifeProject, house, level, latestSpeaking,
+      lastTimeSpeaking, className, win, fav, totalGold
     ]);
+
+    const formatted = formatReportProgresRow(insertRes.rows[0]);
 
     res.status(201).json({
       success: true,
       message: 'Data Report Progres berhasil disimpan/diperbarui.',
-      data: insertRes.rows[0]
+      data: formatted
     });
   } catch (err) {
     console.error('[Report Progres] POST error:', err.message);
@@ -265,7 +352,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 4. POST /push - Bulk Upsert dari Google Sheets / n8n (12 kolom)
+// 4. POST /push - Bulk Upsert dari Google Sheets / n8n (19 kolom)
 router.post('/push', async (req, res) => {
   try {
     await ensureReportProgresTable();
@@ -296,44 +383,60 @@ router.post('/push', async (req, res) => {
         continue;
       }
 
-      const studentName = String(row['Student Name'] ?? row['student_name'] ?? row['Name'] ?? row['name'] ?? '').trim();
-      const category = String(row['Category'] ?? row['category'] ?? '').trim();
-      const className = String(row['Class Name'] ?? row['class_name'] ?? row['Class'] ?? row['class'] ?? '').trim();
-      const level = String(row['Level'] ?? row['level'] ?? '').trim();
+      const studentName = String(row['Student Name'] ?? row['student_name'] ?? row['Name'] ?? row['name'] ?? row['Nama'] ?? '').trim();
+      const classTrainers = String(row['Class Trainers'] ?? row['class_trainers'] ?? row['Trainer Homeroom'] ?? '').trim();
+      const date = String(row['Date'] ?? row['date'] ?? row['Tanggal'] ?? '').trim();
+      const coachFeedback = String(row['Coach Feedback'] ?? row['coach_feedback'] ?? row['feedback'] ?? '').trim();
+      const challenge = String(row['Challenge'] ?? row['challenge'] ?? '').trim();
+      const speakingProject = String(row['Speaking Project'] ?? row['speaking_project'] ?? '').trim();
+      const role2 = String(row['Role 2'] ?? row['role_2'] ?? row['role2'] ?? '').trim();
+      const role3 = String(row['Role 3'] ?? row['role_3'] ?? row['role3'] ?? '').trim();
+      const role4 = String(row['Role 4'] ?? row['role_4'] ?? row['role4'] ?? '').trim();
+      const lifeProject = String(row['Life Project'] ?? row['life_project'] ?? '').trim();
+      const house = String(row['House'] ?? row['house'] ?? row['HOUSE'] ?? '').trim();
+      const level = String(row['Level'] ?? row['level'] ?? row['LEVEL'] ?? '').trim();
       const latestSpeaking = String(row['Latest Speaking Project'] ?? row['latest_speaking_project'] ?? '').trim();
-      const speakingToNext = String(row['Speaking Project to Next Level'] ?? row['speaking_project_to_next_level'] ?? '').trim();
-      const lastSpeakerDate = String(row['Last Speaker date'] ?? row['last_speaker_date'] ?? '').trim();
-      const latestLife = String(row['Latest Life Project'] ?? row['latest_life_project'] ?? '').trim();
-      const lifeToNext = String(row['Life Project to Next Level'] ?? row['life_project_to_next_level'] ?? '').trim();
-      const lastLifeDate = String(row['Last Life Project Date'] ?? row['last_life_project_date'] ?? '').trim();
-      const lastRealStage = String(row['Last Real Stage'] ?? row['last_real_stage'] ?? '').trim();
+      const lastTimeSpeaking = String(row['Last Time Speaking'] ?? row['last_time_speaking'] ?? row['last_speaking_time'] ?? '').trim();
+      const className = String(row['Class'] ?? row['class'] ?? row['Class Name'] ?? row['class_name'] ?? '').trim();
+      const win = String(row['Win'] ?? row['win'] ?? '').trim();
+      const fav = String(row['Fav'] ?? row['fav'] ?? row['favorite'] ?? '').trim();
+      const totalGold = String(row['Total Gold'] ?? row['total_gold'] ?? row['gold_point'] ?? row['gold'] ?? '').trim();
 
       try {
         await db.query(`
           INSERT INTO report_progres (
-            "ID", "Student Name", "Category", "Class Name", "Level",
-            "Latest Speaking Project", "Speaking Project to Next Level", "Last Speaker date",
-            "Latest Life Project", "Life Project to Next Level", "Last Life Project Date",
-            "Last Real Stage", "updated_at"
+            "Student Name", "ID", "Class Trainers", "Date", "Coach Feedback",
+            "Challenge", "Speaking Project", "Role 2", "Role 3", "Role 4",
+            "Life Project", "House", "Level", "Latest Speaking Project",
+            "Last Time Speaking", "Class", "Win", "Fav", "Total Gold",
+            "updated_at"
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, CURRENT_TIMESTAMP)
           ON CONFLICT ("ID") DO UPDATE SET
-            "Student Name"                    = EXCLUDED."Student Name",
-            "Category"                        = EXCLUDED."Category",
-            "Class Name"                      = EXCLUDED."Class Name",
-            "Level"                           = EXCLUDED."Level",
-            "Latest Speaking Project"         = EXCLUDED."Latest Speaking Project",
-            "Speaking Project to Next Level"  = EXCLUDED."Speaking Project to Next Level",
-            "Last Speaker date"               = EXCLUDED."Last Speaker date",
-            "Latest Life Project"             = EXCLUDED."Latest Life Project",
-            "Life Project to Next Level"      = EXCLUDED."Life Project to Next Level",
-            "Last Life Project Date"          = EXCLUDED."Last Life Project Date",
-            "Last Real Stage"                 = EXCLUDED."Last Real Stage",
-            "updated_at"                      = CURRENT_TIMESTAMP;
+            "Student Name"            = EXCLUDED."Student Name",
+            "Class Trainers"          = EXCLUDED."Class Trainers",
+            "Date"                    = EXCLUDED."Date",
+            "Coach Feedback"          = EXCLUDED."Coach Feedback",
+            "Challenge"               = EXCLUDED."Challenge",
+            "Speaking Project"        = EXCLUDED."Speaking Project",
+            "Role 2"                  = EXCLUDED."Role 2",
+            "Role 3"                  = EXCLUDED."Role 3",
+            "Role 4"                  = EXCLUDED."Role 4",
+            "Life Project"            = EXCLUDED."Life Project",
+            "House"                   = EXCLUDED."House",
+            "Level"                   = EXCLUDED."Level",
+            "Latest Speaking Project" = EXCLUDED."Latest Speaking Project",
+            "Last Time Speaking"      = EXCLUDED."Last Time Speaking",
+            "Class"                   = EXCLUDED."Class",
+            "Win"                     = EXCLUDED."Win",
+            "Fav"                     = EXCLUDED."Fav",
+            "Total Gold"              = EXCLUDED."Total Gold",
+            "updated_at"              = CURRENT_TIMESTAMP;
         `, [
-          id, studentName, category, className, level,
-          latestSpeaking, speakingToNext, lastSpeakerDate,
-          latestLife, lifeToNext, lastLifeDate, lastRealStage
+          studentName, id, classTrainers, date, coachFeedback,
+          challenge, speakingProject, role2, role3, role4,
+          lifeProject, house, level, latestSpeaking,
+          lastTimeSpeaking, className, win, fav, totalGold
         ]);
         insertedCount++;
       } catch (rowErr) {
@@ -366,44 +469,59 @@ router.put('/:id', async (req, res) => {
     const existing = checkRes.rows[0];
     const b = req.body;
 
-    const updatedName = b["Student Name"] ?? b["student_name"] ?? existing["Student Name"];
-    const updatedCategory = b["Category"] ?? b["category"] ?? existing["Category"];
-    const updatedClass = b["Class Name"] ?? b["class_name"] ?? existing["Class Name"];
-    const updatedLevel = b["Level"] ?? b["level"] ?? existing["Level"];
+    const updatedStudentName = b["Student Name"] ?? b["student_name"] ?? b["Name"] ?? b["name"] ?? b["Nama"] ?? existing["Student Name"];
+    const updatedClassTrainers = b["Class Trainers"] ?? b["class_trainers"] ?? b["Trainer Homeroom"] ?? existing["Class Trainers"];
+    const updatedDate = b["Date"] ?? b["date"] ?? b["Tanggal"] ?? existing["Date"];
+    const updatedCoachFeedback = b["Coach Feedback"] ?? b["coach_feedback"] ?? b["feedback"] ?? existing["Coach Feedback"];
+    const updatedChallenge = b["Challenge"] ?? b["challenge"] ?? existing["Challenge"];
+    const updatedSpeakingProject = b["Speaking Project"] ?? b["speaking_project"] ?? existing["Speaking Project"];
+    const updatedRole2 = b["Role 2"] ?? b["role_2"] ?? b["role2"] ?? existing["Role 2"];
+    const updatedRole3 = b["Role 3"] ?? b["role_3"] ?? b["role3"] ?? existing["Role 3"];
+    const updatedRole4 = b["Role 4"] ?? b["role_4"] ?? b["role4"] ?? existing["Role 4"];
+    const updatedLifeProject = b["Life Project"] ?? b["life_project"] ?? existing["Life Project"];
+    const updatedHouse = b["House"] ?? b["house"] ?? b["HOUSE"] ?? existing["House"];
+    const updatedLevel = b["Level"] ?? b["level"] ?? b["LEVEL"] ?? existing["Level"];
     const updatedLatestSpeaking = b["Latest Speaking Project"] ?? b["latest_speaking_project"] ?? existing["Latest Speaking Project"];
-    const updatedSpeakingToNext = b["Speaking Project to Next Level"] ?? b["speaking_project_to_next_level"] ?? existing["Speaking Project to Next Level"];
-    const updatedLastSpeaker = b["Last Speaker date"] ?? b["last_speaker_date"] ?? existing["Last Speaker date"];
-    const updatedLatestLife = b["Latest Life Project"] ?? b["latest_life_project"] ?? existing["Latest Life Project"];
-    const updatedLifeToNext = b["Life Project to Next Level"] ?? b["life_project_to_next_level"] ?? existing["Life Project to Next Level"];
-    const updatedLastLife = b["Last Life Project Date"] ?? b["last_life_project_date"] ?? existing["Last Life Project Date"];
-    const updatedLastRealStage = b["Last Real Stage"] ?? b["last_real_stage"] ?? existing["Last Real Stage"];
+    const updatedLastTimeSpeaking = b["Last Time Speaking"] ?? b["last_time_speaking"] ?? b["last_speaking_time"] ?? existing["Last Time Speaking"];
+    const updatedClass = b["Class"] ?? b["class"] ?? b["Class Name"] ?? b["class_name"] ?? existing["Class"];
+    const updatedWin = b["Win"] ?? b["win"] ?? existing["Win"];
+    const updatedFav = b["Fav"] ?? b["fav"] ?? b["favorite"] ?? existing["Fav"];
+    const updatedTotalGold = b["Total Gold"] ?? b["total_gold"] ?? b["gold_point"] ?? b["gold"] ?? existing["Total Gold"];
 
     const updateRes = await db.query(`
       UPDATE report_progres
-      SET "Student Name"                    = $2,
-          "Category"                        = $3,
-          "Class Name"                      = $4,
-          "Level"                           = $5,
-          "Latest Speaking Project"         = $6,
-          "Speaking Project to Next Level"  = $7,
-          "Last Speaker date"               = $8,
-          "Latest Life Project"             = $9,
-          "Life Project to Next Level"      = $10,
-          "Last Life Project Date"          = $11,
-          "Last Real Stage"                 = $12,
-          "updated_at"                      = CURRENT_TIMESTAMP
+      SET "Student Name"            = $2,
+          "Class Trainers"          = $3,
+          "Date"                    = $4,
+          "Coach Feedback"          = $5,
+          "Challenge"               = $6,
+          "Speaking Project"        = $7,
+          "Role 2"                  = $8,
+          "Role 3"                  = $9,
+          "Role 4"                  = $10,
+          "Life Project"            = $11,
+          "House"                   = $12,
+          "Level"                   = $13,
+          "Latest Speaking Project" = $14,
+          "Last Time Speaking"      = $15,
+          "Class"                   = $16,
+          "Win"                     = $17,
+          "Fav"                     = $18,
+          "Total Gold"              = $19,
+          "updated_at"              = CURRENT_TIMESTAMP
       WHERE "ID" = $1
       RETURNING *;
     `, [
-      id, updatedName, updatedCategory, updatedClass, updatedLevel,
-      updatedLatestSpeaking, updatedSpeakingToNext, updatedLastSpeaker,
-      updatedLatestLife, updatedLifeToNext, updatedLastLife, updatedLastRealStage
+      id, updatedStudentName, updatedClassTrainers, updatedDate, updatedCoachFeedback,
+      updatedChallenge, updatedSpeakingProject, updatedRole2, updatedRole3, updatedRole4,
+      updatedLifeProject, updatedHouse, updatedLevel, updatedLatestSpeaking,
+      updatedLastTimeSpeaking, updatedClass, updatedWin, updatedFav, updatedTotalGold
     ]);
 
     res.json({
       success: true,
       message: `Data ID: ${id} berhasil diperbarui.`,
-      data: updateRes.rows[0]
+      data: formatReportProgresRow(updateRes.rows[0])
     });
   } catch (err) {
     console.error('[Report Progres] PUT :id error:', err.message);
@@ -429,7 +547,7 @@ router.delete('/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Tidak ada data dengan ID: ${id}` });
     }
-    res.json({ success: true, message: `Data Report Progres ID ${id} berhasil dihapus.`, deleted: result.rows[0] });
+    res.json({ success: true, message: `Data Report Progres ID ${id} berhasil dihapus.`, deleted: formatReportProgresRow(result.rows[0]) });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Gagal menghapus data.', error: error.message });
   }
