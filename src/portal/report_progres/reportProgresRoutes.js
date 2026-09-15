@@ -5,18 +5,16 @@ const db = require('../../db/neonClient');
 /**
  * ============================================================
  * ROUTE: Report Progres / Weekly Report
- * (/api/report-progres, /api/report-trainee, /api/weekly-report, /api/portal/report-progres)
- *
- * 19 Kolom Resmi:
- * 1. Student Name
- * 2. ID (Primary Key)
- * 3. Class Trainers
- * 4. Date
- * 5. Coach Feedback
- * 6. Challenge
- * 7. Speaking Project
- * 8. Role 2
- * 9. Role 3
+ * 16 Kolom Resmi:
+ * 1.  Student Name
+ * 2.  ID (Primary Key)
+ * 3.  Class Trainers
+ * 4.  Date
+ * 5.  Coach Feedback
+ * 6.  Challenge
+ * 7.  Speaking Project
+ * 8.  Role 2
+ * 9.  Role 3
  * 10. Role 4
  * 11. Life Project
  * 12. House
@@ -24,39 +22,99 @@ const db = require('../../db/neonClient');
  * 14. Latest Speaking Project
  * 15. Last Time Speaking
  * 16. Class
- * 17. Win
- * 18. Fav
- * 19. Total Gold
  * ============================================================
  */
 
-// Helper to ensure report_progres table exists with exact 19 columns
+// Helper to format output with fallback keys for frontend & external system compatibility
+function formatReportProgresRow(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    // ID
+    ID: row["ID"],
+    id: row["ID"],
+    // Student Name
+    "Student Name": row["Student Name"],
+    student_name: row["Student Name"],
+    name: row["Student Name"],
+    Nama: row["Student Name"],
+    // Class Trainers
+    "Class Trainers": row["Class Trainers"],
+    class_trainers: row["Class Trainers"],
+    "Trainer Homeroom": row["Class Trainers"],
+    trainer_homeroom: row["Class Trainers"],
+    // Date
+    Date: row["Date"],
+    date: row["Date"],
+    Tanggal: row["Date"],
+    // Coach Feedback
+    "Coach Feedback": row["Coach Feedback"],
+    coach_feedback: row["Coach Feedback"],
+    feedback: row["Coach Feedback"],
+    // Challenge
+    Challenge: row["Challenge"],
+    challenge: row["Challenge"],
+    // Speaking Project
+    "Speaking Project": row["Speaking Project"],
+    speaking_project: row["Speaking Project"],
+    // Role 2, 3, 4
+    "Role 2": row["Role 2"],
+    role_2: row["Role 2"],
+    role2: row["Role 2"],
+    "Role 3": row["Role 3"],
+    role_3: row["Role 3"],
+    role3: row["Role 3"],
+    "Role 4": row["Role 4"],
+    role_4: row["Role 4"],
+    role4: row["Role 4"],
+    // Life Project
+    "Life Project": row["Life Project"],
+    life_project: row["Life Project"],
+    // House
+    House: row["House"],
+    house: row["House"],
+    // Level
+    Level: row["Level"],
+    level: row["Level"],
+    // Latest Speaking Project
+    "Latest Speaking Project": row["Latest Speaking Project"],
+    latest_speaking_project: row["Latest Speaking Project"],
+    // Last Time Speaking
+    "Last Time Speaking": row["Last Time Speaking"],
+    last_time_speaking: row["Last Time Speaking"],
+    last_speaking_time: row["Last Time Speaking"],
+    // Class
+    Class: row["Class"],
+    class: row["Class"],
+    "Class Name": row["Class"],
+    class_name: row["Class"]
+  };
+}
+
+// Helper to ensure report_progres table exists with exact 16 columns
 async function ensureReportProgresTable() {
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS report_progres (
-        "Student Name"                    VARCHAR(255),
-        "ID"                              VARCHAR(255) PRIMARY KEY,
-        "Class Trainers"                  TEXT,
-        "Date"                            TEXT,
-        "Coach Feedback"                  TEXT,
-        "Challenge"                       TEXT,
-        "Speaking Project"                TEXT,
-        "Role 2"                          TEXT,
-        "Role 3"                          TEXT,
-        "Role 4"                          TEXT,
-        "Life Project"                    TEXT,
-        "House"                           VARCHAR(100),
-        "Level"                           VARCHAR(100),
-        "Latest Speaking Project"         TEXT,
-        "Last Time Speaking"              TEXT,
-        "Class"                           VARCHAR(100),
-        "Win"                             TEXT,
-        "Fav"                             TEXT,
-        "Total Gold"                      TEXT,
-        created_at                        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at                        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+        "ID"                      VARCHAR(255) PRIMARY KEY,
+        "Student Name"            VARCHAR(255),
+        "Class Trainers"          TEXT,
+        "Date"                    TEXT,
+        "Coach Feedback"          TEXT,
+        "Challenge"               TEXT,
+        "Speaking Project"        TEXT,
+        "Role 2"                  TEXT,
+        "Role 3"                  TEXT,
+        "Role 4"                  TEXT,
+        "Life Project"            TEXT,
+        "House"                   VARCHAR(100),
+        "Level"                   VARCHAR(100),
+        "Latest Speaking Project" TEXT,
+        "Last Time Speaking"      TEXT,
+        "Class"                   VARCHAR(100),
+        created_at                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at                TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
     `);
 
     // Pastikan semua kolom baru ditambahkan jika tabel sebelumnya sudah ada
@@ -75,10 +133,7 @@ async function ensureReportProgresTable() {
       `ADD COLUMN IF NOT EXISTS "Level" VARCHAR(100)`,
       `ADD COLUMN IF NOT EXISTS "Latest Speaking Project" TEXT`,
       `ADD COLUMN IF NOT EXISTS "Last Time Speaking" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Class" VARCHAR(100)`,
-      `ADD COLUMN IF NOT EXISTS "Win" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Fav" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Total Gold" TEXT`
+      `ADD COLUMN IF NOT EXISTS "Class" VARCHAR(100)`
     ];
 
     await db.query(`ALTER TABLE report_progres ${columnsToAdd.join(', ')};`);
@@ -87,68 +142,16 @@ async function ensureReportProgresTable() {
   }
 }
 
-// Format row untuk menghasilkan 19 kolom resmi dan alias kompatibilitas frontend
-function formatReportProgresRow(row) {
-  if (!row) return null;
-  return {
-    "Student Name": row["Student Name"] ?? row.student_name ?? row.name ?? row.Nama ?? '',
-    "ID": row["ID"] ?? row.id ?? row.trainee_id ?? '',
-    "Class Trainers": row["Class Trainers"] ?? row.class_trainers ?? row["Trainer Homeroom"] ?? '',
-    "Date": row["Date"] ?? row.date ?? row.Tanggal ?? '',
-    "Coach Feedback": row["Coach Feedback"] ?? row.coach_feedback ?? row.feedback ?? '',
-    "Challenge": row["Challenge"] ?? row.challenge ?? '',
-    "Speaking Project": row["Speaking Project"] ?? row.speaking_project ?? '',
-    "Role 2": row["Role 2"] ?? row.role_2 ?? row.role2 ?? '',
-    "Role 3": row["Role 3"] ?? row.role_3 ?? row.role3 ?? '',
-    "Role 4": row["Role 4"] ?? row.role_4 ?? row.role4 ?? '',
-    "Life Project": row["Life Project"] ?? row.life_project ?? '',
-    "House": row["House"] ?? row.house ?? row.HOUSE ?? '',
-    "Level": row["Level"] ?? row.level ?? row.LEVEL ?? '',
-    "Latest Speaking Project": row["Latest Speaking Project"] ?? row.latest_speaking_project ?? '',
-    "Last Time Speaking": row["Last Time Speaking"] ?? row.last_time_speaking ?? row.last_speaking_time ?? '',
-    "Class": row["Class"] ?? row.class ?? row["Class Name"] ?? row.class_name ?? '',
-    "Win": row["Win"] ?? row.win ?? '',
-    "Fav": row["Fav"] ?? row.fav ?? row.favorite ?? '',
-    "Total Gold": row["Total Gold"] ?? row.total_gold ?? row.gold_point ?? row.gold ?? '',
-
-    // Kompatibilitas alias untuk frontend
-    id: row["ID"] ?? row.id ?? '',
-    name: row["Student Name"] ?? row.student_name ?? row.name ?? '',
-    Nama: row["Student Name"] ?? row.student_name ?? row.name ?? '',
-    student_name: row["Student Name"] ?? row.student_name ?? row.name ?? '',
-    class: row["Class"] ?? row.class ?? '',
-    "Class Name": row["Class"] ?? row.class ?? '',
-    class_name: row["Class"] ?? row.class ?? '',
-    "Trainer Homeroom": row["Class Trainers"] ?? row.class_trainers ?? '',
-    class_trainers: row["Class Trainers"] ?? row.class_trainers ?? '',
-    date: row["Date"] ?? row.date ?? '',
-    coach_feedback: row["Coach Feedback"] ?? row.coach_feedback ?? '',
-    challenge: row["Challenge"] ?? row.challenge ?? '',
-    speaking_project: row["Speaking Project"] ?? row.speaking_project ?? '',
-    role_2: row["Role 2"] ?? row.role_2 ?? '',
-    role_3: row["Role 3"] ?? row.role_3 ?? '',
-    role_4: row["Role 4"] ?? row.role_4 ?? '',
-    life_project: row["Life Project"] ?? row.life_project ?? '',
-    house: row["House"] ?? row.house ?? '',
-    level: row["Level"] ?? row.level ?? '',
-    latest_speaking_project: row["Latest Speaking Project"] ?? row.latest_speaking_project ?? '',
-    last_time_speaking: row["Last Time Speaking"] ?? row.last_time_speaking ?? '',
-    win: row["Win"] ?? row.win ?? '',
-    fav: row["Fav"] ?? row.fav ?? '',
-    total_gold: row["Total Gold"] ?? row.total_gold ?? ''
-  };
-}
-
-// 1. GET / - Ambil semua data Report Progres (search & filter & pagination)
+// 1. GET / - Ambil semua data Report Progres (search & filter)
 router.get('/', async (req, res) => {
   try {
     await ensureReportProgresTable();
 
-    const { search, class: filterClass, class_name, level, house, limit, page } = req.query;
+    const { search, class_name, class: classFilter, house, level, limit, page } = req.query;
     let query = `
       SELECT 
-        "Student Name",
         "ID",
+        "Student Name",
         "Class Trainers",
         "Date",
         "Coach Feedback",
@@ -162,10 +165,7 @@ router.get('/', async (req, res) => {
         "Level",
         "Latest Speaking Project",
         "Last Time Speaking",
-        "Class",
-        "Win",
-        "Fav",
-        "Total Gold"
+        "Class"
       FROM report_progres
     `;
     let conditions = [];
@@ -174,23 +174,23 @@ router.get('/', async (req, res) => {
     if (search) {
       params.push(`%${search.trim()}%`);
       const pIdx = `$${params.length}`;
-      conditions.push(`("ID" ILIKE ${pIdx} OR "Student Name" ILIKE ${pIdx} OR "Class" ILIKE ${pIdx})`);
+      conditions.push(`("ID" ILIKE ${pIdx} OR "Student Name" ILIKE ${pIdx} OR "Class" ILIKE ${pIdx} OR "House" ILIKE ${pIdx})`);
     }
 
-    const targetClass = filterClass || class_name;
+    const targetClass = classFilter || class_name;
     if (targetClass) {
       params.push(targetClass.trim());
       conditions.push(`"Class" ILIKE $${params.length}`);
     }
 
-    if (level) {
-      params.push(level.trim());
-      conditions.push(`"Level" ILIKE $${params.length}`);
-    }
-
     if (house) {
       params.push(house.trim());
       conditions.push(`"House" ILIKE $${params.length}`);
+    }
+
+    if (level) {
+      params.push(level.trim());
+      conditions.push(`"Level" ILIKE $${params.length}`);
     }
 
     if (conditions.length > 0) {
@@ -208,14 +208,13 @@ router.get('/', async (req, res) => {
     }
 
     const result = await db.query(query, params);
-    const formattedRows = result.rows.map(formatReportProgresRow);
 
     res.json({
       success: true,
       message: 'Berhasil mengambil data Report Progres.',
-      count: formattedRows.length,
-      total: formattedRows.length,
-      data: formattedRows
+      count: result.rows.length,
+      total: result.rows.length,
+      data: result.rows.map(formatReportProgresRow)
     });
   } catch (err) {
     console.error('[Report Progres] GET error:', err.message);
@@ -272,7 +271,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3. POST / - Input / Upsert single report progres (19 kolom)
+// 3. POST / - Input / Upsert single report progres (16 kolom)
 router.post('/', async (req, res) => {
   try {
     await ensureReportProgresTable();
@@ -284,7 +283,7 @@ router.post('/', async (req, res) => {
     }
 
     const studentName = String(row['Student Name'] ?? row['student_name'] ?? row['Name'] ?? row['name'] ?? row['Nama'] ?? '').trim();
-    const classTrainers = String(row['Class Trainers'] ?? row['class_trainers'] ?? row['Trainer Homeroom'] ?? '').trim();
+    const classTrainers = String(row['Class Trainers'] ?? row['class_trainers'] ?? row['Trainer Homeroom'] ?? row['trainer_homeroom'] ?? '').trim();
     const date = String(row['Date'] ?? row['date'] ?? row['Tanggal'] ?? '').trim();
     const coachFeedback = String(row['Coach Feedback'] ?? row['coach_feedback'] ?? row['feedback'] ?? '').trim();
     const challenge = String(row['Challenge'] ?? row['challenge'] ?? '').trim();
@@ -293,24 +292,20 @@ router.post('/', async (req, res) => {
     const role3 = String(row['Role 3'] ?? row['role_3'] ?? row['role3'] ?? '').trim();
     const role4 = String(row['Role 4'] ?? row['role_4'] ?? row['role4'] ?? '').trim();
     const lifeProject = String(row['Life Project'] ?? row['life_project'] ?? '').trim();
-    const house = String(row['House'] ?? row['house'] ?? row['HOUSE'] ?? '').trim();
-    const level = String(row['Level'] ?? row['level'] ?? row['LEVEL'] ?? '').trim();
+    const house = String(row['House'] ?? row['house'] ?? '').trim();
+    const level = String(row['Level'] ?? row['level'] ?? '').trim();
     const latestSpeaking = String(row['Latest Speaking Project'] ?? row['latest_speaking_project'] ?? '').trim();
     const lastTimeSpeaking = String(row['Last Time Speaking'] ?? row['last_time_speaking'] ?? row['last_speaking_time'] ?? '').trim();
     const className = String(row['Class'] ?? row['class'] ?? row['Class Name'] ?? row['class_name'] ?? '').trim();
-    const win = String(row['Win'] ?? row['win'] ?? '').trim();
-    const fav = String(row['Fav'] ?? row['fav'] ?? row['favorite'] ?? '').trim();
-    const totalGold = String(row['Total Gold'] ?? row['total_gold'] ?? row['gold_point'] ?? row['gold'] ?? '').trim();
 
     const insertRes = await db.query(`
       INSERT INTO report_progres (
-        "Student Name", "ID", "Class Trainers", "Date", "Coach Feedback",
+        "ID", "Student Name", "Class Trainers", "Date", "Coach Feedback",
         "Challenge", "Speaking Project", "Role 2", "Role 3", "Role 4",
         "Life Project", "House", "Level", "Latest Speaking Project",
-        "Last Time Speaking", "Class", "Win", "Fav", "Total Gold",
-        "updated_at"
+        "Last Time Speaking", "Class", "updated_at"
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, CURRENT_TIMESTAMP)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP)
       ON CONFLICT ("ID") DO UPDATE SET
         "Student Name"            = EXCLUDED."Student Name",
         "Class Trainers"          = EXCLUDED."Class Trainers",
@@ -327,16 +322,13 @@ router.post('/', async (req, res) => {
         "Latest Speaking Project" = EXCLUDED."Latest Speaking Project",
         "Last Time Speaking"      = EXCLUDED."Last Time Speaking",
         "Class"                   = EXCLUDED."Class",
-        "Win"                     = EXCLUDED."Win",
-        "Fav"                     = EXCLUDED."Fav",
-        "Total Gold"              = EXCLUDED."Total Gold",
         "updated_at"              = CURRENT_TIMESTAMP
       RETURNING *;
     `, [
-      studentName, id, classTrainers, date, coachFeedback,
+      id, studentName, classTrainers, date, coachFeedback,
       challenge, speakingProject, role2, role3, role4,
       lifeProject, house, level, latestSpeaking,
-      lastTimeSpeaking, className, win, fav, totalGold
+      lastTimeSpeaking, className
     ]);
 
     const formatted = formatReportProgresRow(insertRes.rows[0]);
@@ -352,7 +344,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 4. POST /push - Bulk Upsert dari Google Sheets / n8n (19 kolom)
+// 4. POST /push - Bulk Upsert dari Google Sheets / n8n (16 kolom)
 router.post('/push', async (req, res) => {
   try {
     await ensureReportProgresTable();
@@ -384,7 +376,7 @@ router.post('/push', async (req, res) => {
       }
 
       const studentName = String(row['Student Name'] ?? row['student_name'] ?? row['Name'] ?? row['name'] ?? row['Nama'] ?? '').trim();
-      const classTrainers = String(row['Class Trainers'] ?? row['class_trainers'] ?? row['Trainer Homeroom'] ?? '').trim();
+      const classTrainers = String(row['Class Trainers'] ?? row['class_trainers'] ?? row['Trainer Homeroom'] ?? row['trainer_homeroom'] ?? '').trim();
       const date = String(row['Date'] ?? row['date'] ?? row['Tanggal'] ?? '').trim();
       const coachFeedback = String(row['Coach Feedback'] ?? row['coach_feedback'] ?? row['feedback'] ?? '').trim();
       const challenge = String(row['Challenge'] ?? row['challenge'] ?? '').trim();
@@ -393,25 +385,21 @@ router.post('/push', async (req, res) => {
       const role3 = String(row['Role 3'] ?? row['role_3'] ?? row['role3'] ?? '').trim();
       const role4 = String(row['Role 4'] ?? row['role_4'] ?? row['role4'] ?? '').trim();
       const lifeProject = String(row['Life Project'] ?? row['life_project'] ?? '').trim();
-      const house = String(row['House'] ?? row['house'] ?? row['HOUSE'] ?? '').trim();
-      const level = String(row['Level'] ?? row['level'] ?? row['LEVEL'] ?? '').trim();
+      const house = String(row['House'] ?? row['house'] ?? '').trim();
+      const level = String(row['Level'] ?? row['level'] ?? '').trim();
       const latestSpeaking = String(row['Latest Speaking Project'] ?? row['latest_speaking_project'] ?? '').trim();
       const lastTimeSpeaking = String(row['Last Time Speaking'] ?? row['last_time_speaking'] ?? row['last_speaking_time'] ?? '').trim();
       const className = String(row['Class'] ?? row['class'] ?? row['Class Name'] ?? row['class_name'] ?? '').trim();
-      const win = String(row['Win'] ?? row['win'] ?? '').trim();
-      const fav = String(row['Fav'] ?? row['fav'] ?? row['favorite'] ?? '').trim();
-      const totalGold = String(row['Total Gold'] ?? row['total_gold'] ?? row['gold_point'] ?? row['gold'] ?? '').trim();
 
       try {
         await db.query(`
           INSERT INTO report_progres (
-            "Student Name", "ID", "Class Trainers", "Date", "Coach Feedback",
+            "ID", "Student Name", "Class Trainers", "Date", "Coach Feedback",
             "Challenge", "Speaking Project", "Role 2", "Role 3", "Role 4",
             "Life Project", "House", "Level", "Latest Speaking Project",
-            "Last Time Speaking", "Class", "Win", "Fav", "Total Gold",
-            "updated_at"
+            "Last Time Speaking", "Class", "updated_at"
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, CURRENT_TIMESTAMP)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP)
           ON CONFLICT ("ID") DO UPDATE SET
             "Student Name"            = EXCLUDED."Student Name",
             "Class Trainers"          = EXCLUDED."Class Trainers",
@@ -428,15 +416,12 @@ router.post('/push', async (req, res) => {
             "Latest Speaking Project" = EXCLUDED."Latest Speaking Project",
             "Last Time Speaking"      = EXCLUDED."Last Time Speaking",
             "Class"                   = EXCLUDED."Class",
-            "Win"                     = EXCLUDED."Win",
-            "Fav"                     = EXCLUDED."Fav",
-            "Total Gold"              = EXCLUDED."Total Gold",
             "updated_at"              = CURRENT_TIMESTAMP;
         `, [
-          studentName, id, classTrainers, date, coachFeedback,
+          id, studentName, classTrainers, date, coachFeedback,
           challenge, speakingProject, role2, role3, role4,
           lifeProject, house, level, latestSpeaking,
-          lastTimeSpeaking, className, win, fav, totalGold
+          lastTimeSpeaking, className
         ]);
         insertedCount++;
       } catch (rowErr) {
@@ -479,14 +464,11 @@ router.put('/:id', async (req, res) => {
     const updatedRole3 = b["Role 3"] ?? b["role_3"] ?? b["role3"] ?? existing["Role 3"];
     const updatedRole4 = b["Role 4"] ?? b["role_4"] ?? b["role4"] ?? existing["Role 4"];
     const updatedLifeProject = b["Life Project"] ?? b["life_project"] ?? existing["Life Project"];
-    const updatedHouse = b["House"] ?? b["house"] ?? b["HOUSE"] ?? existing["House"];
-    const updatedLevel = b["Level"] ?? b["level"] ?? b["LEVEL"] ?? existing["Level"];
+    const updatedHouse = b["House"] ?? b["house"] ?? existing["House"];
+    const updatedLevel = b["Level"] ?? b["level"] ?? existing["Level"];
     const updatedLatestSpeaking = b["Latest Speaking Project"] ?? b["latest_speaking_project"] ?? existing["Latest Speaking Project"];
     const updatedLastTimeSpeaking = b["Last Time Speaking"] ?? b["last_time_speaking"] ?? b["last_speaking_time"] ?? existing["Last Time Speaking"];
     const updatedClass = b["Class"] ?? b["class"] ?? b["Class Name"] ?? b["class_name"] ?? existing["Class"];
-    const updatedWin = b["Win"] ?? b["win"] ?? existing["Win"];
-    const updatedFav = b["Fav"] ?? b["fav"] ?? b["favorite"] ?? existing["Fav"];
-    const updatedTotalGold = b["Total Gold"] ?? b["total_gold"] ?? b["gold_point"] ?? b["gold"] ?? existing["Total Gold"];
 
     const updateRes = await db.query(`
       UPDATE report_progres
@@ -505,9 +487,6 @@ router.put('/:id', async (req, res) => {
           "Latest Speaking Project" = $14,
           "Last Time Speaking"      = $15,
           "Class"                   = $16,
-          "Win"                     = $17,
-          "Fav"                     = $18,
-          "Total Gold"              = $19,
           "updated_at"              = CURRENT_TIMESTAMP
       WHERE "ID" = $1
       RETURNING *;
@@ -515,7 +494,7 @@ router.put('/:id', async (req, res) => {
       id, updatedStudentName, updatedClassTrainers, updatedDate, updatedCoachFeedback,
       updatedChallenge, updatedSpeakingProject, updatedRole2, updatedRole3, updatedRole4,
       updatedLifeProject, updatedHouse, updatedLevel, updatedLatestSpeaking,
-      updatedLastTimeSpeaking, updatedClass, updatedWin, updatedFav, updatedTotalGold
+      updatedLastTimeSpeaking, updatedClass
     ]);
 
     res.json({
