@@ -12,6 +12,7 @@ const houseAllegianceRoutes = require('./portal/house_allegiance/houseAllegiance
 const historyHousesRoutes = require('./portal/history_houses/historyHousesRoutes');
 const award2025Routes = require('./portal/award_2025/award2025Routes');
 const realStageRoutes = require('./portal/voucher_real_stage/realStageRoutes');
+const referralCodeRoutes = require('./portal/referral_code/referralCodeRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -105,6 +106,14 @@ app.use('/api/real-stage', realStageRoutes);
 app.use('/api/webhook/real-stage', realStageRoutes);
 app.use('/api/portal/real-stage', realStageRoutes);
 
+// ============================================================
+// 10. Referral Code
+// ============================================================
+app.use('/api/referral-code', referralCodeRoutes);
+app.use('/api/referral', referralCodeRoutes);
+app.use('/api/portal/referral-code', referralCodeRoutes);
+app.use('/api/webhook/referral-code', referralCodeRoutes);
+
 // Fallback 404 Route
 app.use((req, res) => {
   res.status(404).json({
@@ -125,6 +134,7 @@ app.listen(PORT, () => {
   console.log(`   - 7. History Houses        : /api/history-house`);
   console.log(`   - 8. Award 2025            : /api/award-2025`);
   console.log(`   - 9. Voucher Real Stage    : /api/voucher-real-stage & /api/real-stage`);
+  console.log(`   - 10. Referral Code        : /api/referral-code & /api/portal/referral-code`);
 });
 
 module.exports = app;
