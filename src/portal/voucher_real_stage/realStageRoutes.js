@@ -28,24 +28,6 @@ async function ensureVoucherRealStageTable() {
         "LinkVoucherRealStage" TEXT
       );
     `);
-
-    // Migrasi data dari tabel real_stage jika ada
-    try {
-      const checkOld = await db.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public' AND table_name = 'real_stage'
-        );
-      `);
-      if (checkOld.rows[0]?.exists) {
-        await db.query(`
-          INSERT INTO voucher_real_stage ("NoVoucher", "NamaTrainee", "ID", "LinkVoucherRealStage")
-          SELECT "NoVoucher", "NamaTrainee", "ID", "LinkVoucherRealStage"
-          FROM real_stage
-          ON CONFLICT ("NoVoucher") DO NOTHING;
-        `);
-      }
-    } catch (migErr) {}
   } catch (err) {
     console.error('[Voucher Real Stage] Ensure table error:', err.message);
   }
