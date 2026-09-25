@@ -26,7 +26,7 @@ const { handleGetTransactions } = require('./controllers/transactionController')
 const { handleGetRewards, handleRedeemReward } = require('./controllers/rewardController');
 
 // 1. Overview Saldo & Status Streak
-router.get('/overview/:traineeId?', handleGetOverview);
+router.get('/overview{/:traineeId}', handleGetOverview);
 
 // 2. Klaim Koin Daily Streak (Atomic DB Transaction)
 router.post('/streak/claim', handleClaimStreak);
@@ -36,7 +36,7 @@ router.post('/daily-checkin', handleDailyCheckin);
 router.get('/leaderboard', handleGetLeaderboard);
 
 // 4. Riwayat Koin (Khusus Rentetan Login / Streak)
-router.get('/transactions/:traineeId?', handleGetTransactions);
+router.get('/transactions{/:traineeId}', handleGetTransactions);
 
 // 5. Katalog Reward & Penukaran Hadiah
 router.get('/rewards', handleGetRewards);
