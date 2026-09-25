@@ -40,15 +40,16 @@ async function handleGetLeaderboard(req, res) {
                    COALESCE(s.longest_streak, 0) DESC,
                    p."Name" ASC
         ) AS rank
-      FROM profile_trainee p
-      LEFT JOIN myby_trainee_streaks s ON p."ID" = s."ID" OR LOWER(p."ID") = LOWER(s."ID")
+      FROM myby_trainee_streaks s
+      JOIN profile_trainee p ON p."ID" = s."ID" OR LOWER(p."ID") = LOWER(s."ID")
       LEFT JOIN myby_trainee_wallets w ON p."ID" = w."ID" OR LOWER(p."ID") = LOWER(w."ID")
+      WHERE s.current_streak > 0
     `;
 
     const params = [];
     if (house && house !== 'Semua') {
       params.push(house);
-      query += ` WHERE p."HOUSE" = $${params.length}`;
+      query += ` AND p."HOUSE" = $${params.length}`;
     }
 
     query += ` ORDER BY rank ASC, p."Name" ASC LIMIT $${params.length + 1}`;
