@@ -14,6 +14,7 @@ const award2025Routes = require('./portal/award_2025/award2025Routes');
 const realStageRoutes = require('./portal/voucher_real_stage/realStageRoutes');
 const referralCodeRoutes = require('./portal/referral_code/referralCodeRoutes');
 const referralLinkRoutes = require('./portal/referral_link/referralLinkRoutes');
+const mybyCoinRoutes = require('./portal/myby_coin/mybyCoinRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -122,7 +123,12 @@ app.use('/api/referral-link', referralLinkRoutes);
 app.use('/api/referal-link', referralLinkRoutes);
 app.use('/api/portal/referral-link', referralLinkRoutes);
 app.use('/api/portal/referal-link', referralLinkRoutes);
-app.use('/api/webhook/referral-link', referralLinkRoutes);
+// ============================================================
+// 12. MyBY Coin, Daily Streak & Leaderboard
+// ============================================================
+app.use('/api/myby-coin', mybyCoinRoutes);
+app.use('/api/portal/myby-coin', mybyCoinRoutes);
+app.use('/api/daily-checkin', mybyCoinRoutes);
 
 // Fallback 404 Route
 app.use((req, res) => {
@@ -146,6 +152,7 @@ app.listen(PORT, () => {
   console.log(`   - 9. Voucher Real Stage    : /api/voucher-real-stage & /api/real-stage`);
   console.log(`   - 10. Referral Code        : /api/referral-code & /api/portal/referral-code`);
   console.log(`   - 11. Referal Link         : /api/referral-link & /api/referal-link`);
+  console.log(`   - 12. MyBY Coin & Streak   : /api/myby-coin & /api/portal/myby-coin`);
 });
 
 module.exports = app;
