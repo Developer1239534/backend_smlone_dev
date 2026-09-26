@@ -26,6 +26,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-api-key'],
   credentials: true,
 }));
+app.options('*', cors());
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -135,6 +136,16 @@ app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: `Endpoint ${req.method} ${req.originalUrl} tidak ditemukan.`
+  });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('[Server Error]:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Terjadi kesalahan internal pada server.',
+    error: process.env.NODE_ENV === 'production' ? undefined : err.stack
   });
 });
 
