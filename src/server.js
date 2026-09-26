@@ -15,6 +15,8 @@ const realStageRoutes = require('./portal/voucher_real_stage/realStageRoutes');
 const referralCodeRoutes = require('./portal/referral_code/referralCodeRoutes');
 const referralLinkRoutes = require('./portal/referral_link/referralLinkRoutes');
 const mybyCoinRoutes = require('./portal/myby_coin/mybyCoinRoutes');
+const authRoutes = require('./routes/authRoutes');
+const credentialAdminRoutes = require('./portal/credential_admin/credentialAdminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -26,7 +28,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-api-key'],
   credentials: true,
 }));
-app.options('*', cors());
+app.options(/(.*)/, cors());
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -130,6 +132,19 @@ app.use('/api/portal/referal-link', referralLinkRoutes);
 app.use('/api/myby-coin', mybyCoinRoutes);
 app.use('/api/portal/myby-coin', mybyCoinRoutes);
 app.use('/api/daily-checkin', mybyCoinRoutes);
+
+// ============================================================
+// 13. Auth & Credential Dispatcher
+// ============================================================
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/auth', authRoutes);
+
+// ============================================================
+// 14. Credential Admin
+// ============================================================
+app.use('/api/credential-admin', credentialAdminRoutes);
+app.use('/api/portal/credential-admin', credentialAdminRoutes);
+app.use('/api/admin/credential', credentialAdminRoutes);
 
 // Fallback 404 Route
 app.use((req, res) => {

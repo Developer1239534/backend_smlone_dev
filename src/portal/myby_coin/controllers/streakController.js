@@ -31,14 +31,14 @@ async function handleGetOverview(req, res) {
     // Ambil info profil anak (ID sebagai Primary Key, Name sebagai Secondary Key)
     const profile = await getTraineeProfile(traineeId);
 
-    // Ambil Wallet (upsert default jika belum ada)
+    // Ambil Wallet (upsert default jika belum ada dengan balance 0)
     let walletRes = await db.query(
       'SELECT * FROM myby_trainee_wallets WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) OR "Name" = $1 LIMIT 1',
       [profile.ID]
     );
     if (walletRes.rows.length === 0) {
       await db.query(
-        'INSERT INTO myby_trainee_wallets ("ID", "Name", balance, total_earned) VALUES ($1, $2, 350, 350) ON CONFLICT ("ID") DO UPDATE SET "Name" = EXCLUDED."Name"',
+        'INSERT INTO myby_trainee_wallets ("ID", "Name", balance, total_earned) VALUES ($1, $2, 0, 0) ON CONFLICT ("ID") DO UPDATE SET "Name" = EXCLUDED."Name"',
         [profile.ID, profile.Name]
       );
       walletRes = await db.query(
@@ -46,7 +46,7 @@ async function handleGetOverview(req, res) {
         [profile.ID]
       );
     }
-    const wallet = walletRes.rows[0] || { balance: 350, total_earned: 350, total_spent: 0 };
+    const wallet = walletRes.rows[0] || { balance: 0, total_earned: 0, total_spent: 0 };
 
     // Ambil Streak dengan CAST ::TEXT agar tanggal akurat
     let streakRes = await db.query(`

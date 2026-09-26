@@ -447,68 +447,71 @@ router.post('/push', async (req, res) => {
   }
 });
 
-// 5. PUT /:id - Update data profil Trainee (hanya 22 kolom)
+// 5. PUT /:id - Update / Upsert data profil Trainee (hanya 22 kolom)
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await ensureProfileTraineeTable();
     const checkRes = await db.query('SELECT * FROM profile_trainee WHERE "ID" = $1', [id]);
-    if (checkRes.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `Data Profile Trainee ID: "${id}" tidak ditemukan.`
-      });
-    }
-
-    const existing = checkRes.rows[0];
+    const existing = checkRes.rows.length > 0 ? checkRes.rows[0] : {};
     const b = req.body;
 
-    const updatedClass = b["Class"] ?? b["class"] ?? existing["Class"];
-    const updatedDay = b["Day"] ?? b["day"] ?? existing["Day"];
-    const updatedTime = b["Time"] ?? b["time"] ?? existing["Time"];
-    const updatedRoom = b["Room"] ?? b["room"] ?? existing["Room"];
-    const updatedBranch = b["Branch"] ?? b["branch"] ?? existing["Branch"];
-    const updatedName = b["Name"] ?? b["name"] ?? b["Nama"] ?? existing["Name"];
-    const updatedLevel = b["Level"] ?? b["level"] ?? existing["Level"];
-    const updatedHouse = b["HOUSE"] ?? b["House"] ?? b["house"] ?? existing["HOUSE"];
-    const updatedHouseRole = b["House Role"] ?? b["house_role"] ?? existing["House Role"];
-    const updatedTraineeHomeroom = b["Trainee Homeroom"] ?? b["trainee_homeroom"] ?? existing["Trainee Homeroom"];
-    const updatedHomeroomKelas = b["Homeroom kelas"] ?? b["homeroom_kelas"] ?? existing["Homeroom kelas"];
-    const updatedTrainer = b["Trainer"] ?? b["trainer"] ?? existing["Trainer"];
-    const updatedMembership = b["MEMBERSHIP"] ?? b["Membership"] ?? existing["MEMBERSHIP"];
-    const updatedExpiryDate = b["EXPIRY DATE"] ?? b["Expiry Date"] ?? existing["EXPIRY DATE"];
-    const updatedFirstEnroll = b["FIRST ENROLL"] ?? b["First Enroll"] ?? existing["FIRST ENROLL"];
-    const updatedDob = b["Date of Birth"] ?? b["Date of Birthday"] ?? existing["Date of Birth"];
-    const updatedClassInSchool = b["Class in School"] ?? b["class_in_school"] ?? existing["Class in School"];
-    const updatedParentsEmail = b["Parents Email Account"] ?? b["emailParents"] ?? existing["Parents Email Account"];
-    const updatedParentWa = b["Parent WhatsApp Number"] ?? b["waParent"] ?? existing["Parent WhatsApp Number"];
-    const updatedTraineeWa = b["Trainee WhatsApp Number"] ?? b["waTrainee"] ?? existing["Trainee WhatsApp Number"];
-    const updatedSchoolName = b["School Name"] ?? b["schoolName"] ?? existing["School Name"];
+    const updatedClass = b["Class"] ?? b["class"] ?? existing["Class"] ?? '';
+    const updatedDay = b["Day"] ?? b["day"] ?? existing["Day"] ?? '';
+    const updatedTime = b["Time"] ?? b["time"] ?? existing["Time"] ?? '';
+    const updatedRoom = b["Room"] ?? b["room"] ?? existing["Room"] ?? '';
+    const updatedBranch = b["Branch"] ?? b["branch"] ?? existing["Branch"] ?? '';
+    const updatedName = b["Name"] ?? b["name"] ?? b["Nama"] ?? existing["Name"] ?? '';
+    const updatedLevel = b["Level"] ?? b["level"] ?? existing["Level"] ?? '';
+    const updatedHouse = b["HOUSE"] ?? b["House"] ?? b["house"] ?? existing["HOUSE"] ?? '';
+    const updatedHouseRole = b["House Role"] ?? b["house_role"] ?? existing["House Role"] ?? '';
+    const updatedTraineeHomeroom = b["Trainee Homeroom"] ?? b["trainee_homeroom"] ?? existing["Trainee Homeroom"] ?? '';
+    const updatedHomeroomKelas = b["Homeroom kelas"] ?? b["homeroom_kelas"] ?? existing["Homeroom kelas"] ?? '';
+    const updatedTrainer = b["Trainer"] ?? b["trainer"] ?? existing["Trainer"] ?? '';
+    const updatedMembership = b["MEMBERSHIP"] ?? b["Membership"] ?? existing["MEMBERSHIP"] ?? '';
+    const updatedExpiryDate = b["EXPIRY DATE"] ?? b["Expiry Date"] ?? existing["EXPIRY DATE"] ?? '';
+    const updatedFirstEnroll = b["FIRST ENROLL"] ?? b["First Enroll"] ?? existing["FIRST ENROLL"] ?? '';
+    const updatedDob = b["Date of Birth"] ?? b["Date of Birthday"] ?? b["date_of_birth"] ?? b["birthDate"] ?? existing["Date of Birth"] ?? '';
+    const updatedClassInSchool = b["Class in School"] ?? b["class_in_school"] ?? b["Kelas"] ?? b["kelas"] ?? b["newestGrade"] ?? existing["Class in School"] ?? '';
+    const updatedParentsEmail = b["Parents Email Account"] ?? b["Email Account Parents"] ?? b["parents_email_account"] ?? b["emailParents"] ?? existing["Parents Email Account"] ?? '';
+    const updatedParentWa = b["Parent WhatsApp Number"] ?? b["Nomor WA Parent"] ?? b["parent_whatsapp_number"] ?? b["waParent"] ?? existing["Parent WhatsApp Number"] ?? '';
+    const updatedTraineeWa = b["Trainee WhatsApp Number"] ?? b["Nomor WA Trainee"] ?? b["trainee_whatsapp_number"] ?? b["waTrainee"] ?? existing["Trainee WhatsApp Number"] ?? '';
+    const updatedSchoolName = b["School Name"] ?? b["Nama Sekolah"] ?? b["school_name"] ?? b["schoolName"] ?? existing["School Name"] ?? '';
 
     const updateRes = await db.query(`
-      UPDATE profile_trainee
-      SET "Class"                   = $2,
-          "Day"                     = $3,
-          "Time"                    = $4,
-          "Room"                    = $5,
-          "Branch"                  = $6,
-          "Name"                    = $7,
-          "Level"                   = $8,
-          "HOUSE"                   = $9,
-          "House Role"              = $10,
-          "Trainee Homeroom"        = $11,
-          "Homeroom kelas"          = $12,
-          "Trainer"                 = $13,
-          "MEMBERSHIP"              = $14,
-          "EXPIRY DATE"             = $15,
-          "FIRST ENROLL"            = $16,
-          "Date of Birth"           = $17,
-          "Class in School"         = $18,
-          "Parents Email Account"   = $19,
-          "Parent WhatsApp Number"  = $20,
-          "Trainee WhatsApp Number" = $21,
-          "School Name"             = $22
-      WHERE "ID" = $1
+      INSERT INTO profile_trainee (
+        "ID", "Class", "Day", "Time", "Room", "Branch", "Name", "Level", "HOUSE", "House Role",
+        "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
+        "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
+        "Trainee WhatsApp Number", "School Name"
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22
+      )
+      ON CONFLICT ("ID") DO UPDATE
+      SET "Class"                   = EXCLUDED."Class",
+          "Day"                     = EXCLUDED."Day",
+          "Time"                    = EXCLUDED."Time",
+          "Room"                    = EXCLUDED."Room",
+          "Branch"                  = EXCLUDED."Branch",
+          "Name"                    = CASE WHEN EXCLUDED."Name" != '' THEN EXCLUDED."Name" ELSE profile_trainee."Name" END,
+          "Level"                   = EXCLUDED."Level",
+          "HOUSE"                   = EXCLUDED."HOUSE",
+          "House Role"              = EXCLUDED."House Role",
+          "Trainee Homeroom"        = EXCLUDED."Trainee Homeroom",
+          "Homeroom kelas"          = EXCLUDED."Homeroom kelas",
+          "Trainer"                 = EXCLUDED."Trainer",
+          "MEMBERSHIP"              = EXCLUDED."MEMBERSHIP",
+          "EXPIRY DATE"             = EXCLUDED."EXPIRY DATE",
+          "FIRST ENROLL"            = EXCLUDED."FIRST ENROLL",
+          "Date of Birth"           = EXCLUDED."Date of Birth",
+          "Class in School"         = EXCLUDED."Class in School",
+          "Parents Email Account"   = EXCLUDED."Parents Email Account",
+          "Parent WhatsApp Number"  = EXCLUDED."Parent WhatsApp Number",
+          "Trainee WhatsApp Number" = EXCLUDED."Trainee WhatsApp Number",
+          "School Name"             = EXCLUDED."School Name"
       RETURNING *;
     `, [
       id, updatedClass, updatedDay, updatedTime, updatedRoom, updatedBranch,
