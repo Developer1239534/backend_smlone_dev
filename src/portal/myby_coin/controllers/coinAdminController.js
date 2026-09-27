@@ -80,11 +80,13 @@ async function handleAdminUpsertWallet(req, res) {
          WHERE "ID" = $1 RETURNING *`,
         [profile.ID, delta, finalName]
       );
-      // catat mutasi audit admin
+      // catat mutasi audit admin: badge "Deposit Admin" (+) atau "Koreksi Saldo" (-)
+      const badge = delta >= 0 ? 'Deposit Admin' : 'Koreksi Saldo';
+      const txTitle = delta >= 0 ? `Deposit Admin (+${delta})` : `Koreksi Saldo (${delta})`;
       await db.query(
         `INSERT INTO myby_coin_transactions (id, "ID", "Name", title, amount, type, badge, metadata)
-         VALUES ($1, $2, $3, $4, $5, $6, 'Admin Adjustment', $7)`,
-        [`tx-adj-${Date.now()}`, profile.ID, finalName || profile.Name, `Admin Adjustment (${delta > 0 ? '+' : ''}${delta})`, Math.abs(delta), delta >= 0 ? 'earn' : 'spend', JSON.stringify({ by: 'admin' })]
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [`tx-adj-${Date.now()}`, profile.ID, finalName || profile.Name, txTitle, Math.abs(delta), delta >= 0 ? 'earn' : 'spend', badge, JSON.stringify({ by: 'admin' })]
       ).catch(() => {});
     } else {
       result = await db.query(
@@ -102,7 +104,7 @@ async function handleAdminUpsertWallet(req, res) {
           finalName]
       );
     }
-    return res.status(201).json({ success: true, message: 'Wallet berhasil disimpan.', data: result.rows[0] });
+    return res.status(201).json({ success: true, message: 'Deposit / saldo berhasil diperbarui.', data: result.rows[0] });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal menyimpan wallet.', error: error.message });
   }
@@ -331,12 +333,12 @@ async function handleAdminUpdateRedeem(req, res) {
       ).catch(() => {});
       await db.query(
         `INSERT INTO myby_coin_transactions (id, "ID", "Name", title, amount, type, badge)
-         VALUES ($1, $2, $3, $4, $5, 'earn', 'Refund')`,
+         VALUES ($1, $2, $3, $4, $5, 'earn', 'Refund Koin')`,
         [`tx-ref-${Date.now()}`, prev.ID, prev.Name, `Refund: ${prev.reward_title}`, Number(prev.coins_spent)]
       );
     }
     await db.query('COMMIT');
-    return res.status(200).json({ success: true, message: 'Status redeem berhasil diperbarui.', data: result.rows[0] });
+    return res.status(200).json({ success: true, message: 'Status klaim hadiah berhasil diperbarui.', data: result.rows[0] });
   } catch (error) {
     await db.query('ROLLBACK').catch(() => {});
     return res.status(500).json({ success: false, message: 'Gagal memperbarui redeem.', error: error.message });

@@ -121,8 +121,8 @@ async function handleRedeemReward(req, res) {
     const txId = `tx-red-${Date.now()}`;
     await db.query(`
       INSERT INTO myby_coin_transactions (id, "ID", "Name", title, amount, type, badge)
-      VALUES ($1, $2, $3, $4, $5, 'spend', 'Redeem')
-    `, [txId, profile.ID, profile.Name, `Redeem Hadiah: ${reward.title}`, reward.cost]);
+      VALUES ($1, $2, $3, $4, $5, 'spend', 'Klaim Hadiah')
+    `, [txId, profile.ID, profile.Name, `Klaim Hadiah: ${reward.title}`, reward.cost]);
 
     // Catat pengajuan redeem
     const redeemId = `red-${Date.now()}`;
