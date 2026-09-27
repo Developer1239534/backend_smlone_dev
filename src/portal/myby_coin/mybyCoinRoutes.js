@@ -21,7 +21,7 @@ const {
   handleDailyCheckin
 } = require('./controllers/streakController');
 
-const { handleGetLeaderboard } = require('./controllers/leaderboardController');
+const { handleGetLeaderboard, handleGetLeaderboardReferral } = require('./controllers/leaderboardController');
 const { handleGetTransactions } = require('./controllers/transactionController');
 const { handleGetRewards, handleRedeemReward, handleGetTraineeRedeems } = require('./controllers/rewardController');
 
@@ -59,8 +59,9 @@ router.get('/overview{/:traineeId}', handleGetOverview);
 router.post('/streak/claim', handleClaimStreak);
 router.post('/daily-checkin', handleDailyCheckin);
 
-// 3. Leaderboard Realtime
+// 3. Leaderboard Realtime & Referral
 router.get('/leaderboard', handleGetLeaderboard);
+router.get('/leaderboard-referral', handleGetLeaderboardReferral);
 
 // 4. Riwayat Koin (Khusus Rentetan Login / Streak)
 router.get('/transactions{/:traineeId}', handleGetTransactions);
