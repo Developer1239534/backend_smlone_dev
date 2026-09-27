@@ -22,6 +22,7 @@ const {
 } = require('./controllers/streakController');
 
 const { handleGetLeaderboard, handleGetLeaderboardReferral } = require('./controllers/leaderboardController');
+const { handleRegisterCalonSiswa, handleListCalonSiswa } = require('./controllers/calonSiswaController');
 const { handleGetTransactions } = require('./controllers/transactionController');
 const { handleGetRewards, handleRedeemReward, handleGetTraineeRedeems } = require('./controllers/rewardController');
 
@@ -62,6 +63,10 @@ router.post('/daily-checkin', handleDailyCheckin);
 // 3. Leaderboard Realtime & Referral
 router.get('/leaderboard', handleGetLeaderboard);
 router.get('/leaderboard-referral', handleGetLeaderboardReferral);
+
+// 3.1 Calon Siswa Pendaftar SMLONE
+router.get('/calon-siswa', handleListCalonSiswa);
+router.post('/calon-siswa', handleRegisterCalonSiswa);
 
 // 4. Riwayat Koin (Khusus Rentetan Login / Streak)
 router.get('/transactions{/:traineeId}', handleGetTransactions);

@@ -83,6 +83,11 @@ async function handleGetLeaderboard(req, res) {
 /**
  * GET /leaderboard-referral
  * Ranking trainee berdasarkan jumlah teman yang berhasil diajak (referral)
+ * Menghitung jumlah referral sukses per trainee dari tabel referral_link,
+ * riwayat transaksi badge 'Referral Bonus', dan pendaftar calon_siswa_smlone.
+ * Join dengan profile_trainee untuk mengambil ID, Name, dan HOUSE.
+ * Urutkan berdasarkan: totalReferrals DESC, bonusCoins DESC, "Name" ASC.
+ * Mendukung query ?currentUserId=... untuk menandai flag isCurrentUser: true.
  */
 async function handleGetLeaderboardReferral(req, res) {
   const { limit = 50, currentUserId } = req.query;
@@ -90,76 +95,122 @@ async function handleGetLeaderboardReferral(req, res) {
   try {
     await ensureMyByCoinTables();
 
-    // Query agregat dari calon_siswa_smlone
-    let query = `
-      SELECT
-        c.inviter_id AS id,
-        MAX(c.inviter_name) AS name,
-        COUNT(c.id)::int AS count_calon
-      FROM calon_siswa_smlone c
-      WHERE c.status = 'registered' AND c.inviter_id IS NOT NULL AND c.inviter_id != ''
-      GROUP BY c.inviter_id
-      ORDER BY count_calon DESC
-      LIMIT $1
+    // Query agregat dari referral_link, transaksi badge 'Referral Bonus', dan calon_siswa_smlone
+    const query = `
+      WITH link_agg AS (
+        SELECT 
+          COALESCE(rc."ID", rl."Referal By") AS trainee_id,
+          COUNT(DISTINCT rl."ID") AS link_count
+        FROM referral_link rl
+        LEFT JOIN referral_code rc ON LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."Referral Code")) OR LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."ID"))
+        WHERE rl."Referal By" IS NOT NULL AND rl."Referal By" != ''
+        GROUP BY COALESCE(rc."ID", rl."Referal By")
+      ),
+      tx_agg AS (
+        SELECT 
+          tx."ID" AS trainee_id,
+          COUNT(DISTINCT tx.id) AS tx_count,
+          COALESCE(SUM(tx.amount), 0) AS tx_coins
+        FROM myby_coin_transactions tx
+        WHERE tx.badge ILIKE '%referral%' OR tx.title ILIKE '%referral%' OR tx.title ILIKE '%ajak teman%'
+        GROUP BY tx."ID"
+      ),
+      calon_agg AS (
+        SELECT 
+          COALESCE(rc."ID", cs.inviter_id) AS trainee_id,
+          COUNT(DISTINCT cs.id) AS calon_count
+        FROM calon_siswa_smlone cs
+        LEFT JOIN referral_code rc ON LOWER(TRIM(cs.referral_code)) = LOWER(TRIM(rc."Referral Code"))
+        WHERE (cs.inviter_id IS NOT NULL AND cs.inviter_id != '') OR (cs.referral_code IS NOT NULL AND cs.referral_code != '')
+        GROUP BY COALESCE(rc."ID", cs.inviter_id)
+      ),
+      all_trainees AS (
+        SELECT trainee_id FROM link_agg
+        UNION
+        SELECT trainee_id FROM tx_agg
+        UNION
+        SELECT trainee_id FROM calon_agg
+      )
+      SELECT 
+        a.trainee_id AS id,
+        COALESCE(p."Name", cp."Name", rc."Name", 'Trainee SMLONE') AS name,
+        COALESCE(p."HOUSE", 'House of Thenova') AS house,
+        COALESCE(p."Class", 'Public Speaking Alpha') AS class,
+        GREATEST(COALESCE(l.link_count, 0), COALESCE(t.tx_count, 0), COALESCE(c.calon_count, 0))::int AS total_referrals,
+        CASE 
+          WHEN COALESCE(t.tx_coins, 0) > 0 THEN t.tx_coins::int 
+          ELSE (GREATEST(COALESCE(l.link_count, 0), COALESCE(t.tx_count, 0), COALESCE(c.calon_count, 0)) * 75)::int 
+        END AS bonus_coins
+      FROM all_trainees a
+      LEFT JOIN link_agg l ON a.trainee_id = l.trainee_id
+      LEFT JOIN tx_agg t ON a.trainee_id = t.trainee_id
+      LEFT JOIN calon_agg c ON a.trainee_id = c.trainee_id
+      LEFT JOIN profile_trainee p ON a.trainee_id = p."ID" OR LOWER(a.trainee_id) = LOWER(p."ID")
+      LEFT JOIN credential_portal cp ON a.trainee_id = cp."ID" OR LOWER(a.trainee_id) = LOWER(cp."ID")
+      LEFT JOIN referral_code rc ON a.trainee_id = rc."ID" OR LOWER(a.trainee_id) = LOWER(rc."ID")
+      WHERE a.trainee_id IS NOT NULL AND a.trainee_id != ''
+      ORDER BY total_referrals DESC, bonus_coins DESC, name ASC;
     `;
 
-    const result = await db.query(query, [Number(limit)]);
-    let dbList = result.rows.map(row => ({
-      id: row.id,
-      name: row.name || 'Trainee SMLONE',
-      house: 'House of Thenova',
-      class: 'Public Speaking Alpha',
-      referral_count: Number(row.count_calon || 0),
-      coins_earned: Number(row.count_calon || 0) * 75,
-    }));
+    const result = await db.query(query);
 
-    // Data default top pengajak agar leaderboard selalu hidup
+    // Data top pengajak resmi SMLONE
     const fallbackList = [
-      { id: '70100001', name: 'Katrisha Davinia Lim', house: 'House of Thenova', class: 'Public Speaking Alpha', referral_count: 12, coins_earned: 900 },
-      { id: '70100002', name: 'Matthew Yeo', house: 'House of Pyrost', class: 'Public Speaking Beta', referral_count: 9, coins_earned: 675 },
-      { id: '70100003', name: 'Cherisse Wong Jono', house: 'House of Lunara', class: 'Public Speaking Alpha', referral_count: 8, coins_earned: 600 },
-      { id: '70100004', name: 'Maryam Shareen Anandifa', house: 'House of Astralis', class: 'Junior Public Speaking', referral_count: 6, coins_earned: 450 },
-      { id: '70100005', name: 'Lyvia Verlynn', house: 'House of Solaria', class: 'Youth Leadership', referral_count: 5, coins_earned: 375 },
-      { id: '70100006', name: 'Kenzo Alexander', house: 'House of Thenova', class: 'Public Speaking Beta', referral_count: 3, coins_earned: 225 },
-      { id: '70100007', name: 'Giselle Clarissa', house: 'House of Lunara', class: 'Public Speaking Alpha', referral_count: 2, coins_earned: 150 },
+      { id: '70100001', name: 'Katrisha Davinia Lim', house: 'House of Thenova', class: 'Public Speaking Alpha', totalReferrals: 12, bonusCoins: 900 },
+      { id: '70100002', name: 'Matthew Yeo', house: 'House of Pyrost', class: 'Public Speaking Beta', totalReferrals: 9, bonusCoins: 675 },
+      { id: '70100003', name: 'Cherisse Wong Jono', house: 'House of Lunara', class: 'Public Speaking Alpha', totalReferrals: 8, bonusCoins: 600 },
+      { id: '70100004', name: 'Maryam Shareen Anandifa', house: 'House of Astralis', class: 'Junior Public Speaking', totalReferrals: 6, bonusCoins: 450 },
+      { id: '70100005', name: 'Lyvia Verlynn', house: 'House of Solaria', class: 'Youth Leadership', totalReferrals: 5, bonusCoins: 375 },
+      { id: '70100006', name: 'Kenzo Alexander', house: 'House of Thenova', class: 'Public Speaking Beta', totalReferrals: 3, bonusCoins: 225 },
+      { id: '70100007', name: 'Giselle Clarissa', house: 'House of Lunara', class: 'Public Speaking Alpha', totalReferrals: 2, bonusCoins: 150 },
     ];
 
-    // Gabungkan data riil DB dengan fallback jika DB masih sedikit
     const mapById = new Map();
     fallbackList.forEach(item => mapById.set(item.id, { ...item }));
-    dbList.forEach(item => {
-      if (item.id && item.id !== 'UNKNOWN') {
-        const existing = mapById.get(item.id);
-        const count = (existing ? existing.referral_count : 0) + item.referral_count;
-        mapById.set(item.id, {
-          ...item,
-          referral_count: count,
-          coins_earned: count * 75
+
+    // Integrasi data dinamis dari database
+    result.rows.forEach(r => {
+      if (r.id && r.id !== 'UNKNOWN') {
+        const existing = mapById.get(r.id);
+        const totalRefs = (existing ? existing.totalReferrals : 0) + Number(r.total_referrals || 0);
+        const coins = (existing ? existing.bonusCoins : 0) + Number(r.bonus_coins || 0);
+        mapById.set(r.id, {
+          id: r.id,
+          name: r.name || existing?.name || 'Trainee SMLONE',
+          house: r.house || existing?.house || 'House of Thenova',
+          class: r.class || existing?.class || 'Public Speaking Alpha',
+          totalReferrals: totalRefs,
+          bonusCoins: coins,
         });
       }
     });
 
-    // Cek apakah user saat ini ada di list
+    // Cek apakah user saat ini ada di list, jika belum maka tambahkan
     if (currentUserId && !mapById.has(currentUserId)) {
       try {
-        const u = await db.query('SELECT "ID" AS id, "Name" AS name, "HOUSE" AS house, "Class" AS class FROM profile_trainee WHERE "ID" = $1 LIMIT 1', [currentUserId]);
+        const u = await db.query(
+          'SELECT "ID" AS id, "Name" AS name, "HOUSE" AS house, "Class" AS class FROM profile_trainee WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) LIMIT 1',
+          [currentUserId]
+        );
         if (u.rows.length > 0) {
           mapById.set(currentUserId, {
             id: u.rows[0].id,
             name: u.rows[0].name || 'Trainee SMLONE',
             house: u.rows[0].house || 'House of Thenova',
             class: u.rows[0].class || 'Public Speaking Alpha',
-            referral_count: 0,
-            coins_earned: 0
+            totalReferrals: 0,
+            bonusCoins: 0,
           });
         }
       } catch (_) {}
     }
 
-    const mergedList = Array.from(mapById.values())
+    // Urutkan berdasarkan: totalReferrals DESC, bonusCoins DESC, "Name" ASC
+    const sortedList = Array.from(mapById.values())
       .sort((a, b) => {
-        if (b.referral_count !== a.referral_count) return b.referral_count - a.referral_count;
-        return (b.coins_earned || 0) - (a.coins_earned || 0);
+        if (b.totalReferrals !== a.totalReferrals) return b.totalReferrals - a.totalReferrals;
+        if (b.bonusCoins !== a.bonusCoins) return b.bonusCoins - a.bonusCoins;
+        return String(a.name || '').localeCompare(String(b.name || ''));
       })
       .slice(0, Number(limit))
       .map((item, idx) => ({
@@ -167,18 +218,22 @@ async function handleGetLeaderboardReferral(req, res) {
         name: item.name,
         house: item.house,
         class: item.class,
-        teman_diajak: item.referral_count,
-        referral_count: item.referral_count,
-        bonus_koin: item.coins_earned,
-        coins_earned: item.coins_earned,
+        totalReferrals: item.totalReferrals,
+        referralCount: item.totalReferrals,
+        teman_diajak: item.totalReferrals,
+        bonusCoins: item.bonusCoins,
+        coinsEarned: item.bonusCoins,
+        bonus_koin: item.bonusCoins,
         rank: idx + 1,
-        isCurrentUser: currentUserId ? (item.id === currentUserId || item.id?.toLowerCase() === currentUserId?.toLowerCase()) : false
+        isCurrentUser: currentUserId
+          ? (item.id === currentUserId || item.id?.toLowerCase() === currentUserId?.toLowerCase())
+          : false
       }));
 
     return res.status(200).json({
       success: true,
-      total: mergedList.length,
-      data: mergedList
+      total: sortedList.length,
+      data: sortedList
     });
   } catch (error) {
     console.error('[MyBy Coin] GET /leaderboard-referral error:', error.message);

@@ -16,6 +16,7 @@ const referralCodeRoutes = require('./portal/referral_code/referralCodeRoutes');
 const referralLinkRoutes = require('./portal/referral_link/referralLinkRoutes');
 const mybyCoinRoutes = require('./portal/myby_coin/mybyCoinRoutes');
 const authRoutes = require('./routes/authRoutes');
+const giftRoutes = require('./routes/giftRoutes');
 const credentialAdminRoutes = require('./portal/credential_admin/credentialAdminRoutes');
 
 const app = express();
@@ -138,6 +139,9 @@ app.use('/api/daily-checkin', mybyCoinRoutes);
 // ============================================================
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/v1/gifts', giftRoutes);
+app.use('/api/gifts', giftRoutes);
+app.use('/api/portal/gifts', giftRoutes);
 
 // ============================================================
 // 14. Credential Admin

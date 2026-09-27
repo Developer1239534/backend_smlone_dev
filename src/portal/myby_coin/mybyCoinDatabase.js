@@ -167,6 +167,23 @@ async function ensureMyByCoinTables() {
       );
       CREATE INDEX IF NOT EXISTS idx_myby_redeem_id ON myby_redeem_requests ("ID");
       CREATE INDEX IF NOT EXISTS idx_myby_redeem_name ON myby_redeem_requests ("Name");
+
+      CREATE TABLE IF NOT EXISTS calon_siswa_smlone (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        phone VARCHAR(50) NOT NULL,
+        age INT,
+        school VARCHAR(255),
+        program VARCHAR(100),
+        referral_code VARCHAR(50),
+        inviter_id VARCHAR(255),
+        inviter_name VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'registered',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_calon_siswa_refcode ON calon_siswa_smlone (referral_code);
+      CREATE INDEX IF NOT EXISTS idx_calon_siswa_inviter ON calon_siswa_smlone (inviter_id);
     `);
 
     // 3. Seed catalog rewards jika kosong
