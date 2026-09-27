@@ -154,38 +154,23 @@ async function handleGetLeaderboardReferral(req, res) {
 
     const result = await db.query(query);
 
-    // Data top pengajak resmi SMLONE
-    const fallbackList = [
-      { id: '70100001', name: 'Katrisha Davinia Lim', house: 'House of Thenova', class: 'Public Speaking Alpha', totalReferrals: 12, bonusCoins: 900 },
-      { id: '70100002', name: 'Matthew Yeo', house: 'House of Pyrost', class: 'Public Speaking Beta', totalReferrals: 9, bonusCoins: 675 },
-      { id: '70100003', name: 'Cherisse Wong Jono', house: 'House of Lunara', class: 'Public Speaking Alpha', totalReferrals: 8, bonusCoins: 600 },
-      { id: '70100004', name: 'Maryam Shareen Anandifa', house: 'House of Astralis', class: 'Junior Public Speaking', totalReferrals: 6, bonusCoins: 450 },
-      { id: '70100005', name: 'Lyvia Verlynn', house: 'House of Solaria', class: 'Youth Leadership', totalReferrals: 5, bonusCoins: 375 },
-      { id: '70100006', name: 'Kenzo Alexander', house: 'House of Thenova', class: 'Public Speaking Beta', totalReferrals: 3, bonusCoins: 225 },
-      { id: '70100007', name: 'Giselle Clarissa', house: 'House of Lunara', class: 'Public Speaking Alpha', totalReferrals: 2, bonusCoins: 150 },
-    ];
-
     const mapById = new Map();
-    fallbackList.forEach(item => mapById.set(item.id, { ...item }));
 
-    // Integrasi data dinamis dari database
+    // 100% Data riil database Neon PostgreSQL (tanpa data dummy/fallback)
     result.rows.forEach(r => {
       if (r.id && r.id !== 'UNKNOWN') {
-        const existing = mapById.get(r.id);
-        const totalRefs = (existing ? existing.totalReferrals : 0) + Number(r.total_referrals || 0);
-        const coins = (existing ? existing.bonusCoins : 0) + Number(r.bonus_coins || 0);
         mapById.set(r.id, {
           id: r.id,
-          name: r.name || existing?.name || 'Trainee SMLONE',
-          house: r.house || existing?.house || 'House of Thenova',
-          class: r.class || existing?.class || 'Public Speaking Alpha',
-          totalReferrals: totalRefs,
-          bonusCoins: coins,
+          name: r.name || 'Trainee SMLONE',
+          house: r.house || 'House of Thenova',
+          class: r.class || 'Public Speaking Alpha',
+          totalReferrals: Number(r.total_referrals || 0),
+          bonusCoins: Number(r.bonus_coins || 0),
         });
       }
     });
 
-    // Cek apakah user saat ini ada di list, jika belum maka tambahkan
+    // Cek apakah user saat ini ada di list, jika belum maka tambahkan dengan 0 referral
     if (currentUserId && !mapById.has(currentUserId)) {
       try {
         const u = await db.query(
