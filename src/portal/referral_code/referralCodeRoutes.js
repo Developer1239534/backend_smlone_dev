@@ -164,6 +164,89 @@ router.get('/', async (req, res) => {
 });
 
 // ============================================================
+// 1.1 GET /leads -> Ambil data pendaftar referral beserta pengundangnya (Admin)
+// ============================================================
+router.get('/leads', async (req, res) => {
+  try {
+    const q = `
+      WITH combined AS (
+        SELECT 
+          c.id::text AS id,
+          c.name,
+          COALESCE(c.phone, '-') AS phone,
+          c.age,
+          COALESCE(c.school, '-') AS school,
+          COALESCE(c.program, 'Public Speaking SMLONE') AS program,
+          c.referral_code,
+          COALESCE(c.inviter_id, rc."ID") AS inviter_id,
+          COALESCE(c.inviter_name, p."Name", cp."Name", rc."Name", 'Siswa SMLONE') AS inviter_name,
+          COALESCE(c.status, 'registered') AS status,
+          c.created_at
+        FROM calon_siswa_smlone c
+        LEFT JOIN referral_code rc ON LOWER(TRIM(c.referral_code)) = LOWER(TRIM(rc."Referral Code"))
+        LEFT JOIN profile_trainee p ON COALESCE(c.inviter_id, rc."ID") = p."ID" OR LOWER(COALESCE(c.inviter_id, rc."ID")) = LOWER(p."ID")
+        LEFT JOIN credential_portal cp ON COALESCE(c.inviter_id, rc."ID") = cp."ID" OR LOWER(COALESCE(c.inviter_id, rc."ID")) = LOWER(cp."ID")
+
+        UNION ALL
+
+        SELECT
+          rl."ID"::text AS id,
+          rl."Name" AS name,
+          '-'::text AS phone,
+          NULL::int AS age,
+          '-'::text AS school,
+          COALESCE(rl."Class", 'Public Speaking Regular')::text AS program,
+          rl."Referal By" AS referral_code,
+          rc."ID" AS inviter_id,
+          COALESCE(p."Name", cp."Name", rc."Name", 'Siswa SMLONE') AS inviter_name,
+          'registered'::text AS status,
+          rl."created_at" AS created_at
+        FROM referral_link rl
+        LEFT JOIN referral_code rc ON LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."Referral Code")) OR LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."ID"))
+        LEFT JOIN profile_trainee p ON rc."ID" = p."ID" OR LOWER(rc."ID") = LOWER(p."ID")
+        LEFT JOIN credential_portal cp ON rc."ID" = cp."ID" OR LOWER(rc."ID") = LOWER(cp."ID")
+        WHERE NOT EXISTS (
+          SELECT 1 FROM calon_siswa_smlone c WHERE LOWER(TRIM(c.name)) = LOWER(TRIM(rl."Name"))
+        )
+      )
+      SELECT * FROM combined ORDER BY created_at DESC;
+    `;
+
+    const result = await db.query(q);
+    const formatted = result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      phone: row.phone,
+      whatsapp: row.phone,
+      age: row.age,
+      school: row.school,
+      program: row.program,
+      referral_code: row.referral_code,
+      inviter_id: row.inviter_id,
+      inviter_name: row.inviter_name,
+      referrer_id: row.inviter_id,
+      referrer_name: row.inviter_name,
+      status: row.status,
+      created_at: row.created_at,
+      registration_date: row.created_at
+    }));
+
+    return res.status(200).json({
+      success: true,
+      total: formatted.length,
+      data: formatted
+    });
+  } catch (error) {
+    console.error('[Referral Leads] GET /leads error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data pendaftar referral.',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
 // 2. GET /:identifier -> Ambil single data berdasarkan ID, Referral Code, atau Name
 // ============================================================
 router.get('/:identifier', async (req, res) => {

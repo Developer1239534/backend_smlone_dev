@@ -5,10 +5,12 @@ const db = require('../../db/neonClient');
 /**
  * ============================================================
  * ROUTE: Referal Link Portal (/api/referral-link & /api/portal/referral-link)
- * 3 Kolom Resmi Sesuai Permintaan:
+ * Kolom Resmi:
  * 1. ID (Primary Key)
- * 2. Referal By
- * 3. Name
+ * 2. Name
+ * 3. Class
+ * 4. Referal By
+ * 5. created_at
  * Tabel Database: referral_link
  * ============================================================
  */
@@ -19,27 +21,32 @@ async function ensureReferralLinkTable() {
     await db.query(`
       CREATE TABLE IF NOT EXISTS referral_link (
         "ID"           VARCHAR(255) PRIMARY KEY,
-        "Referal By"   VARCHAR(255),
         "Name"         VARCHAR(255),
+        "Class"        VARCHAR(255),
+        "Referal By"   VARCHAR(255),
         "created_at"   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         "updated_at"   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE referral_link ADD COLUMN IF NOT EXISTS "Class" VARCHAR(255);
     `);
 
     await db.query(`
       CREATE INDEX IF NOT EXISTS idx_referral_link_by ON referral_link ("Referal By");
       CREATE INDEX IF NOT EXISTS idx_referral_link_name ON referral_link ("Name");
+      CREATE INDEX IF NOT EXISTS idx_referral_link_class ON referral_link ("Class");
     `);
   } catch (err) {
     console.error('[Referal Link] Ensure table error:', err.message);
   }
 }
 
-// Format baris row agar selalu menyajikan 3 kolom resmi beserta alias camelCase / snake_case
+// Format baris row agar selalu menyajikan kolom resmi beserta alias camelCase / snake_case
 function formatReferralLinkRow(row) {
   if (!row) return null;
 
   const id = String(row["ID"] ?? row.id ?? row.id_trainee ?? '').trim();
+  const name = String(row["Name"] ?? row.name ?? row.nama ?? '').trim();
+  const cls = String(row["Class"] ?? row.class ?? row.kelas ?? '').trim();
   const referalBy = String(
     row["Referal By"] ??
     row.referal_by ??
@@ -49,22 +56,23 @@ function formatReferralLinkRow(row) {
     row.referred_by ??
     ''
   ).trim();
-  const name = String(row["Name"] ?? row.name ?? row.nama ?? '').trim();
 
   return {
-    // 3 Kolom resmi sesuai permintaan pengguna
+    // Kolom resmi sesuai permintaan pengguna
     "ID": id,
-    "Referal By": referalBy,
     "Name": name,
+    "Class": cls,
+    "Referal By": referalBy,
+    "created_at": row.created_at ?? null,
 
     // Alias pendukung
     id: id,
+    name: name,
+    class: cls,
     referal_by: referalBy,
     referral_by: referalBy,
     referalBy: referalBy,
     referralBy: referalBy,
-    name: name,
-    created_at: row.created_at ?? null,
     updated_at: row.updated_at ?? null
   };
 }
@@ -86,11 +94,14 @@ router.get('/', async (req, res) => {
       limit
     } = req.query;
 
+    const targetClass = req.query.class || req.query.Class;
+
     let query = `
       SELECT
         "ID",
-        "Referal By",
         "Name",
+        "Class",
+        "Referal By",
         "created_at",
         "updated_at"
       FROM referral_link
@@ -106,6 +117,7 @@ router.get('/', async (req, res) => {
         "ID" ILIKE $${params.length}
         OR "Referal By" ILIKE $${params.length}
         OR "Name" ILIKE $${params.length}
+        OR "Class" ILIKE $${params.length}
       )`);
     }
 
@@ -126,6 +138,12 @@ router.get('/', async (req, res) => {
     if (name) {
       params.push(`%${String(name).trim()}%`);
       conditions.push(`"Name" ILIKE $${params.length}`);
+    }
+
+    // Filter by Class
+    if (targetClass) {
+      params.push(`%${String(targetClass).trim()}%`);
+      conditions.push(`"Class" ILIKE $${params.length}`);
     }
 
     if (conditions.length > 0) {
@@ -178,8 +196,9 @@ router.get('/by/:referalBy', async (req, res) => {
     const query = `
       SELECT
         "ID",
-        "Referal By",
         "Name",
+        "Class",
+        "Referal By",
         "created_at",
         "updated_at"
       FROM referral_link
@@ -220,8 +239,9 @@ router.get('/:identifier', async (req, res) => {
     const query = `
       SELECT
         "ID",
-        "Referal By",
         "Name",
+        "Class",
+        "Referal By",
         "created_at",
         "updated_at"
       FROM referral_link
@@ -267,6 +287,8 @@ router.post('/', async (req, res) => {
 
     const body = req.body || {};
     const id = String(body["ID"] ?? body.id ?? body.id_trainee ?? '').trim();
+    const name = String(body["Name"] ?? body.name ?? body.nama ?? '').trim();
+    const cls = String(body["Class"] ?? body.class ?? body.kelas ?? '').trim();
     const referalBy = String(
       body["Referal By"] ??
       body.referal_by ??
@@ -276,7 +298,6 @@ router.post('/', async (req, res) => {
       body.referred_by ??
       ''
     ).trim();
-    const name = String(body["Name"] ?? body.name ?? body.nama ?? '').trim();
 
     if (!id) {
       return res.status(400).json({
@@ -286,16 +307,17 @@ router.post('/', async (req, res) => {
     }
 
     const upsertQuery = `
-      INSERT INTO referral_link ("ID", "Referal By", "Name", "created_at", "updated_at")
-      VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO referral_link ("ID", "Name", "Class", "Referal By", "created_at", "updated_at")
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT ("ID") DO UPDATE SET
-        "Referal By" = EXCLUDED."Referal By",
         "Name"       = EXCLUDED."Name",
+        "Class"      = EXCLUDED."Class",
+        "Referal By" = EXCLUDED."Referal By",
         "updated_at" = CURRENT_TIMESTAMP
       RETURNING *;
     `;
 
-    const result = await db.query(upsertQuery, [id, referalBy, name]);
+    const result = await db.query(upsertQuery, [id, name, cls, referalBy]);
     const saved = formatReferralLinkRow(result.rows[0]);
 
     return res.status(201).json({
@@ -334,6 +356,8 @@ router.post('/bulk', async (req, res) => {
 
     for (const item of list) {
       const id = String(item["ID"] ?? item.id ?? item.id_trainee ?? '').trim();
+      const name = String(item["Name"] ?? item.name ?? item.nama ?? '').trim();
+      const cls = String(item["Class"] ?? item.class ?? item.kelas ?? '').trim();
       const referalBy = String(
         item["Referal By"] ??
         item.referal_by ??
@@ -343,7 +367,6 @@ router.post('/bulk', async (req, res) => {
         item.referred_by ??
         ''
       ).trim();
-      const name = String(item["Name"] ?? item.name ?? item.nama ?? '').trim();
 
       if (!id) {
         errors.push({ item, error: 'Kolom ID kosong.' });
@@ -352,13 +375,14 @@ router.post('/bulk', async (req, res) => {
 
       try {
         await db.query(`
-          INSERT INTO referral_link ("ID", "Referal By", "Name", "created_at", "updated_at")
-          VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          INSERT INTO referral_link ("ID", "Name", "Class", "Referal By", "created_at", "updated_at")
+          VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
           ON CONFLICT ("ID") DO UPDATE SET
-            "Referal By" = EXCLUDED."Referal By",
             "Name"       = EXCLUDED."Name",
+            "Class"      = EXCLUDED."Class",
+            "Referal By" = EXCLUDED."Referal By",
             "updated_at" = CURRENT_TIMESTAMP;
-        `, [id, referalBy, name]);
+        `, [id, name, cls, referalBy]);
         successCount++;
       } catch (err) {
         errors.push({ id, error: err.message });
@@ -392,20 +416,26 @@ router.put('/:id', async (req, res) => {
     await ensureReferralLinkTable();
 
     const body = req.body || {};
-    const referalBy = body["Referal By"] ?? body.referal_by ?? body.referral_by ?? body.referalBy ?? body.referralBy;
     const name = body["Name"] ?? body.name ?? body.nama;
+    const cls = body["Class"] ?? body.class ?? body.kelas;
+    const referalBy = body["Referal By"] ?? body.referal_by ?? body.referral_by ?? body.referalBy ?? body.referralBy;
 
     const updates = [];
     const params = [id];
 
-    if (referalBy !== undefined) {
-      params.push(String(referalBy).trim());
-      updates.push(`"Referal By" = $${params.length}`);
-    }
-
     if (name !== undefined) {
       params.push(String(name).trim());
       updates.push(`"Name" = $${params.length}`);
+    }
+
+    if (cls !== undefined) {
+      params.push(String(cls).trim());
+      updates.push(`"Class" = $${params.length}`);
+    }
+
+    if (referalBy !== undefined) {
+      params.push(String(referalBy).trim());
+      updates.push(`"Referal By" = $${params.length}`);
     }
 
     if (updates.length === 0) {

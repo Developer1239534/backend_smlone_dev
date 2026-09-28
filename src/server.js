@@ -117,6 +117,7 @@ app.use('/api/portal/real-stage', realStageRoutes);
 // ============================================================
 app.use('/api/referral-code', referralCodeRoutes);
 app.use('/api/referral', referralCodeRoutes);
+app.use('/api/portal/referral', referralCodeRoutes);
 app.use('/api/portal/referral-code', referralCodeRoutes);
 app.use('/api/webhook/referral-code', referralCodeRoutes);
 
