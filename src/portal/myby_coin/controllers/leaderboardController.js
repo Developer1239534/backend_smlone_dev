@@ -96,15 +96,30 @@ async function handleGetLeaderboardReferral(req, res) {
     await ensureMyByCoinTables();
 
     // Query agregat dari referral_link, transaksi badge 'Referral Bonus', dan calon_siswa_smlone
+    // Normalisasi: kode "SMLONE-<ID>" / "MYBY-<ID>" / "SML-<ID>-REF" selalu dipetakan ke ID trainee aslinya
     const query = `
       WITH link_agg AS (
-        SELECT 
-          COALESCE(rc."ID", rl."Referal By") AS trainee_id,
+        SELECT
+          COALESCE(
+            rc."ID",
+            CASE
+              WHEN UPPER(TRIM(rl."Referal By")) LIKE 'SMLONE-%' THEN TRIM(SUBSTRING(TRIM(rl."Referal By") FROM 8))
+              WHEN UPPER(TRIM(rl."Referal By")) LIKE 'MYBY-%' THEN TRIM(SUBSTRING(TRIM(rl."Referal By") FROM 6))
+              ELSE TRIM(rl."Referal By")
+            END
+          ) AS trainee_id,
           COUNT(DISTINCT rl."ID") AS link_count
         FROM referral_link rl
         LEFT JOIN referral_code rc ON LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."Referral Code")) OR LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."ID"))
         WHERE rl."Referal By" IS NOT NULL AND rl."Referal By" != ''
-        GROUP BY COALESCE(rc."ID", rl."Referal By")
+        GROUP BY COALESCE(
+          rc."ID",
+          CASE
+            WHEN UPPER(TRIM(rl."Referal By")) LIKE 'SMLONE-%' THEN TRIM(SUBSTRING(TRIM(rl."Referal By") FROM 8))
+            WHEN UPPER(TRIM(rl."Referal By")) LIKE 'MYBY-%' THEN TRIM(SUBSTRING(TRIM(rl."Referal By") FROM 6))
+            ELSE TRIM(rl."Referal By")
+          END
+        )
       ),
       tx_agg AS (
         SELECT 
