@@ -141,25 +141,20 @@ async function handleGetLeaderboardReferral(req, res) {
       ),
       all_trainees AS (
         SELECT trainee_id FROM link_agg
-        UNION
-        SELECT trainee_id FROM tx_agg
-        UNION
-        SELECT trainee_id FROM calon_agg
       )
       SELECT 
         a.trainee_id AS id,
         COALESCE(p."Name", cp."Name", rc."Name", 'Trainee SMLONE') AS name,
         COALESCE(p."HOUSE", 'House of Thenova') AS house,
         COALESCE(p."Class", 'Public Speaking Alpha') AS class,
-        GREATEST(COALESCE(l.link_count, 0), COALESCE(t.tx_count, 0), COALESCE(c.calon_count, 0))::int AS total_referrals,
+        COALESCE(l.link_count, 0)::int AS total_referrals,
         CASE 
           WHEN COALESCE(t.tx_coins, 0) > 0 THEN t.tx_coins::int 
-          ELSE (GREATEST(COALESCE(l.link_count, 0), COALESCE(t.tx_count, 0), COALESCE(c.calon_count, 0)) * 75)::int 
+          ELSE (COALESCE(l.link_count, 0) * 5)::int 
         END AS bonus_coins
       FROM all_trainees a
       LEFT JOIN link_agg l ON a.trainee_id = l.trainee_id
       LEFT JOIN tx_agg t ON a.trainee_id = t.trainee_id
-      LEFT JOIN calon_agg c ON a.trainee_id = c.trainee_id
       LEFT JOIN profile_trainee p ON a.trainee_id = p."ID" OR LOWER(a.trainee_id) = LOWER(p."ID")
       LEFT JOIN credential_portal cp ON a.trainee_id = cp."ID" OR LOWER(a.trainee_id) = LOWER(cp."ID")
       LEFT JOIN referral_code rc ON a.trainee_id = rc."ID" OR LOWER(a.trainee_id) = LOWER(rc."ID")
