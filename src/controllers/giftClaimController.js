@@ -234,7 +234,7 @@ async function handleGiftClaim(req, res) {
       await db.query(
         `INSERT INTO myby_redeem_requests (id, "ID", "Name", reward_id, reward_title, coins_spent, notes, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
-        [`red-${claimId}`, profile.ID, profile.Name, gift.catalogId || rawGiftId, gift.nama, gift.cost, 'via /api/v1/gifts/claim']
+        [`red-${claimId}`, profile.ID, profile.Name, gift.catalogId || rawGiftId, gift.nama, gift.cost, null]
       );
       if (gift.catalogId) {
         await db.query(
