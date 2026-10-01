@@ -168,11 +168,22 @@ async function ensureReportProgresTable() {
   }
 }
 
+// Ensure tabel hanya dijalankan sekali per proses (bukan tiap request).
+// GET by-ID tidak menunggu ensure sama sekali — tabel sudah ada & terindex.
+let ensureProgresPromise = null;
+function ensureProgresOnce() {
+  if (!ensureProgresPromise) {
+    ensureProgresPromise = ensureReportProgresTable().catch((e) =>
+      console.error('[Report Progres] Ensure-once error:', e.message)
+    );
+  }
+  return ensureProgresPromise;
+}
+ensureProgresOnce(); // prewarm saat boot, fire-and-forget
+
 // 1. GET / - Ambil semua data Report Progres (search, filter, pagination)
 router.get('/', async (req, res) => {
   try {
-    await ensureReportProgresTable();
-
     const { id, search, class_name, class: classFilter, house, level, date, limit, page } = req.query;
     let query = `
       SELECT 
@@ -270,7 +281,7 @@ router.get('/stream', (req, res) => {
 
   const send = async () => {
     try {
-      const result = await db.query('SELECT * FROM report_progres ORDER BY created_at DESC LIMIT 50');
+      const result = await db.query(`SELECT ${REPORT_PROGRES_COLS} FROM report_progres ORDER BY created_at DESC LIMIT 50`);
       res.write(`data: ${JSON.stringify(result.rows.map(formatReportProgresRow))}\n\n`);
     } catch (e) {}
   };
@@ -294,27 +305,44 @@ router.all('/reset-schema', async (req, res) => {
   }
 });
 
-// 2. GET /:id - Detail report progres per ID Trainee (mengembalikan histori baris & latest)
+// 2. GET /:id - Detail latest report progres per ID Trainee (1 baris terbaru saja).
+// Tanpa ensure-table (tabel sudah ada + terindex), exact-match + LIMIT 1.
+const REPORT_PROGRES_COLS = `
+  "ID",
+  "Student Name",
+  "Class Trainers",
+  "Date",
+  "Coach Feedback",
+  "Challenge",
+  "Speaking Project",
+  "Role 2",
+  "Role 3",
+  "Role 4",
+  "Life Project",
+  "House",
+  "Level",
+  "Latest Speaking Project",
+  "Last Time Speaking",
+  "Class",
+  created_at,
+  updated_at
+`;
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await ensureReportProgresTable();
     const result = await db.query(
-      'SELECT * FROM report_progres WHERE "ID" = $1 OR "ID" ILIKE $1 ORDER BY created_at DESC',
-      [id]
+      `SELECT ${REPORT_PROGRES_COLS} FROM report_progres WHERE "ID" = $1 ORDER BY created_at DESC LIMIT 1`,
+      [String(id).trim()]
     );
 
     if (result.rows.length > 0) {
-      const formattedRows = result.rows.map(formatReportProgresRow);
-      const latest = formattedRows[0];
+      const latest = formatReportProgresRow(result.rows[0]);
 
       return res.json({
         success: true,
-        count: formattedRows.length,
+        count: 1,
         data: latest,
         latest: latest,
-        history: formattedRows,
-        all: formattedRows,
         ...latest
       });
     }
@@ -332,7 +360,7 @@ router.get('/:id', async (req, res) => {
 // 3. POST / - Input single report progres record
 router.post('/', async (req, res) => {
   try {
-    await ensureReportProgresTable();
+    await ensureProgresOnce();
     const row = req.body;
 
     const id = String(row['ID'] ?? row['id'] ?? row['trainee_id'] ?? '').trim();
@@ -384,7 +412,7 @@ router.post('/', async (req, res) => {
 // 4. POST /push - Bulk High-Speed Batch Insert dari Google Sheets / n8n (Menyimpan seluruh 16k+ baris tanpa batasan ID)
 router.post('/push', async (req, res) => {
   try {
-    await ensureReportProgresTable();
+    await ensureProgresOnce();
     let data = req.body;
     if (!Array.isArray(data)) {
       data = [data];

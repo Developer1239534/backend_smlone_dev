@@ -18,6 +18,7 @@ const mybyCoinRoutes = require('./portal/myby_coin/mybyCoinRoutes');
 const authRoutes = require('./routes/authRoutes');
 const giftRoutes = require('./routes/giftRoutes');
 const credentialAdminRoutes = require('./portal/credential_admin/credentialAdminRoutes');
+const db = require('./db/neonClient');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -41,6 +42,47 @@ app.get('/api/health', (req, res) => {
     message: 'SMLONE Backend Server is running smoothly!',
     timestamp: new Date().toISOString()
   });
+});
+
+// Endpoint Agregat Dashboard Summary (1x request, multi-table query via same pool)
+app.get(['/api/dashboard-summary/:id', '/api/portal/dashboard-summary/:id'], async (req, res) => {
+  const { id } = req.params;
+  const cleanId = String(id || '').trim();
+  try {
+    const [profileRes, reportRes] = await Promise.all([
+      db.query(
+        `SELECT "Class", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
+          "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
+          "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
+          "Trainee WhatsApp Number", "School Name"
+        FROM profile_trainee WHERE "ID" = $1 LIMIT 1`,
+        [cleanId]
+      ),
+      db.query(
+        `SELECT "ID", "Student Name", "Class Trainers", "Date", "Coach Feedback", "Challenge",
+          "Speaking Project", "Role 2", "Role 3", "Role 4", "Life Project", "House", "Level",
+          "Latest Speaking Project", "Last Time Speaking", "Class", created_at, updated_at
+        FROM report_progres WHERE "ID" = $1 ORDER BY created_at DESC LIMIT 1`,
+        [cleanId]
+      )
+    ]);
+
+    const profileData = profileRes.rows[0] || null;
+    const reportData = reportRes.rows[0] || null;
+
+    res.json({
+      success: true,
+      message: `Dashboard summary untuk ID ${cleanId}`,
+      data: {
+        profile: profileData,
+        reportProgres: reportData,
+        reportTrainee: reportData
+      }
+    });
+  } catch (err) {
+    console.error('[Dashboard Summary] Error:', err.message);
+    res.status(500).json({ success: false, message: 'Gagal mengambil summary dashboard', error: err.message });
+  }
 });
 
 // ============================================================

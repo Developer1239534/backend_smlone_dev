@@ -65,6 +65,18 @@ async function ensureProfileTraineeTable() {
   }
 }
 
+// Ensure hanya dijalankan sekali saat boot (bukan per request)
+let ensureProfilePromise = null;
+function ensureProfileOnce() {
+  if (!ensureProfilePromise) {
+    ensureProfilePromise = ensureProfileTraineeTable().catch(err => {
+      console.error('[Profile Trainee] Ensure table error:', err.message);
+    });
+  }
+  return ensureProfilePromise;
+}
+ensureProfileOnce(); // prewarm boot-only
+
 // Format row untuk menghasilkan 22 kolom resmi dan alias kompatibilitas frontend
 function formatProfileRow(row) {
   return {
@@ -119,7 +131,6 @@ function formatProfileRow(row) {
 // 1. GET / - Ambil semua data Profile Trainee (search & filter) murni dari database Neon
 router.get('/', async (req, res) => {
   try {
-    await ensureProfileTraineeTable();
     const { search, house, class_name, membership, branch, level, limit, page } = req.query;
 
     let query = `
@@ -198,11 +209,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. GET /:id - Ambil detail Profile Trainee berdasarkan ID
+// 2. GET /:id - Ambil detail Profile Trainee berdasarkan ID (tanpa ensure-table, exact index lookup)
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await ensureProfileTraineeTable();
+    const cleanId = String(id || '').trim();
     const result = await db.query(
       `SELECT 
         "Class", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
@@ -210,9 +221,9 @@ router.get('/:id', async (req, res) => {
         "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
         "Trainee WhatsApp Number", "School Name"
       FROM profile_trainee 
-      WHERE "ID" = $1 OR "ID" ILIKE $1 
+      WHERE "ID" = $1
       LIMIT 1`,
-      [id]
+      [cleanId]
     );
 
     if (result.rows.length === 0) {
@@ -223,11 +234,12 @@ router.get('/:id', async (req, res) => {
     }
 
     const row = result.rows[0];
+    const formatted = formatProfileRow(row);
     return res.status(200).json({
       success: true,
       message: `Berhasil mengambil data Profile Trainee ID: ${id}.`,
-      data: formatProfileRow(row),
-      ...formatProfileRow(row)
+      data: formatted,
+      ...formatted
     });
   } catch (error) {
     console.error('[Profile Trainee] GET /:id error:', error.message);
@@ -242,7 +254,7 @@ router.get('/:id', async (req, res) => {
 // 3. POST / - Tambah / Upsert data tunggal (22 kolom murni)
 router.post('/', async (req, res) => {
   try {
-    await ensureProfileTraineeTable();
+    await ensureProfileOnce();
     const row = req.body;
 
     const id = String(row['ID'] ?? row['id'] ?? '').trim();
@@ -334,7 +346,7 @@ router.post('/', async (req, res) => {
 // 4. POST /push - Bulk Upsert sinkronisasi Google Sheet / n8n (22 kolom murni)
 router.post('/push', async (req, res) => {
   try {
-    await ensureProfileTraineeTable();
+    await ensureProfileOnce();
     let data = req.body;
 
     if (!Array.isArray(data)) {
@@ -451,7 +463,7 @@ router.post('/push', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await ensureProfileTraineeTable();
+    await ensureProfileOnce();
     const checkRes = await db.query('SELECT * FROM profile_trainee WHERE "ID" = $1', [id]);
     const existing = checkRes.rows.length > 0 ? checkRes.rows[0] : {};
     const b = req.body;
