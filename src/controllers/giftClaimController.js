@@ -42,6 +42,18 @@ async function ensureGiftClaimsTable() {
   `);
 }
 
+// Inisialisasi skema tabel sekali saat startup
+let ensureGiftClaimsPromise = null;
+function ensureGiftClaimsOnce() {
+  if (!ensureGiftClaimsPromise) {
+    ensureGiftClaimsPromise = ensureGiftClaimsTable().catch((err) => {
+      console.error('[Gift Claims] Ensure table error:', err.message);
+    });
+  }
+  return ensureGiftClaimsPromise;
+}
+ensureGiftClaimsOnce();
+
 function extractUserFromRequest(req) {
   let user = null;
   const authHeader = req.headers['authorization'] || req.headers['Authorization'];
@@ -75,10 +87,12 @@ function extractUserFromRequest(req) {
   if (!user && req.user) user = req.user;
 
   const bodyId = req.body?.trainee_id ?? req.body?.traineeId ?? req.body?.user_id ?? req.body?.id ?? req.body?.ID;
-  if (!user && bodyId) {
+  const queryId = req.query?.trainee_id ?? req.query?.traineeId ?? req.query?.user_id ?? req.query?.id ?? req.query?.ID;
+  const targetId = bodyId || queryId;
+  if (!user && targetId) {
     user = {
-      id: String(bodyId).trim(),
-      trainee_id: String(bodyId).trim(),
+      id: String(targetId).trim(),
+      trainee_id: String(targetId).trim(),
       name: req.body?.name || req.body?.Nama || '',
       email: req.body?.email || req.body?.Email || ''
     };
@@ -96,11 +110,10 @@ function extractUserFromRequest(req) {
  * 4. Kurangi koin + insert ke tabel gift_claims (id, user_id, gift_id, gift_name, coin_cost, remaining_coin, status, created_at) dalam 1 transaksi DB.
  * 5. Setelah commit sukses, forward ASYNC (fire-and-forget, timeout 5 detik, jangan gagalkan response kalau n8n timeout).
  * 6. Langsung return 200 ke portal:
- *    { success:true, message:"Hadiah berhasil diklaim, cek email kamu", data:{ gift: gift_name, coin_cost: cost, remaining_coin: sisa } }
+ *    { success:true, message:"Hadiah berhasil diklaim!", data:{ gift: gift_name, coin_cost: cost, remaining_coin: sisa } }
  */
 async function handleGiftClaim(req, res) {
   try {
-    await ensureGiftClaimsTable();
 
     // 1. Ambil user dari JWT (atau fallback identitas sesi)
     const user = extractUserFromRequest(req);
@@ -119,7 +132,21 @@ async function handleGiftClaim(req, res) {
       return res.status(400).json({ success: false, error: 'gift_id wajib diisi.' });
     }
 
-    const gift = GIFT_MAP[rawGiftId];
+    let gift = GIFT_MAP[rawGiftId];
+    if (!gift) {
+      try {
+        const catRes = await db.query('SELECT * FROM myby_rewards_catalog WHERE id = $1 OR LOWER(id) = $1 LIMIT 1', [rawGiftId]);
+        if (catRes.rows.length > 0) {
+          const r = catRes.rows[0];
+          gift = {
+            catalogId: r.id,
+            nama: r.title || r.name,
+            cost: Number(r.cost || 0)
+          };
+        }
+      } catch (_) {}
+    }
+
     if (!gift) {
       return res.status(400).json({ success: false, error: `gift_id "${rawGiftId}" tidak valid atau tidak ditemukan.` });
     }
@@ -221,7 +248,7 @@ async function handleGiftClaim(req, res) {
       // 6. Langsung return 200 ke portal
       res.status(200).json({
         success: true,
-        message: 'Hadiah berhasil diklaim, cek email kamu',
+        message: 'Hadiah berhasil diklaim!',
         data: {
           gift: gift.nama,
           coin_cost: gift.cost,
