@@ -17,6 +17,7 @@ const referralLinkRoutes = require('./portal/referral_link/referralLinkRoutes');
 const mybyCoinRoutes = require('./portal/myby_coin/mybyCoinRoutes');
 const authRoutes = require('./routes/authRoutes');
 const giftRoutes = require('./routes/giftRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 const credentialAdminRoutes = require('./portal/credential_admin/credentialAdminRoutes');
 const db = require('./db/neonClient');
 
@@ -187,7 +188,14 @@ app.use('/api/gifts', giftRoutes);
 app.use('/api/portal/gifts', giftRoutes);
 
 // ============================================================
-// 14. Credential Admin
+// 14. Students & Level 6 Reports
+// ============================================================
+app.use('/api/v1/students', studentRoutes);
+app.use('/api/students', studentRoutes);
+app.use('/api/portal/students', studentRoutes);
+
+// ============================================================
+// 15. Credential Admin
 // ============================================================
 app.use('/api/credential-admin', credentialAdminRoutes);
 app.use('/api/portal/credential-admin', credentialAdminRoutes);
@@ -211,7 +219,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '127.0.0.1', () => {
   console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
   console.log(`📡 Endpoints Portal aktif:`);
   console.log(`   - 1. Credential Portal     : /api/credential-portal`);
