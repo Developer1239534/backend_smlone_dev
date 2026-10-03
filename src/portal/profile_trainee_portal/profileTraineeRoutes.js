@@ -37,6 +37,7 @@ async function ensureProfileTraineeTable() {
     await db.query(`
       CREATE TABLE IF NOT EXISTS profile_trainee (
         "Class"                   VARCHAR(100),
+        "Program"                 VARCHAR(100),
         "Day"                     VARCHAR(50),
         "Time"                    VARCHAR(50),
         "Room"                    VARCHAR(100),
@@ -59,6 +60,7 @@ async function ensureProfileTraineeTable() {
         "Trainee WhatsApp Number" VARCHAR(100),
         "School Name"             VARCHAR(255)
       );
+      ALTER TABLE profile_trainee ADD COLUMN IF NOT EXISTS "Program" VARCHAR(100);
     `);
   } catch (err) {
     console.error('[Profile Trainee] Ensure table error:', err.message);
@@ -77,10 +79,11 @@ function ensureProfileOnce() {
 }
 ensureProfileOnce(); // prewarm boot-only
 
-// Format row untuk menghasilkan 22 kolom resmi dan alias kompatibilitas frontend
+// Format row untuk menghasilkan kolom resmi dan alias kompatibilitas frontend
 function formatProfileRow(row) {
   return {
     "Class": row["Class"] ?? '',
+    "Program": row["Program"] ?? '',
     "Day": row["Day"] ?? '',
     "Time": row["Time"] ?? '',
     "Room": row["Room"] ?? '',
@@ -106,6 +109,7 @@ function formatProfileRow(row) {
     id: row["ID"] ?? '',
     name: row["Name"] ?? '',
     class: row["Class"] ?? '',
+    program: row["Program"] ?? '',
     day: row["Day"] ?? '',
     time: row["Time"] ?? '',
     room: row["Room"] ?? '',
@@ -135,7 +139,7 @@ router.get('/', async (req, res) => {
 
     let query = `
       SELECT 
-        "Class", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
+        "Class", "Program", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
         "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
         "Trainee WhatsApp Number", "School Name"
@@ -216,7 +220,7 @@ router.get('/:id', async (req, res) => {
     const cleanId = String(id || '').trim();
     const result = await db.query(
       `SELECT 
-        "Class", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
+        "Class", "Program", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
         "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
         "Trainee WhatsApp Number", "School Name"
