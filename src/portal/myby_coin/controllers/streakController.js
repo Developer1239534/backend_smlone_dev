@@ -85,7 +85,7 @@ async function handleGetOverview(req, res) {
       cycleDay = 1;
     }
 
-    const todayBonusAvailable = CYCLE_BONUSES[(cycleDay - 1) % 7] || 20;
+    const todayBonusAvailable = CYCLE_BONUSES[(cycleDay - 1) % 7] || 2;
 
     // Bentuk data visual 7 hari
     const days = DAY_NAMES.map((name, idx) => {
@@ -203,7 +203,7 @@ async function handleClaimStreak(req, res) {
 
     const prevLongest = Number(prevStreak.longest_streak || 0);
     const newLongest = Math.max(prevLongest, newStreak);
-    const bonusCoin = CYCLE_BONUSES[(newCycleDay - 1) % 7] || 20;
+    const bonusCoin = CYCLE_BONUSES[(newCycleDay - 1) % 7] || 2;
 
     // Eksekusi Transaksi Database (Atomic)
     await db.query('BEGIN');
@@ -243,7 +243,7 @@ async function handleClaimStreak(req, res) {
     // 3. Catat Riwayat Transaksi Murni: "Day X Streak"
     const txId = `tx-streak-${Date.now()}`;
     await db.query(`
-      INSERT INTO myby_coin_transactions (id, "ID", "Name", title, amount, type, badge)
+      INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge)
       VALUES ($1, $2, $3, $4, $5, 'earn', 'Streak Reward')
     `, [txId, profile.ID, profile.Name, `Day ${newStreak} Streak`, bonusCoin]);
 

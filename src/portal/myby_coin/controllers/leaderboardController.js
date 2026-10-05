@@ -150,7 +150,7 @@ async function handleGetLeaderboardReferral(req, res) {
         COALESCE(l.link_count, 0)::int AS total_referrals,
         CASE 
           WHEN COALESCE(t.tx_coins, 0) > 0 THEN t.tx_coins::int 
-          ELSE (COALESCE(l.link_count, 0) * 5)::int 
+          ELSE (COALESCE(l.link_count, 0) * 1)::int 
         END AS bonus_coins
       FROM all_trainees a
       LEFT JOIN link_agg l ON a.trainee_id = l.trainee_id
