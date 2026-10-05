@@ -115,9 +115,10 @@ async function handleAdminDeleteWallet(req, res) {
   const { id } = req.params;
   try {
     await ensureMyByCoinTables();
-    const result = await db.query('DELETE FROM myby_trainee_wallets WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 RETURNING "ID", "Name";', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Wallet "${id}" tidak ditemukan.` });
-    return res.status(200).json({ success: true, message: 'Wallet berhasil dihapus.', data: result.rows[0] });
+    const existing = await db.query('SELECT "ID", "Name" FROM myby_trainee_wallets WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 LIMIT 1;', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ success: false, message: `Wallet "${id}" tidak ditemukan.` });
+    await db.query('DELETE FROM myby_trainee_wallets WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1;', [id]);
+    return res.status(200).json({ success: true, message: 'Wallet berhasil dihapus.', data: existing.rows[0] });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal menghapus wallet.', error: error.message });
   }
@@ -170,9 +171,10 @@ async function handleAdminDeleteTransaction(req, res) {
   const { id } = req.params;
   try {
     await ensureMyByCoinTables();
-    const result = await db.query('DELETE FROM myby_coin_transactions WHERE id = $1 RETURNING id;', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Transaksi "${id}" tidak ditemukan.` });
-    return res.status(200).json({ success: true, message: 'Transaksi berhasil dihapus.', data: result.rows[0] });
+    const existing = await db.query('SELECT id FROM myby_coin_transactions WHERE id = $1 LIMIT 1;', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ success: false, message: `Transaksi "${id}" tidak ditemukan.` });
+    await db.query('DELETE FROM myby_coin_transactions WHERE id = $1;', [id]);
+    return res.status(200).json({ success: true, message: 'Transaksi berhasil dihapus.', data: existing.rows[0] });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal menghapus transaksi.', error: error.message });
   }
@@ -262,9 +264,10 @@ async function handleAdminDeleteReward(req, res) {
   const { id } = req.params;
   try {
     await ensureMyByCoinTables();
-    const result = await db.query('DELETE FROM myby_rewards_catalog WHERE id = $1 RETURNING id, title;', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Reward "${id}" tidak ditemukan.` });
-    return res.status(200).json({ success: true, message: 'Reward berhasil dihapus.', data: result.rows[0] });
+    const existing = await db.query('SELECT id, title FROM myby_rewards_catalog WHERE id = $1 LIMIT 1;', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ success: false, message: `Reward "${id}" tidak ditemukan.` });
+    await db.query('DELETE FROM myby_rewards_catalog WHERE id = $1;', [id]);
+    return res.status(200).json({ success: true, message: 'Reward berhasil dihapus.', data: existing.rows[0] });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal menghapus reward.', error: error.message });
   }
@@ -353,9 +356,10 @@ async function handleAdminDeleteRedeem(req, res) {
   const { id } = req.params;
   try {
     await ensureMyByCoinTables();
-    const result = await db.query('DELETE FROM myby_redeem_requests WHERE id = $1 RETURNING id;', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Redeem "${id}" tidak ditemukan.` });
-    return res.status(200).json({ success: true, message: 'Redeem berhasil dihapus.', data: result.rows[0] });
+    const existing = await db.query('SELECT id FROM myby_redeem_requests WHERE id = $1 LIMIT 1;', [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ success: false, message: `Redeem "${id}" tidak ditemukan.` });
+    await db.query('DELETE FROM myby_redeem_requests WHERE id = $1;', [id]);
+    return res.status(200).json({ success: true, message: 'Redeem berhasil dihapus.', data: existing.rows[0] });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal menghapus redeem.', error: error.message });
   }

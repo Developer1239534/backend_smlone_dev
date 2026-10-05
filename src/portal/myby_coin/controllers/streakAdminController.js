@@ -155,14 +155,18 @@ async function handleAdminDeleteStreak(req, res) {
   const { id } = req.params;
   try {
     await ensureMyByCoinTables();
-    const result = await db.query(
-      'DELETE FROM myby_trainee_streaks WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 RETURNING "ID", "Name";',
+    const existing = await db.query(
+      'SELECT "ID", "Name" FROM myby_trainee_streaks WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 LIMIT 1;',
       [id]
     );
-    if (result.rows.length === 0) {
+    if (existing.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Streak ID "${id}" tidak ditemukan.` });
     }
-    return res.status(200).json({ success: true, message: 'Data streak berhasil dihapus.', data: result.rows[0] });
+    await db.query(
+      'DELETE FROM myby_trainee_streaks WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1;',
+      [id]
+    );
+    return res.status(200).json({ success: true, message: 'Data streak berhasil dihapus.', data: existing.rows[0] });
   } catch (error) {
     console.error('[MyBy Streak Admin] DELETE error:', error.message);
     return res.status(500).json({ success: false, message: 'Gagal menghapus streak.', error: error.message });
