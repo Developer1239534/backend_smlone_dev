@@ -41,7 +41,7 @@ function convertPgToMysql(sql, params = []) {
     const matchVal = convertedSql.match(/ON\s+DUPLICATE|VALUES/i);
     if (matchVal) {
       const parts = convertedSql.split(matchVal[0]);
-      parts[0] = parts[0].replace(/\b`ID`\b/g, '`trainee_id`');
+      parts[0] = parts[0].replace(/`ID`/g, '`trainee_id`');
       convertedSql = parts.join(matchVal[0]);
     }
   }
