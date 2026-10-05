@@ -99,7 +99,12 @@ async function handleAdminUpsertStreak(req, res) {
       last_check_in_date || null,
       Number(total_check_ins ?? 0)
     ]);
-    return res.status(201).json({ success: true, message: 'Data streak berhasil disimpan.', data: result.rows[0] });
+    const returnData = (await db.query(
+      'SELECT "ID", "Name", current_streak, longest_streak, streak_cycle_day, last_check_in_date, total_check_ins FROM myby_trainee_streaks WHERE "ID" = $1',
+      [profile.ID]
+    )).rows[0] || result.rows[0];
+
+    return res.status(201).json({ success: true, message: 'Data streak berhasil disimpan.', data: returnData });
   } catch (error) {
     console.error('[MyBy Streak Admin] UPSERT error:', error.message);
     return res.status(500).json({ success: false, message: 'Gagal menyimpan data streak.', error: error.message });
@@ -133,7 +138,12 @@ async function handleAdminUpdateStreak(req, res) {
       b.last_check_in_date !== undefined ? (b.last_check_in_date || null) : ex.last_check_in_date,
       b.total_check_ins ?? ex.total_check_ins
     ]);
-    return res.status(200).json({ success: true, message: `Streak ID ${ex.ID} berhasil diperbarui.`, data: result.rows[0] });
+    const returnData = (await db.query(
+      'SELECT "ID", "Name", current_streak, longest_streak, streak_cycle_day, last_check_in_date, total_check_ins FROM myby_trainee_streaks WHERE "ID" = $1',
+      [ex.ID]
+    )).rows[0] || result.rows[0];
+
+    return res.status(200).json({ success: true, message: `Streak ID ${ex.ID} berhasil diperbarui.`, data: returnData });
   } catch (error) {
     console.error('[MyBy Streak Admin] UPDATE error:', error.message);
     return res.status(500).json({ success: false, message: 'Gagal memperbarui streak.', error: error.message });

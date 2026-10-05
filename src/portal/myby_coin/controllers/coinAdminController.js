@@ -84,7 +84,7 @@ async function handleAdminUpsertWallet(req, res) {
       const badge = delta >= 0 ? 'Deposit Admin' : 'Koreksi Saldo';
       const txTitle = delta >= 0 ? `Deposit Admin (+${delta})` : `Koreksi Saldo (${delta})`;
       await db.query(
-        `INSERT INTO myby_coin_transactions (id, "ID", "Name", title, amount, type, badge, metadata)
+        `INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge, metadata)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [`tx-adj-${Date.now()}`, profile.ID, finalName || profile.Name, txTitle, Math.abs(delta), delta >= 0 ? 'earn' : 'spend', badge, JSON.stringify({ by: 'admin' })]
       ).catch(() => {});
@@ -104,7 +104,8 @@ async function handleAdminUpsertWallet(req, res) {
           finalName]
       );
     }
-    return res.status(201).json({ success: true, message: 'Deposit / saldo berhasil diperbarui.', data: result.rows[0] });
+    const returnData = (await db.query('SELECT * FROM myby_trainee_wallets WHERE "ID" = $1', [profile.ID])).rows[0] || result.rows[0];
+    return res.status(201).json({ success: true, message: 'Deposit / saldo berhasil diperbarui.', data: returnData });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal menyimpan wallet.', error: error.message });
   }
@@ -155,7 +156,7 @@ async function handleAdminCreateTransaction(req, res) {
     const finalName = String(Name ?? name ?? profile.Name ?? '').trim();
     const txId = `tx-adm-${Date.now()}`;
     const result = await db.query(
-      `INSERT INTO myby_coin_transactions (id, "ID", "Name", title, amount, type, badge, metadata)
+      `INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge, metadata)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
       [txId, profile.ID, finalName, title, Number(amount), type, badge, metadata ? JSON.stringify(metadata) : '{}']
     );
@@ -222,7 +223,8 @@ async function handleAdminUpsertReward(req, res) {
         description = EXCLUDED.description, is_active = EXCLUDED.is_active
       RETURNING *;
     `, [finalId, title, category, Number(cost), Number(stock ?? 0), image_url ?? image ?? null, tag ?? null, description ?? null, is_active !== undefined ? Boolean(is_active) : true]);
-    return res.status(201).json({ success: true, message: 'Reward berhasil disimpan.', data: result.rows[0] });
+    const returnData = (await db.query('SELECT * FROM myby_rewards_catalog WHERE id = $1', [finalId])).rows[0] || result.rows[0];
+    return res.status(201).json({ success: true, message: 'Reward berhasil disimpan.', data: returnData });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal menyimpan reward.', error: error.message });
   }
@@ -249,7 +251,8 @@ async function handleAdminUpdateReward(req, res) {
       b.tag !== undefined ? b.tag : ex.tag,
       b.description !== undefined ? b.description : ex.description,
       b.is_active !== undefined ? Boolean(b.is_active) : ex.is_active]);
-    return res.status(200).json({ success: true, message: 'Reward berhasil diperbarui.', data: result.rows[0] });
+    const returnData = (await db.query('SELECT * FROM myby_rewards_catalog WHERE id = $1', [id])).rows[0] || result.rows[0];
+    return res.status(200).json({ success: true, message: 'Reward berhasil diperbarui.', data: returnData });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal memperbarui reward.', error: error.message });
   }
@@ -332,13 +335,14 @@ async function handleAdminUpdateRedeem(req, res) {
         [prev.reward_id]
       ).catch(() => {});
       await db.query(
-        `INSERT INTO myby_coin_transactions (id, "ID", "Name", title, amount, type, badge)
+        `INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge)
          VALUES ($1, $2, $3, $4, $5, 'earn', 'Refund Koin')`,
         [`tx-ref-${Date.now()}`, prev.ID, prev.Name, `Refund: ${prev.reward_title}`, Number(prev.coins_spent)]
       );
     }
     await db.query('COMMIT');
-    return res.status(200).json({ success: true, message: 'Status klaim hadiah berhasil diperbarui.', data: result.rows[0] });
+    const returnData = (await db.query('SELECT * FROM myby_redeem_requests WHERE id = $1', [id])).rows[0] || result.rows[0];
+    return res.status(200).json({ success: true, message: 'Status klaim hadiah berhasil diperbarui.', data: returnData });
   } catch (error) {
     await db.query('ROLLBACK').catch(() => {});
     return res.status(500).json({ success: false, message: 'Gagal memperbarui redeem.', error: error.message });

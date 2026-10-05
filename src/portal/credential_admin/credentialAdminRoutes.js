@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
   try {
     await ensureCredentialAdminTable();
     const { search } = req.query;
-    let query = 'SELECT id, "Nama", "Password", created_at, updated_at FROM public.credential_admin';
+    let query = 'SELECT id, "Nama", "Password", created_at, updated_at FROM credential_admin';
     let params = [];
 
     if (search) {
@@ -63,10 +63,10 @@ router.get('/:identifier', async (req, res) => {
     let params = [];
 
     if (isNumeric) {
-      query = 'SELECT id, "Nama", "Password", created_at, updated_at FROM public.credential_admin WHERE id = $1 LIMIT 1';
+      query = 'SELECT id, "Nama", "Password", created_at, updated_at FROM credential_admin WHERE id = $1 LIMIT 1';
       params = [parseInt(identifier, 10)];
     } else {
-      query = 'SELECT id, "Nama", "Password", created_at, updated_at FROM public.credential_admin WHERE "Nama" = $1 OR "Nama" ILIKE $1 LIMIT 1';
+      query = 'SELECT id, "Nama", "Password", created_at, updated_at FROM credential_admin WHERE "Nama" = $1 OR "Nama" ILIKE $1 LIMIT 1';
       params = [identifier];
     }
 
@@ -110,15 +110,16 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const searchWithDomain = inputUser.includes('@') ? inputUser : `${inputUser}@smlone.com`;
     const result = await db.query(
       `SELECT id, "Nama", "Password" 
-       FROM public.credential_admin 
+       FROM credential_admin 
        WHERE "Nama" = $1 
-          OR "Nama" ILIKE $1 
-          OR "Nama" ILIKE $1 || '@smlone.com'
-          OR split_part("Nama", '@', 1) ILIKE $1 
+          OR "Nama" = $2
+          OR LOWER("Nama") = LOWER($1)
+          OR LOWER("Nama") = LOWER($2)
        LIMIT 1`,
-      [inputUser]
+      [inputUser, searchWithDomain]
     );
 
     if (result.rows.length === 0) {
@@ -179,7 +180,7 @@ router.post('/', async (req, res) => {
     }
 
     const insertResult = await db.query(`
-      INSERT INTO public.credential_admin ("Nama", "Password")
+      INSERT INTO credential_admin ("Nama", "Password")
       VALUES ($1, $2)
       ON CONFLICT ("Nama") DO UPDATE
       SET "Password" = EXCLUDED."Password",
@@ -187,10 +188,16 @@ router.post('/', async (req, res) => {
       RETURNING id, "Nama", "Password", created_at, updated_at;
     `, [finalNama, finalPassword]);
 
+    let savedData = (insertResult.rows && insertResult.rows[0]) ? insertResult.rows[0] : null;
+    if (!savedData) {
+      const fetchBack = await db.query('SELECT id, "Nama", "Password", created_at, updated_at FROM credential_admin WHERE "Nama" = $1 LIMIT 1', [finalNama]);
+      savedData = fetchBack.rows[0];
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Data Credential Admin berhasil disimpan/diperbarui.',
-      data: insertResult.rows[0]
+      data: savedData
     });
   } catch (error) {
     console.error('[Credential Admin] POST / error:', error.message);
@@ -212,17 +219,22 @@ router.delete('/:identifier', async (req, res) => {
     let query = '';
     let params = [];
 
+    let existing = null;
     if (isNumeric) {
-      query = 'DELETE FROM public.credential_admin WHERE id = $1 RETURNING id, "Nama"';
-      params = [parseInt(identifier, 10)];
+      const chk = await db.query('SELECT id, "Nama" FROM credential_admin WHERE id = $1 LIMIT 1', [parseInt(identifier, 10)]);
+      existing = chk.rows[0];
+      if (existing) {
+        await db.query('DELETE FROM credential_admin WHERE id = $1', [parseInt(identifier, 10)]);
+      }
     } else {
-      query = 'DELETE FROM public.credential_admin WHERE "Nama" = $1 OR "Nama" ILIKE $1 RETURNING id, "Nama"';
-      params = [identifier];
+      const chk = await db.query('SELECT id, "Nama" FROM credential_admin WHERE "Nama" = $1 OR LOWER("Nama") = LOWER($1) LIMIT 1', [identifier]);
+      existing = chk.rows[0];
+      if (existing) {
+        await db.query('DELETE FROM credential_admin WHERE id = $1', [existing.id]);
+      }
     }
 
-    const result = await db.query(query, params);
-
-    if (result.rows.length === 0) {
+    if (!existing) {
       return res.status(404).json({
         success: false,
         message: `Data Credential Admin "${identifier}" tidak ditemukan.`
@@ -232,7 +244,7 @@ router.delete('/:identifier', async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `Data Credential Admin "${identifier}" berhasil dihapus.`,
-      data: result.rows[0]
+      data: existing
     });
   } catch (error) {
     console.error('[Credential Admin] DELETE /:identifier error:', error.message);

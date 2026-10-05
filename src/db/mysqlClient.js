@@ -24,6 +24,8 @@ function convertPgToMysql(sql, params = []) {
   // 0. Handle Transaction & DDL helpers
   convertedSql = convertedSql.replace(/^\s*BEGIN\s*;?/gi, 'START TRANSACTION;');
   convertedSql = convertedSql.replace(/\bto_regclass\s*\([^\)]+\)/gi, "1");
+  convertedSql = convertedSql.replace(/\bpublic\./gi, '');
+  convertedSql = convertedSql.replace(/`public`\./gi, '');
 
   // 0b. Remove PostgreSQL typecasts (e.g. ::int, ::TEXT, ::DATE, ::jsonb) & NULLS LAST/FIRST
   convertedSql = convertedSql.replace(/::[a-zA-Z0-9_]+/g, '');
@@ -83,8 +85,14 @@ async function query(sqlText, params = []) {
   const { sql: mysqlSql, params: mysqlParams } = convertPgToMysql(sqlText, params);
   const [rows] = await pool.execute(mysqlSql, mysqlParams);
 
+  const isReturning = /\bRETURNING\b/i.test(sqlText);
+  let returnRows = Array.isArray(rows) ? rows : [];
+  if (!Array.isArray(rows) && isReturning && rows.affectedRows > 0) {
+    returnRows = [{ id: rows.insertId || 1, success: true }];
+  }
+
   return {
-    rows: Array.isArray(rows) ? rows : [],
+    rows: returnRows,
     rowCount: Array.isArray(rows) ? rows.length : (rows.affectedRows || 0),
     affectedRows: rows.affectedRows || 0,
     insertId: rows.insertId || null
@@ -97,8 +105,15 @@ async function connect() {
     query: async (sqlText, params = []) => {
       const { sql: mysqlSql, params: mysqlParams } = convertPgToMysql(sqlText, params);
       const [rows] = await connection.execute(mysqlSql, mysqlParams);
+
+      const isReturning = /\bRETURNING\b/i.test(sqlText);
+      let returnRows = Array.isArray(rows) ? rows : [];
+      if (!Array.isArray(rows) && isReturning && rows.affectedRows > 0) {
+        returnRows = [{ id: rows.insertId || 1, success: true }];
+      }
+
       return {
-        rows: Array.isArray(rows) ? rows : [],
+        rows: returnRows,
         rowCount: Array.isArray(rows) ? rows.length : (rows.affectedRows || 0),
         affectedRows: rows.affectedRows || 0,
         insertId: rows.insertId || null
