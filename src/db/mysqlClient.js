@@ -32,14 +32,19 @@ function convertPgToMysql(sql, params = []) {
   // 0c. Remove RETURNING clause at end of INSERT/UPDATE/DELETE queries
   convertedSql = convertedSql.replace(/\bRETURNING\s+[\s\S]+$/gi, '');
 
-  // 0d. Map "ID" to "trainee_id" for tables where MySQL renamed ID -> trainee_id to avoid collision with PK id
-  if (/myby_coin_transactions|myby_redeem_requests/i.test(convertedSql)) {
-    convertedSql = convertedSql.replace(/"ID"/g, '"trainee_id"');
-    convertedSql = convertedSql.replace(/`ID`/g, '`trainee_id`');
-  }
-
   // 1. Convert PostgreSQL quote "Column" to MySQL backtick `Column`
   convertedSql = convertedSql.replace(/"([a-zA-Z0-9_\s/-]+)"/g, '`$1`');
+
+  // 1b. Map `ID` to `trainee_id` ONLY when prefixed by myby_coin_transactions / myby_redeem_requests or aliases (tx, r) or inside INSERT INTO those tables
+  convertedSql = convertedSql.replace(/\b(tx|r|myby_coin_transactions|myby_redeem_requests)\.`ID`/gi, '$1.`trainee_id`');
+  if (/INSERT\s+INTO\s+`?(myby_coin_transactions|myby_redeem_requests)`?/i.test(convertedSql)) {
+    const matchVal = convertedSql.match(/ON\s+DUPLICATE|VALUES/i);
+    if (matchVal) {
+      const parts = convertedSql.split(matchVal[0]);
+      parts[0] = parts[0].replace(/\b`ID`\b/g, '`trainee_id`');
+      convertedSql = parts.join(matchVal[0]);
+    }
+  }
 
   // 2. Convert ILIKE -> LIKE
   convertedSql = convertedSql.replace(/\bILIKE\b/gi, 'LIKE');
