@@ -129,10 +129,10 @@ async function handleAdminListTransactions(req, res) {
   try {
     await ensureMyByCoinTables();
     const { search, type, limit = 50, offset = 0 } = req.query;
-    let query = 'SELECT id, "ID", "Name", title, amount, type, badge, metadata, created_at FROM myby_coin_transactions';
+    let query = 'SELECT id, trainee_id AS "ID", "Name", title, amount, type, badge, metadata, created_at FROM myby_coin_transactions';
     const params = [];
     const conds = [];
-    if (search) { params.push(`%${search}%`); conds.push(`("ID" ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR title ILIKE $${params.length})`); }
+    if (search) { params.push(`%${search}%`); conds.push(`(trainee_id ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR title ILIKE $${params.length})`); }
     if (type) { params.push(type); conds.push(`type = $${params.length}`); }
     if (conds.length) query += ' WHERE ' + conds.join(' AND ');
     query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
