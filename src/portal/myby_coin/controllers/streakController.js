@@ -234,7 +234,11 @@ async function handleClaimStreak(req, res) {
       RETURNING balance
     `, [profile.ID, profile.Name, bonusCoin]);
 
-    const newBalance = walletUpdate.rows[0].balance;
+    let newBalance = (walletUpdate.rows && walletUpdate.rows[0]) ? walletUpdate.rows[0].balance : 0;
+    if (!newBalance) {
+      const wRes = await db.query('SELECT balance FROM myby_trainee_wallets WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) LIMIT 1', [profile.ID]);
+      newBalance = wRes.rows[0] ? wRes.rows[0].balance : bonusCoin;
+    }
 
     // 3. Catat Riwayat Transaksi Murni: "Day X Streak"
     const txId = `tx-streak-${Date.now()}`;

@@ -21,6 +21,23 @@ function convertPgToMysql(sql, params = []) {
 
   let convertedSql = sql;
 
+  // 0. Handle Transaction & DDL helpers
+  convertedSql = convertedSql.replace(/^\s*BEGIN\s*;?/gi, 'START TRANSACTION;');
+  convertedSql = convertedSql.replace(/\bto_regclass\s*\([^\)]+\)/gi, "1");
+
+  // 0b. Remove PostgreSQL typecasts (e.g. ::int, ::TEXT, ::DATE, ::jsonb) & NULLS LAST/FIRST
+  convertedSql = convertedSql.replace(/::[a-zA-Z0-9_]+/g, '');
+  convertedSql = convertedSql.replace(/\bNULLS\s+(LAST|FIRST)\b/gi, '');
+
+  // 0c. Remove RETURNING clause at end of INSERT/UPDATE/DELETE queries
+  convertedSql = convertedSql.replace(/\bRETURNING\s+[\s\S]+$/gi, '');
+
+  // 0d. Map "ID" to "trainee_id" for tables where MySQL renamed ID -> trainee_id to avoid collision with PK id
+  if (/myby_coin_transactions|myby_redeem_requests/i.test(convertedSql)) {
+    convertedSql = convertedSql.replace(/"ID"/g, '"trainee_id"');
+    convertedSql = convertedSql.replace(/`ID`/g, '`trainee_id`');
+  }
+
   // 1. Convert PostgreSQL quote "Column" to MySQL backtick `Column`
   convertedSql = convertedSql.replace(/"([a-zA-Z0-9_\s/-]+)"/g, '`$1`');
 
@@ -34,6 +51,13 @@ function convertPgToMysql(sql, params = []) {
   // 4. Convert EXCLUDED."col" -> VALUES(`col`)
   convertedSql = convertedSql.replace(/EXCLUDED\.`([^`]+)`/g, 'VALUES(`$1`)');
   convertedSql = convertedSql.replace(/EXCLUDED\."([^"]+)"/g, 'VALUES(`$1`)');
+
+  // 5. Remove table name prefixes in ON DUPLICATE KEY UPDATE clause (e.g. myby_trainee_wallets.balance -> balance)
+  if (convertedSql.includes('ON DUPLICATE KEY UPDATE')) {
+    const parts = convertedSql.split('ON DUPLICATE KEY UPDATE');
+    parts[1] = parts[1].replace(/`?[a-zA-Z0-9_]+`?\.\s*(`?[a-zA-Z0-9_]+`?)/g, '$1');
+    convertedSql = parts.join('ON DUPLICATE KEY UPDATE');
+  }
 
   // 5. Convert Parameterized $1, $2, $3 -> ?
   const newParams = [];
@@ -62,12 +86,29 @@ async function query(sqlText, params = []) {
   };
 }
 
+async function connect() {
+  const connection = await pool.getConnection();
+  return {
+    query: async (sqlText, params = []) => {
+      const { sql: mysqlSql, params: mysqlParams } = convertPgToMysql(sqlText, params);
+      const [rows] = await connection.execute(mysqlSql, mysqlParams);
+      return {
+        rows: Array.isArray(rows) ? rows : [],
+        rowCount: Array.isArray(rows) ? rows.length : (rows.affectedRows || 0),
+        affectedRows: rows.affectedRows || 0,
+        insertId: rows.insertId || null
+      };
+    },
+    release: () => connection.release()
+  };
+}
+
 pool.query('SELECT 1')
-  .then(() => console.log('⚡ [MySQLClient] Connection pool ready & pre-warmed.'))
+  .then(() => console.log('⚡ [MySQLClient] Connection pool ready & pre-warmed on Hostinger MySQL.'))
   .catch((err) => console.warn('⚠️ [MySQLClient] Prewarm ping failed:', err.message));
 
 module.exports = {
   query,
-  pool,
+  pool: { ...pool, connect },
   convertPgToMysql
 };

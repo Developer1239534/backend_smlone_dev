@@ -133,6 +133,12 @@ async function handleRedeemReward(req, res) {
 
     await db.query('COMMIT');
 
+    let remainingBal = (updatedWallet.rows && updatedWallet.rows[0]) ? updatedWallet.rows[0].balance : null;
+    if (remainingBal === null || remainingBal === undefined) {
+      const wRes = await db.query('SELECT balance FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1', [profile.ID]);
+      remainingBal = wRes.rows[0] ? wRes.rows[0].balance : 0;
+    }
+
     return res.status(200).json({
       success: true,
       message: `Berhasil menukarkan "${reward.title}"! Tim SMLONE akan segera memproses hadiah Anda.`,
@@ -140,7 +146,7 @@ async function handleRedeemReward(req, res) {
         redeemId,
         rewardTitle: reward.title,
         coinsSpent: Number(reward.cost),
-        remainingBalance: Number(updatedWallet.rows[0].balance)
+        remainingBalance: Number(remainingBal)
       }
     });
   } catch (error) {
