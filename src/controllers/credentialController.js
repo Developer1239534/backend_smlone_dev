@@ -36,6 +36,19 @@ async function handleSendCredential(req, res) {
     const traineeName = trainee.Name || 'Trainee';
     const sentAt = new Date().toISOString();
 
+    let dob = '';
+    let parentEmail = '';
+    try {
+      const profRes = await db.query(
+        'SELECT "Date of Birth" as dob, "Parents Email Account" as parent_email FROM profile_trainee WHERE "ID" = $1 LIMIT 1',
+        [actualId]
+      );
+      if (profRes.rows.length > 0) {
+        dob = profRes.rows[0].dob ? String(profRes.rows[0].dob).split('T')[0] : '';
+        parentEmail = profRes.rows[0].parent_email || '';
+      }
+    } catch (_) {}
+
     // 3. LANGSUNG return response 200 OK ke Frontend (< 100ms)
     res.status(200).json({
       success: true,
@@ -44,6 +57,7 @@ async function handleSendCredential(req, res) {
         id: actualId,
         name: traineeName,
         email: trimmedEmail,
+        dob,
         sentAt
       }
     });
@@ -58,7 +72,9 @@ async function handleSendCredential(req, res) {
             id: actualId,
             name: traineeName,
             email: trimmedEmail,
-            password: trainee.Password
+            password: trainee.Password,
+            dob,
+            parent_email: parentEmail
           },
           {
             headers: { 'Content-Type': 'application/json' },

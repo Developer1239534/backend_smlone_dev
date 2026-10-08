@@ -19,10 +19,13 @@ const authRoutes = require('./routes/authRoutes');
 const giftRoutes = require('./routes/giftRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const credentialAdminRoutes = require('./portal/credential_admin/credentialAdminRoutes');
+const telemetryRoutes = require('./routes/telemetryRoutes');
 const db = require('./db/neonClient');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+app.set('trust proxy', true);
 
 // Middlewares
 app.use(cors({
@@ -200,6 +203,26 @@ app.use('/api/portal/students', studentRoutes);
 app.use('/api/credential-admin', credentialAdminRoutes);
 app.use('/api/portal/credential-admin', credentialAdminRoutes);
 app.use('/api/admin/credential', credentialAdminRoutes);
+
+// Telemetry & Activity Tracking
+app.use('/api/v1/telemetry', telemetryRoutes);
+app.use('/api/telemetry', telemetryRoutes);
+app.use('/api/portal/telemetry', telemetryRoutes);
+
+// On-demand Google Sheets sync trigger to n8n
+app.post('/api/sync-sheets', async (req, res) => {
+  try {
+    fetch('https://n8n-jua7.srv1825659.hstgr.cloud/webhook/sync-google-sheets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ triggered_by: req.ip || 'admin' })
+    }).catch(err => console.error('[Sync-Sheets] Webhook trigger error:', err.message));
+
+    res.json({ success: true, message: 'Google Sheets sync workflow telah dipicu di n8n' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // Fallback 404 Route
 app.use((req, res) => {

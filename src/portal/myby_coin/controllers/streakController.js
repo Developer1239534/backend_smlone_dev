@@ -13,6 +13,20 @@ const db = require('../../../db/neonClient');
 const { ensureMyByCoinTables, getTraineeProfile } = require('../mybyCoinDatabase');
 const { CYCLE_BONUSES, DAY_NAMES, getWIBDate } = require('../mybyCoinConstants');
 
+function normalizeDateStr(d) {
+  if (!d) return null;
+  if (d instanceof Date) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(d);
+  }
+  const s = String(d).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+  const parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(parsed);
+  }
+  return null;
+}
+
 /**
  * GET /overview/:traineeId
  * Mengambil ringkasan saldo koin & streak anak dari database
@@ -75,7 +89,7 @@ async function handleGetOverview(req, res) {
     let longestStreak = Number(streak.longest_streak || 0);
     let cycleDay = Number(streak.streak_cycle_day || 1);
 
-    const lastDateStr = streak.last_check_in_date ? String(streak.last_check_in_date).substring(0, 10) : null;
+    const lastDateStr = normalizeDateStr(streak.last_check_in_date);
     const hasCheckedInToday = lastDateStr === today;
 
     let streakBroken = false;
@@ -178,7 +192,7 @@ async function handleClaimStreak(req, res) {
       prevStreak = r.rows[0];
     }
 
-    const lastDateStr = prevStreak && prevStreak.last_check_in_date ? String(prevStreak.last_check_in_date).substring(0, 10) : null;
+    const lastDateStr = normalizeDateStr(prevStreak && prevStreak.last_check_in_date);
 
     // Cegah klaim ganda di hari yang sama
     if (lastDateStr === today) {

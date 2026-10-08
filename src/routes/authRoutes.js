@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const db = require('../db/neonClient');
 const { handleSendCredential } = require('../controllers/credentialController');
+const { logPortalLogin } = require('../utils/discordPortalLogger');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'smlone_secret_key_12345';
 
@@ -26,6 +27,8 @@ router.post(['/token', '/login'], async (req, res) => {
   const { id, ID, studentId, student_id, password, Password } = req.body || {};
   const rawId = String(id ?? ID ?? studentId ?? student_id ?? '').trim();
   const rawPass = String(password ?? Password ?? '');
+  const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+  const userAgent = req.headers['user-agent'] || '';
 
   if (!rawId) {
     return res.status(400).json({ success: false, error: 'ID Trainee wajib diisi.' });
@@ -38,11 +41,35 @@ router.post(['/token', '/login'], async (req, res) => {
     );
 
     if (cred.rows.length === 0) {
+      // Async Discord Logging (Gagal - ID tidak ditemukan)
+      setImmediate(() => {
+        logPortalLogin({
+          traineeId: rawId,
+          traineeName: 'Unknown',
+          success: false,
+          statusText: 'ID Trainee tidak ditemukan',
+          ip: clientIp,
+          userAgent
+        });
+      });
+
       return res.status(404).json({ success: false, error: 'Trainee dengan ID tersebut tidak ditemukan.' });
     }
 
     const trainee = cred.rows[0];
     if (rawPass && String(trainee.Password) !== rawPass) {
+      // Async Discord Logging (Gagal - Password Salah)
+      setImmediate(() => {
+        logPortalLogin({
+          traineeId: trainee.ID,
+          traineeName: trainee.Name,
+          success: false,
+          statusText: 'Password Salah',
+          ip: clientIp,
+          userAgent
+        });
+      });
+
       return res.status(401).json({ success: false, error: 'Password salah.' });
     }
 
@@ -67,6 +94,18 @@ router.post(['/token', '/login'], async (req, res) => {
       JWT_SECRET,
       { expiresIn: '30d' }
     );
+
+    // Async Discord Logging (Berhasil Login)
+    setImmediate(() => {
+      logPortalLogin({
+        traineeId: trainee.ID,
+        traineeName: trainee.Name,
+        success: true,
+        statusText: 'Login Berhasil',
+        ip: clientIp,
+        userAgent
+      });
+    });
 
     return res.status(200).json({
       success: true,

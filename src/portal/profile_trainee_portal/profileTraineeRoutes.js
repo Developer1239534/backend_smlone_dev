@@ -60,7 +60,6 @@ async function ensureProfileTraineeTable() {
         "Trainee WhatsApp Number" VARCHAR(100),
         "School Name"             VARCHAR(255)
       );
-      ALTER TABLE profile_trainee ADD COLUMN IF NOT EXISTS "Program" VARCHAR(100);
     `);
   } catch (err) {
     console.error('[Profile Trainee] Ensure table error:', err.message);

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../db/neonClient');
+const { logPortalLogin } = require('../../utils/discordPortalLogger');
 
 // Helper to ensure credential_portal table exists
 async function ensureCredentialPortalTable() {
@@ -54,6 +55,9 @@ router.get('/', async (req, res) => {
 // 2. GET /:id - Ambil satu data Credential Portal berdasarkan ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
+  const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+  const userAgent = req.headers['user-agent'] || '';
+
   try {
     const result = await db.query(
       'SELECT * FROM credential_portal WHERE "ID" = $1 OR "ID" ILIKE $1 LIMIT 1',
@@ -61,6 +65,17 @@ router.get('/:id', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
+      setImmediate(() => {
+        logPortalLogin({
+          traineeId: id,
+          traineeName: 'Unknown',
+          success: false,
+          statusText: 'ID Trainee tidak terdaftar',
+          ip: clientIp,
+          userAgent
+        });
+      });
+
       return res.status(404).json({
         success: false,
         message: `Data Credential Portal dengan ID: "${id}" tidak ditemukan.`
@@ -68,6 +83,18 @@ router.get('/:id', async (req, res) => {
     }
 
     const row = result.rows[0];
+
+    setImmediate(() => {
+      logPortalLogin({
+        traineeId: row["ID"],
+        traineeName: row["Name"],
+        success: true,
+        statusText: 'Permintaan Login Portal HP/Web',
+        ip: clientIp,
+        userAgent
+      });
+    });
+
     return res.status(200).json({
       success: true,
       message: `Berhasil mengambil data Credential Portal ID: ${id}.`,

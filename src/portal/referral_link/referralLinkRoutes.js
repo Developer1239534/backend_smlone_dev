@@ -26,8 +26,7 @@ async function ensureReferralLinkTable() {
         "Referal By"   VARCHAR(255),
         "created_at"   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         "updated_at"   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-      ALTER TABLE referral_link ADD COLUMN IF NOT EXISTS "Class" VARCHAR(255);
+      )
     `);
 
     await db.query(`

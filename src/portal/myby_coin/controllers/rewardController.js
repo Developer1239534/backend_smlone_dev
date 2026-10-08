@@ -11,6 +11,7 @@
 
 const db = require('../../../db/neonClient');
 const { ensureMyByCoinTables, getTraineeProfile } = require('../mybyCoinDatabase');
+const { generateClaimPdf } = require('../../../utils/generateClaimPdf');
 
 /**
  * GET /rewards
@@ -101,13 +102,12 @@ async function handleRedeemReward(req, res) {
     await db.query('BEGIN');
 
     // Potong koin
-    const updatedWallet = await db.query(`
+    await db.query(`
       UPDATE myby_trainee_wallets
       SET balance = balance - $1,
           total_spent = total_spent + $1,
           updated_at = NOW()
       WHERE "ID" = $2
-      RETURNING balance
     `, [reward.cost, profile.ID]);
 
     // Kurangi stok
@@ -120,24 +120,62 @@ async function handleRedeemReward(req, res) {
     // Catat mutasi spend
     const txId = `tx-red-${Date.now()}`;
     await db.query(`
-      INSERT INTO myby_coin_transactions (id, "ID", "Name", title, amount, type, badge)
+      INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge)
       VALUES ($1, $2, $3, $4, $5, 'spend', 'Klaim Hadiah')
     `, [txId, profile.ID, profile.Name, `Klaim Hadiah: ${reward.title}`, reward.cost]);
 
     // Catat pengajuan redeem
     const redeemId = `red-${Date.now()}`;
     await db.query(`
-      INSERT INTO myby_redeem_requests (id, "ID", "Name", reward_id, reward_title, coins_spent, notes)
+      INSERT INTO myby_redeem_requests (id, trainee_id, "Name", reward_id, reward_title, coins_spent, notes)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
     `, [redeemId, profile.ID, profile.Name, reward.id, reward.title, reward.cost, notes || '']);
 
     await db.query('COMMIT');
 
-    let remainingBal = (updatedWallet.rows && updatedWallet.rows[0]) ? updatedWallet.rows[0].balance : null;
-    if (remainingBal === null || remainingBal === undefined) {
-      const wRes = await db.query('SELECT balance FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1', [profile.ID]);
-      remainingBal = wRes.rows[0] ? wRes.rows[0].balance : 0;
-    }
+    const wRes = await db.query('SELECT balance FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1', [profile.ID]);
+    const remainingBal = wRes.rows[0] ? wRes.rows[0].balance : 0;
+
+    const claimEmail = req.body.email || profile.Email || profile.email || profile['Parents Email Account'] || '';
+    setImmediate(async () => {
+      try {
+        let pdfBase64 = '';
+        try {
+          const pdfBuffer = await generateClaimPdf({
+            redeemId,
+            traineeId: profile.ID,
+            traineeName: profile.Name,
+            recipientEmail: claimEmail,
+            rewardTitle: reward.title,
+            coinsSpent: Number(reward.cost),
+            remainingBalance: Number(remainingBal),
+            branch: profile.Branch || profile.Cabang || '',
+            program: profile.Program || ''
+          });
+          pdfBase64 = pdfBuffer.toString('base64');
+        } catch (pdfErr) {
+          console.error('[MyBy Coin] PDF gen error:', pdfErr.message);
+        }
+
+        await fetch('https://n8n-jua7.srv1825659.hstgr.cloud/webhook/gift-claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: profile.ID,
+            name: profile.Name,
+            email: claimEmail,
+            gift: reward.title,
+            gift_image: reward.image_url || '',
+            coin_cost: Number(reward.cost),
+            remaining_coin: Number(remainingBal),
+            pdf_base64: pdfBase64,
+            pdf_filename: `Bukti_Klaim_Hadiah_${profile.ID}.pdf`
+          })
+        });
+      } catch (err) {
+        console.error('[MyBy Coin] n8n webhook error:', err.message);
+      }
+    });
 
     return res.status(200).json({
       success: true,
@@ -171,11 +209,11 @@ async function handleGetTraineeRedeems(req, res) {
     const profile = await getTraineeProfile(traineeId);
 
     const result = await db.query(
-      `SELECT r.id, r."ID", r."Name", r.reward_id, r.reward_title, r.coins_spent, r.status, r.notes, r.created_at, r.updated_at,
+      `SELECT r.id, r.trainee_id, r.trainee_id AS "ID", r."Name", r.reward_id, r.reward_title, r.coins_spent, r.status, r.notes, r.created_at, r.updated_at,
               c.image_url, c.category, c.cost, c.description
        FROM myby_redeem_requests r
        LEFT JOIN myby_rewards_catalog c ON r.reward_id = c.id
-       WHERE r."ID" = $1 OR LOWER(r."ID") = LOWER($1) OR r."Name" = $2
+       WHERE r.trainee_id = $1 OR LOWER(r.trainee_id) = LOWER($1) OR r."Name" = $2
        ORDER BY r.created_at DESC`,
       [profile.ID, profile.Name]
     );

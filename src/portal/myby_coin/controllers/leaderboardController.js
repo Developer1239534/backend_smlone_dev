@@ -123,12 +123,12 @@ async function handleGetLeaderboardReferral(req, res) {
       ),
       tx_agg AS (
         SELECT 
-          tx."ID" AS trainee_id,
+          tx.trainee_id AS trainee_id,
           COUNT(DISTINCT tx.id) AS tx_count,
           COALESCE(SUM(tx.amount), 0) AS tx_coins
         FROM myby_coin_transactions tx
         WHERE tx.badge ILIKE '%referral%' OR tx.title ILIKE '%referral%' OR tx.title ILIKE '%ajak teman%'
-        GROUP BY tx."ID"
+        GROUP BY tx.trainee_id
       ),
       calon_agg AS (
         SELECT 

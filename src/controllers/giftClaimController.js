@@ -2,6 +2,7 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const db = require('../db/neonClient');
 const { ensureMyByCoinTables, getTraineeProfile } = require('../portal/myby_coin/mybyCoinDatabase');
+const { generateClaimPdf } = require('../utils/generateClaimPdf');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'smlone_secret_key_12345';
 
@@ -28,7 +29,7 @@ const N8N_GIFT_WEBHOOK =
 async function ensureGiftClaimsTable() {
   await ensureMyByCoinTables();
   await db.query(`
-    CREATE TABLE IF NOT EXISTS public.gift_claims (
+    CREATE TABLE IF NOT EXISTS gift_claims (
       id VARCHAR(100) PRIMARY KEY,
       user_id VARCHAR(255) NOT NULL,
       gift_id VARCHAR(100) NOT NULL,
@@ -36,9 +37,8 @@ async function ensureGiftClaimsTable() {
       coin_cost INTEGER NOT NULL,
       remaining_coin INTEGER NOT NULL,
       status VARCHAR(50) DEFAULT 'claimed',
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-    CREATE INDEX IF NOT EXISTS idx_gift_claims_user_gift ON public.gift_claims(user_id, gift_id, created_at DESC);
   `);
 }
 
@@ -190,8 +190,8 @@ async function handleGiftClaim(req, res) {
 
       // 3. Cek idempotency: tolak jika ada claim gift sama dalam 60 detik terakhir (key: user_id + gift_id)
       const dupRes = await db.query(
-        `SELECT id FROM public.gift_claims
-         WHERE user_id = $1 AND gift_id = $2 AND created_at > NOW() - INTERVAL '60 seconds'
+        `SELECT id FROM gift_claims
+         WHERE user_id = $1 AND gift_id = $2 AND created_at > NOW() - INTERVAL 60 SECOND
          LIMIT 1`,
         [profile.ID, rawGiftId]
       );
@@ -220,19 +220,19 @@ async function handleGiftClaim(req, res) {
 
       const claimId = `claim-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       await db.query(
-        `INSERT INTO public.gift_claims (id, user_id, gift_id, gift_name, coin_cost, remaining_coin, status, created_at)
+        `INSERT INTO gift_claims (id, user_id, gift_id, gift_name, coin_cost, remaining_coin, status, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, 'claimed', NOW())`,
         [claimId, profile.ID, rawGiftId, gift.nama, gift.cost, remaining]
       );
 
       // Sekaligus catat mutasi buku kas koin (badge: 'Klaim Hadiah') & redeem request
       await db.query(
-        `INSERT INTO myby_coin_transactions (id, "ID", "Name", title, amount, type, badge)
+        `INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge)
          VALUES ($1, $2, $3, $4, $5, 'spend', 'Klaim Hadiah')`,
         [`tx-${claimId}`, profile.ID, profile.Name, `Klaim Hadiah: ${gift.nama}`, gift.cost]
       );
       await db.query(
-        `INSERT INTO myby_redeem_requests (id, "ID", "Name", reward_id, reward_title, coins_spent, notes, status)
+        `INSERT INTO myby_redeem_requests (id, trainee_id, "Name", reward_id, reward_title, coins_spent, notes, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
         [`red-${claimId}`, profile.ID, profile.Name, gift.catalogId || rawGiftId, gift.nama, gift.cost, null]
       );
@@ -256,9 +256,27 @@ async function handleGiftClaim(req, res) {
         }
       });
 
-      // 5. Setelah commit sukses, forward ASYNC (fire-and-forget, timeout 5 detik, jangan gagalkan response kalau n8n timeout)
+      // 5. Setelah commit sukses, forward ASYNC (fire-and-forget, timeout 10 detik, sertakan PDF attachment)
       setImmediate(async () => {
         try {
+          let pdfBase64 = '';
+          try {
+            const pdfBuffer = await generateClaimPdf({
+              redeemId: `CLM-${Date.now().toString().slice(-6)}`,
+              traineeId: profile.ID,
+              traineeName: userName,
+              recipientEmail: userEmail,
+              rewardTitle: gift.nama,
+              coinsSpent: gift.cost,
+              remainingBalance: remaining,
+              branch: profile.Branch || profile.Cabang || '',
+              program: profile.Program || ''
+            });
+            pdfBase64 = pdfBuffer.toString('base64');
+          } catch (pdfErr) {
+            console.error('[GIFT CLAIM] PDF gen error:', pdfErr.message);
+          }
+
           await axios.post(
             N8N_GIFT_WEBHOOK,
             {
@@ -266,15 +284,18 @@ async function handleGiftClaim(req, res) {
               name: userName,
               email: userEmail,
               gift: gift.nama,
+              gift_image: gift.image || '',
               coin_cost: gift.cost,
-              remaining_coin: remaining
+              remaining_coin: remaining,
+              pdf_base64: pdfBase64,
+              pdf_filename: `Bukti_Klaim_Hadiah_${profile.ID}.pdf`
             },
             {
               headers: { 'Content-Type': 'application/json' },
-              timeout: 5000
+              timeout: 10000
             }
           );
-          console.log(`[GIFT CLAIM] Forwarded to n8n webhook: ${profile.ID} -> ${gift.nama}`);
+          console.log(`[GIFT CLAIM] Forwarded to n8n webhook with PDF attachment: ${profile.ID} -> ${gift.nama}`);
         } catch (e) {
           console.error(`[GIFT CLAIM FORWARD ERROR] ${profile.ID}:`, e.message);
         }

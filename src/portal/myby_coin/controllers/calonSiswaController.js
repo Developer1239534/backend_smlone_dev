@@ -50,6 +50,25 @@ async function handleRegisterCalonSiswa(req, res) {
       inviterName
     ]);
 
+    // Tambahkan 1 koin untuk inviter (referral bonus: 1 coin)
+    if (inviterId) {
+      await db.query(`
+        INSERT INTO myby_trainee_wallets ("ID", "Name", balance, total_earned)
+        VALUES ($1, $2, 1, 1)
+        ON CONFLICT ("ID") 
+        DO UPDATE SET 
+          balance = myby_trainee_wallets.balance + 1,
+          total_earned = myby_trainee_wallets.total_earned + 1,
+          "Name" = COALESCE(EXCLUDED."Name", myby_trainee_wallets."Name"),
+          updated_at = NOW()
+      `, [inviterId, inviterName || 'Trainee SMLONE']).catch(() => {});
+
+      await db.query(`
+        INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge)
+        VALUES ($1, $2, $3, $4, 1, 'earn', 'Referral Bonus')
+      `, [`tx-ref-${Date.now()}`, inviterId, inviterName || 'Trainee SMLONE', `Referral: ${name.trim()}`]).catch(() => {});
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Data calon siswa berhasil dicatat.',

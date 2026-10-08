@@ -56,6 +56,28 @@ async function handleAdminGetStreak(req, res) {
       [id]
     );
     if (result.rows.length === 0) {
+      const traineeCheck = await db.query(
+        'SELECT "ID", "Name" FROM credential_portal WHERE "ID" = $1 LIMIT 1',
+        [id]
+      );
+      if (traineeCheck.rows.length > 0) {
+        const tr = traineeCheck.rows[0];
+        return res.status(200).json({
+          success: true,
+          message: 'Berhasil mengambil detail streak.',
+          data: {
+            ID: tr.ID,
+            Name: tr.Name,
+            current_streak: 0,
+            longest_streak: 0,
+            streak_cycle_day: 0,
+            last_check_in_date: null,
+            total_check_ins: 0,
+            created_at: null,
+            updated_at: null
+          }
+        });
+      }
       return res.status(404).json({ success: false, message: `Streak ID "${id}" tidak ditemukan.` });
     }
     return res.status(200).json({ success: true, message: 'Berhasil mengambil detail streak.', data: result.rows[0] });

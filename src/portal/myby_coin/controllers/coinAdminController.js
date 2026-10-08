@@ -43,7 +43,28 @@ async function handleAdminGetWallet(req, res) {
       'SELECT "ID", "Name", balance, total_earned, total_spent, created_at, updated_at FROM myby_trainee_wallets WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 OR "Name" ILIKE $1 LIMIT 1',
       [id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Wallet "${id}" tidak ditemukan.` });
+    if (result.rows.length === 0) {
+      const traineeCheck = await db.query(
+        'SELECT "ID", "Name" FROM credential_portal WHERE "ID" = $1 LIMIT 1',
+        [id]
+      );
+      if (traineeCheck.rows.length > 0) {
+        const tr = traineeCheck.rows[0];
+        return res.status(200).json({
+          success: true,
+          data: {
+            ID: tr.ID,
+            Name: tr.Name,
+            balance: 0,
+            total_earned: 0,
+            total_spent: 0,
+            created_at: null,
+            updated_at: null
+          }
+        });
+      }
+      return res.status(404).json({ success: false, message: `Wallet "${id}" tidak ditemukan.` });
+    }
     return res.status(200).json({ success: true, data: result.rows[0] });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal mengambil wallet.', error: error.message });
@@ -322,16 +343,18 @@ async function handleAdminUpdateRedeem(req, res) {
     const prev = check.rows[0];
 
     await db.query('BEGIN');
-    const result = await db.query(
-      'UPDATE myby_redeem_requests SET status = COALESCE($2, status), notes = COALESCE($3, notes), updated_at = NOW() WHERE id = $1 RETURNING *',
+    await db.query(
+      'UPDATE myby_redeem_requests SET status = COALESCE($2, status), notes = COALESCE($3, notes), updated_at = NOW() WHERE id = $1',
       [id, status || null, notes !== undefined ? notes : null]
     );
+
+    const traineeId = prev.trainee_id || prev.ID;
 
     // refund jika berubah ke rejected dari status non-rejected
     if (status === 'rejected' && prev.status !== 'rejected') {
       await db.query(
         'UPDATE myby_trainee_wallets SET balance = balance + $2, total_spent = GREATEST(0, total_spent - $2), updated_at = NOW() WHERE "ID" = $1 OR LOWER("ID") = LOWER($1)',
-        [prev.ID, Number(prev.coins_spent)]
+        [traineeId, Number(prev.coins_spent)]
       );
       await db.query(
         'UPDATE myby_rewards_catalog SET stock = stock + 1 WHERE id = $1',
@@ -340,11 +363,11 @@ async function handleAdminUpdateRedeem(req, res) {
       await db.query(
         `INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge)
          VALUES ($1, $2, $3, $4, $5, 'earn', 'Refund Koin')`,
-        [`tx-ref-${Date.now()}`, prev.ID, prev.Name, `Refund: ${prev.reward_title}`, Number(prev.coins_spent)]
+        [`tx-ref-${Date.now()}`, traineeId, prev.Name, `Refund: ${prev.reward_title}`, Number(prev.coins_spent)]
       );
     }
     await db.query('COMMIT');
-    const returnData = (await db.query('SELECT * FROM myby_redeem_requests WHERE id = $1', [id])).rows[0] || result.rows[0];
+    const returnData = (await db.query('SELECT * FROM myby_redeem_requests WHERE id = $1', [id])).rows[0];
     return res.status(200).json({ success: true, message: 'Status klaim hadiah berhasil diperbarui.', data: returnData });
   } catch (error) {
     await db.query('ROLLBACK').catch(() => {});

@@ -114,55 +114,8 @@ async function ensureReportProgresTable() {
         "Class"                   VARCHAR(100),
         created_at                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at                TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_report_progres_trainee_id ON report_progres ("ID");
-      CREATE INDEX IF NOT EXISTS idx_report_progres_class ON report_progres ("Class");
+      )
     `);
-
-    // Tambah kolom jika belum ada
-    const columnsToAdd = [
-      `ADD COLUMN IF NOT EXISTS "ID" VARCHAR(255)`,
-      `ADD COLUMN IF NOT EXISTS "Student Name" VARCHAR(255)`,
-      `ADD COLUMN IF NOT EXISTS "Class Trainers" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Date" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Coach Feedback" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Challenge" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Speaking Project" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Role 2" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Role 3" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Role 4" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Life Project" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "House" VARCHAR(100)`,
-      `ADD COLUMN IF NOT EXISTS "Level" VARCHAR(100)`,
-      `ADD COLUMN IF NOT EXISTS "Latest Speaking Project" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Last Time Speaking" TEXT`,
-      `ADD COLUMN IF NOT EXISTS "Class" VARCHAR(100)`
-    ];
-
-    await db.query(`ALTER TABLE report_progres ${columnsToAdd.join(', ')};`);
-
-    // Hapus row_id dan kolom usang jika masih ada
-    const obsoleteCols = [
-      'row_id',
-      'Category',
-      'Class Name',
-      'Speaking Project to Next Level',
-      'Last Speaker date',
-      'Latest Life Project',
-      'Life Project to Next Level',
-      'Last Life Project Date',
-      'Last Real Stage',
-      'Win',
-      'Fav',
-      'Total Gold'
-    ];
-
-    for (const col of obsoleteCols) {
-      try {
-        await db.query(`ALTER TABLE report_progres DROP COLUMN IF EXISTS "${col}" CASCADE;`);
-      } catch (dropErr) {}
-    }
   } catch (err) {
     console.error('[Report Progres] Ensure table error:', err.message);
   }

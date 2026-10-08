@@ -10,7 +10,8 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 20,
   queueLimit: 0,
-  charset: 'utf8mb4'
+  charset: 'utf8mb4',
+  timezone: '+07:00'
 });
 
 /**
@@ -27,6 +28,12 @@ function convertPgToMysql(sql, params = []) {
   convertedSql = convertedSql.replace(/\bpublic\./gi, '');
   convertedSql = convertedSql.replace(/`public`\./gi, '');
 
+  // 0a. Strip PostgreSQL DDL specifics (TIMESTAMP WITH TIME ZONE, TIMESTAMPTZ, JSONB, CREATE INDEX IF NOT EXISTS)
+  convertedSql = convertedSql.replace(/TIMESTAMP\s+WITH\s+TIME\s+ZONE/gi, 'TIMESTAMP');
+  convertedSql = convertedSql.replace(/\bTIMESTAMPTZ\b/gi, 'TIMESTAMP');
+  convertedSql = convertedSql.replace(/\bJSONB\b/gi, 'JSON');
+  convertedSql = convertedSql.replace(/CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS[\s\S]+?;/gi, '');
+
   // 0b. Remove PostgreSQL typecasts (e.g. ::int, ::TEXT, ::DATE, ::jsonb) & NULLS LAST/FIRST
   convertedSql = convertedSql.replace(/::[a-zA-Z0-9_]+/g, '');
   convertedSql = convertedSql.replace(/\bNULLS\s+(LAST|FIRST)\b/gi, '');
@@ -35,7 +42,7 @@ function convertPgToMysql(sql, params = []) {
   convertedSql = convertedSql.replace(/\bRETURNING\s+[\s\S]+$/gi, '');
 
   // 1. Convert PostgreSQL quote "Column" to MySQL backtick `Column`
-  convertedSql = convertedSql.replace(/"([a-zA-Z0-9_\s/-]+)"/g, '`$1`');
+  convertedSql = convertedSql.replace(/"([^"]+)"/g, '`$1`');
 
   // 1b. Map `ID` to `trainee_id` ONLY when prefixed by myby_coin_transactions / myby_redeem_requests or aliases (tx, r) or inside INSERT INTO those tables
   convertedSql = convertedSql.replace(/\b(tx|r|myby_coin_transactions|myby_redeem_requests)\.`ID`/gi, '$1.`trainee_id`');
@@ -82,7 +89,13 @@ function convertPgToMysql(sql, params = []) {
 }
 
 async function query(sqlText, params = []) {
+  if (/^\s*DO\s+\$\$/i.test(sqlText)) {
+    return { rows: [], rowCount: 0, affectedRows: 0, insertId: null };
+  }
   const { sql: mysqlSql, params: mysqlParams } = convertPgToMysql(sqlText, params);
+  if (!mysqlSql || !mysqlSql.trim()) {
+    return { rows: [], rowCount: 0, affectedRows: 0, insertId: null };
+  }
   const [rows] = await pool.execute(mysqlSql, mysqlParams);
 
   const isReturning = /\bRETURNING\b/i.test(sqlText);
