@@ -2,13 +2,13 @@ const mysql = require('mysql2/promise');
 require('dotenv').config();
 
 const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST || '109.106.253.219',
-  user: process.env.MYSQL_USER || 'u8155716_developer',
-  password: process.env.MYSQL_PASSWORD || '@=I?Grks9R^IMki2',
-  database: process.env.MYSQL_DATABASE || 'u8155716_smlone_portal',
+  host: process.env.MYSQL_HOST || '127.0.0.1',
+  user: process.env.MYSQL_USER || 'smlone_dbuser',
+  password: process.env.MYSQL_PASSWORD || '8636963e90ca357291edabe81f960fb5',
+  database: process.env.MYSQL_DATABASE || 'smlone_portal',
   port: parseInt(process.env.MYSQL_PORT || '3306', 10),
   waitForConnections: true,
-  connectionLimit: 20,
+  connectionLimit: 50,
   queueLimit: 0,
   charset: 'utf8mb4',
   timezone: '+07:00'
