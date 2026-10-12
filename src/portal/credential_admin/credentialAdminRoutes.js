@@ -131,11 +131,8 @@ router.post('/login', async (req, res) => {
 
     const admin = result.rows[0];
 
-    const isMatch =
-      admin.Password === inputPass ||
-      admin.Password.toLowerCase() === inputPass.toLowerCase() ||
-      admin.Password.replace(/!$/, '') === inputPass ||
-      admin.Password.toLowerCase().replace(/!$/, '') === inputPass.toLowerCase();
+    // Validasi ketat (strict exact match) sesuai instruksi: wajib sama persis
+    const isMatch = admin.Password === inputPass;
 
     if (!isMatch) {
       return res.status(401).json({
