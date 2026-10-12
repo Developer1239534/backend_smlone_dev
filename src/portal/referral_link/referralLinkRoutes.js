@@ -305,6 +305,53 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Validasi Batas Waktu: Ditutup sampai 31 Oktober 2026 pukul 23:59:59 WIB
+    const DEADLINE_EPOCH = new Date('2026-10-31T23:59:59+07:00').getTime();
+    if (Date.now() > DEADLINE_EPOCH) {
+      return res.status(400).json({
+        success: false,
+        message: 'Periode pendaftaran dan klaim ID referral telah ditutup pada 31 Oktober 2026.'
+      });
+    }
+
+    // Proteksi Self-Referral: Dilarang mendaftar menggunakan referral milik sendiri
+    if (referalBy) {
+      const cleanRef = referalBy.toUpperCase().trim();
+      const cleanId = id.toUpperCase().trim();
+      if (
+        cleanRef === cleanId ||
+        cleanRef === `SMLONE-${cleanId}` ||
+        cleanRef === `MYBY-${cleanId}`
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Pendaftaran ditolak: Anda tidak dapat menggunakan kode referral milik sendiri.'
+        });
+      }
+
+      // Cek apakah kode referral ini terdaftar atas nama ID trainee yang sama
+      const ownCodeRes = await db.query(
+        'SELECT "Referral Code" FROM referral_code WHERE "ID" = $1 LIMIT 1',
+        [id]
+      );
+      if (ownCodeRes.rows.length > 0) {
+        const myCode = String(ownCodeRes.rows[0]["Referral Code"] || '').toUpperCase().trim();
+        if (myCode && cleanRef === myCode) {
+          return res.status(400).json({
+            success: false,
+            message: 'Pendaftaran ditolak: Anda tidak dapat menggunakan kode referral milik sendiri.'
+          });
+        }
+      }
+    }
+
+    // 1 referral wajib 1 ID unik
+    const existingCheck = await db.query(
+      'SELECT "ID", "Referal By" FROM referral_link WHERE "ID" = $1 LIMIT 1',
+      [id]
+    );
+    const isNewReferral = existingCheck.rows.length === 0;
+
     const upsertQuery = `
       INSERT INTO referral_link ("ID", "Name", "Class", "Referal By", "created_at", "updated_at")
       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -318,6 +365,54 @@ router.post('/', async (req, res) => {
 
     const result = await db.query(upsertQuery, [id, name, cls, referalBy]);
     const saved = formatReferralLinkRow(result.rows[0]);
+
+    // Berikan reward 2 koin kepada inviter jika pendaftaran referral baru valid
+    if (isNewReferral && referalBy) {
+      try {
+        let inviterId = referalBy.trim();
+        let inviterName = 'Trainee SMLONE';
+        const cleanRef = referalBy.toUpperCase().trim();
+        if (cleanRef.startsWith('SMLONE-')) inviterId = cleanRef.replace(/^SMLONE-/, '');
+        else if (cleanRef.startsWith('MYBY-')) inviterId = cleanRef.replace(/^MYBY-/, '');
+
+        const refCodeQuery = await db.query(
+          'SELECT "ID", "Name" FROM referral_code WHERE LOWER(TRIM("Referral Code")) = LOWER(TRIM($1)) OR LOWER(TRIM("ID")) = LOWER(TRIM($1)) LIMIT 1',
+          [referalBy.trim()]
+        );
+        if (refCodeQuery.rows.length > 0) {
+          inviterId = refCodeQuery.rows[0]["ID"];
+          inviterName = refCodeQuery.rows[0]["Name"] || inviterName;
+        } else {
+          const profQuery = await db.query(
+            'SELECT "ID", "Name" FROM profile_trainee WHERE LOWER(TRIM("ID")) = LOWER(TRIM($1)) LIMIT 1',
+            [inviterId]
+          );
+          if (profQuery.rows.length > 0) {
+            inviterName = profQuery.rows[0]["Name"] || inviterName;
+          }
+        }
+
+        if (inviterId && inviterId.toUpperCase() !== id.toUpperCase()) {
+          await db.query(`
+            INSERT INTO myby_trainee_wallets ("ID", "Name", balance, total_earned)
+            VALUES ($1, $2, 2, 2)
+            ON CONFLICT ("ID") 
+            DO UPDATE SET 
+              balance = myby_trainee_wallets.balance + 2,
+              total_earned = myby_trainee_wallets.total_earned + 2,
+              "Name" = COALESCE(EXCLUDED."Name", myby_trainee_wallets."Name"),
+              updated_at = NOW()
+          `, [inviterId, inviterName]).catch(() => {});
+
+          await db.query(`
+            INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge)
+            VALUES ($1, $2, $3, $4, 2, 'earn', 'Referral Bonus')
+          `, [`tx-ref-${Date.now()}`, inviterId, inviterName, `Referral: ${name.trim() || id}`]).catch(() => {});
+        }
+      } catch (coinErr) {
+        console.error('[Referral Link] Error crediting 2 coins to inviter:', coinErr.message);
+      }
+    }
 
     return res.status(201).json({
       success: true,

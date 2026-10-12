@@ -52,7 +52,7 @@ async function handleAdminGetStreak(req, res) {
       `SELECT "ID", "Name", current_streak, longest_streak, streak_cycle_day,
               last_check_in_date::TEXT AS last_check_in_date, total_check_ins,
               created_at, updated_at FROM myby_trainee_streaks
-       WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 OR "Name" ILIKE $1 LIMIT 1`,
+       WHERE "ID" = $1 LIMIT 1`,
       [id]
     );
     if (result.rows.length === 0) {
@@ -138,7 +138,7 @@ async function handleAdminUpdateStreak(req, res) {
   const { id } = req.params;
   try {
     await ensureMyByCoinTables();
-    const check = await db.query('SELECT * FROM myby_trainee_streaks WHERE "ID" = $1 OR "ID" ILIKE $1 LIMIT 1', [id]);
+    const check = await db.query('SELECT * FROM myby_trainee_streaks WHERE "ID" = $1 LIMIT 1', [id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Streak ID "${id}" tidak ditemukan.` });
     }
@@ -178,14 +178,14 @@ async function handleAdminDeleteStreak(req, res) {
   try {
     await ensureMyByCoinTables();
     const existing = await db.query(
-      'SELECT "ID", "Name" FROM myby_trainee_streaks WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 LIMIT 1;',
+      'SELECT "ID", "Name" FROM myby_trainee_streaks WHERE "ID" = $1 LIMIT 1;',
       [id]
     );
     if (existing.rows.length === 0) {
       return res.status(404).json({ success: false, message: `Streak ID "${id}" tidak ditemukan.` });
     }
     await db.query(
-      'DELETE FROM myby_trainee_streaks WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1;',
+      'DELETE FROM myby_trainee_streaks WHERE "ID" = $1;',
       [id]
     );
     return res.status(200).json({ success: true, message: 'Data streak berhasil dihapus.', data: existing.rows[0] });

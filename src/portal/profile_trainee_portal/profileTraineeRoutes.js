@@ -58,7 +58,8 @@ async function ensureProfileTraineeTable() {
         "Parents Email Account"   VARCHAR(255),
         "Parent WhatsApp Number"  VARCHAR(100),
         "Trainee WhatsApp Number" VARCHAR(100),
-        "School Name"             VARCHAR(255)
+        "School Name"             VARCHAR(255),
+        "avatar_url"              TEXT
       );
     `);
   } catch (err) {
@@ -104,6 +105,7 @@ function formatProfileRow(row) {
     "Parent WhatsApp Number": row["Parent WhatsApp Number"] ?? '',
     "Trainee WhatsApp Number": row["Trainee WhatsApp Number"] ?? '',
     "School Name": row["School Name"] ?? '',
+    "avatar_url": row["avatar_url"] ?? row["avatar_URL"] ?? '',
     // Alias kompatibilitas frontend
     id: row["ID"] ?? '',
     name: row["Name"] ?? '',
@@ -127,7 +129,8 @@ function formatProfileRow(row) {
     parents_email_account: row["Parents Email Account"] ?? '',
     parent_whatsapp_number: row["Parent WhatsApp Number"] ?? '',
     trainee_whatsapp_number: row["Trainee WhatsApp Number"] ?? '',
-    school_name: row["School Name"] ?? ''
+    school_name: row["School Name"] ?? '',
+    avatar_url: row["avatar_url"] ?? row["avatar_URL"] ?? ''
   };
 }
 
@@ -141,7 +144,7 @@ router.get('/', async (req, res) => {
         "Class", "Program", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
         "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
-        "Trainee WhatsApp Number", "School Name"
+        "Trainee WhatsApp Number", "School Name", "avatar_url"
       FROM profile_trainee
     `;
     const conditions = [];
@@ -222,7 +225,7 @@ router.get('/:id', async (req, res) => {
         "Class", "Program", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
         "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
-        "Trainee WhatsApp Number", "School Name"
+        "Trainee WhatsApp Number", "School Name", "avatar_url"
       FROM profile_trainee 
       WHERE "ID" = $1
       LIMIT 1`,
@@ -492,10 +495,11 @@ router.put('/:id', async (req, res) => {
     const updatedParentWa = b["Parent WhatsApp Number"] ?? b["Nomor WA Parent"] ?? b["parent_whatsapp_number"] ?? b["waParent"] ?? existing["Parent WhatsApp Number"] ?? '';
     const updatedTraineeWa = b["Trainee WhatsApp Number"] ?? b["Nomor WA Trainee"] ?? b["trainee_whatsapp_number"] ?? b["waTrainee"] ?? existing["Trainee WhatsApp Number"] ?? '';
     const updatedSchoolName = b["School Name"] ?? b["Nama Sekolah"] ?? b["school_name"] ?? b["schoolName"] ?? existing["School Name"] ?? '';
+    const updatedProgram = b["Program"] ?? b["program"] ?? existing["Program"] ?? '';
 
     const updateRes = await db.query(`
       INSERT INTO profile_trainee (
-        "ID", "Class", "Day", "Time", "Room", "Branch", "Name", "Level", "HOUSE", "House Role",
+        "ID", "Class", "Program", "Day", "Time", "Room", "Branch", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
         "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
         "Trainee WhatsApp Number", "School Name"
@@ -503,10 +507,11 @@ router.put('/:id', async (req, res) => {
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-        $21, $22
+        $21, $22, $23
       )
       ON CONFLICT ("ID") DO UPDATE
       SET "Class"                   = EXCLUDED."Class",
+          "Program"                 = CASE WHEN EXCLUDED."Program" != '' THEN EXCLUDED."Program" ELSE profile_trainee."Program" END,
           "Day"                     = EXCLUDED."Day",
           "Time"                    = EXCLUDED."Time",
           "Room"                    = EXCLUDED."Room",
@@ -529,7 +534,7 @@ router.put('/:id', async (req, res) => {
           "School Name"             = EXCLUDED."School Name"
       RETURNING *;
     `, [
-      id, updatedClass, updatedDay, updatedTime, updatedRoom, updatedBranch,
+      id, updatedClass, updatedProgram, updatedDay, updatedTime, updatedRoom, updatedBranch,
       updatedName, updatedLevel, updatedHouse, updatedHouseRole,
       updatedTraineeHomeroom, updatedHomeroomKelas, updatedTrainer,
       updatedMembership, updatedExpiryDate, updatedFirstEnroll,
@@ -537,10 +542,13 @@ router.put('/:id', async (req, res) => {
       updatedParentWa, updatedTraineeWa, updatedSchoolName
     ]);
 
+    const finalRes = await db.query('SELECT * FROM profile_trainee WHERE "ID" = $1', [id]);
+    const updatedRow = finalRes.rows[0] || updateRes.rows[0];
+
     return res.status(200).json({
       success: true,
       message: `Profile Trainee ID: ${id} berhasil diperbarui.`,
-      data: formatProfileRow(updateRes.rows[0])
+      data: formatProfileRow(updatedRow)
     });
   } catch (error) {
     console.error('[Profile Trainee] PUT /:id error:', error.message);

@@ -14,6 +14,7 @@ const emailLimiter = rateLimit({
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
   message: {
     success: false,
     error: 'Terlalu banyak permintaan. Silakan coba 10 menit lagi.'

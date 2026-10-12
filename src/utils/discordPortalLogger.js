@@ -6,6 +6,33 @@ const fs = require('fs');
 // Map<traineeId, { threadId: string, timestamp: number }>
 const activeThreads = new Map();
 
+// Antrean asynchronous throttled agar aman dari rate-limit Discord saat lonjakan 400 user
+const logQueue = [];
+let isProcessingQueue = false;
+const DISCORD_DELAY_MS = 1200; // Jeda aman ~50 pesan per menit
+
+function enqueueLog(taskFn) {
+  logQueue.push(taskFn);
+  if (!isProcessingQueue) {
+    processLogQueue();
+  }
+}
+
+async function processLogQueue() {
+  if (logQueue.length === 0) {
+    isProcessingQueue = false;
+    return;
+  }
+  isProcessingQueue = true;
+  const nextTask = logQueue.shift();
+  try {
+    await nextTask();
+  } catch (err) {
+    console.error('[DiscordPortalLogger] Queue item error:', err.message);
+  }
+  setTimeout(processLogQueue, DISCORD_DELAY_MS);
+}
+
 function getDiscordToken() {
   if (process.env.DISCORD_BOT_TOKEN) {
     return process.env.DISCORD_BOT_TOKEN;
@@ -70,41 +97,47 @@ async function logPortalLogin({ traineeId, traineeName, success, statusText, ip,
     }
   };
 
-  const req = https.request(options, (res) => {
-    let responseBody = '';
-    res.on('data', (chunk) => { responseBody += chunk; });
-    res.on('end', () => {
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        try {
-          const parsed = JSON.parse(responseBody);
-          const threadId = parsed.id;
-          if (traineeId && success) {
-            activeThreads.set(String(traineeId), { threadId, timestamp: Date.now() });
+  enqueueLog(() => {
+    return new Promise((resolve) => {
+      const req = https.request(options, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => { responseBody += chunk; });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              const parsed = JSON.parse(responseBody);
+              const threadId = parsed.id;
+              if (traineeId && success) {
+                activeThreads.set(String(traineeId), { threadId, timestamp: Date.now() });
+              }
+              sendThreadMessage(token, threadId, {
+                traineeId,
+                traineeName,
+                success,
+                statusText,
+                ip,
+                userAgent,
+                nowWIB
+              });
+            } catch (err) {
+              console.error('[DiscordPortalLogger] Failed to parse thread response:', err.message);
+            }
+          } else {
+            console.error(`[DiscordPortalLogger] Thread HTTP ${res.statusCode}:`, responseBody);
           }
-          sendThreadMessage(token, threadId, {
-            traineeId,
-            traineeName,
-            success,
-            statusText,
-            ip,
-            userAgent,
-            nowWIB
-          });
-        } catch (err) {
-          console.error('[DiscordPortalLogger] Failed to parse thread response:', err.message);
-        }
-      } else {
-        console.error(`[DiscordPortalLogger] Thread HTTP ${res.statusCode}:`, responseBody);
-      }
+          resolve();
+        });
+      });
+
+      req.on('error', (e) => {
+        console.error('[DiscordPortalLogger] Request error:', e.message);
+        resolve();
+      });
+
+      req.write(postData);
+      req.end();
     });
   });
-
-  req.on('error', (e) => {
-    console.error('[DiscordPortalLogger] Request error:', e.message);
-  });
-
-  req.write(postData);
-  req.end();
 }
 
 function sendThreadMessage(token, threadId, data) {
@@ -190,20 +223,26 @@ function postRawToThread(token, threadId, contentText) {
     }
   };
 
-  const req = https.request(options, (res) => {
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      console.log(`[DiscordPortalLogger] Activity posted to thread ${threadId}`);
-    } else {
-      console.error(`[DiscordPortalLogger] HTTP ${res.statusCode} posting to thread ${threadId}`);
-    }
-  });
+  enqueueLog(() => {
+    return new Promise((resolve) => {
+      const req = https.request(options, (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log(`[DiscordPortalLogger] Activity posted to thread ${threadId}`);
+        } else {
+          console.error(`[DiscordPortalLogger] HTTP ${res.statusCode} posting to thread ${threadId}`);
+        }
+        resolve();
+      });
 
-  req.on('error', (e) => {
-    console.error('[DiscordPortalLogger] Post error:', e.message);
-  });
+      req.on('error', (e) => {
+        console.error('[DiscordPortalLogger] Post error:', e.message);
+        resolve();
+      });
 
-  req.write(postData);
-  req.end();
+      req.write(postData);
+      req.end();
+    });
+  });
 }
 
 module.exports = {

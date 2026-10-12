@@ -26,7 +26,7 @@ async function getTraineeProfile(traineeId) {
 
   try {
     const profRes = await db.query(
-      'SELECT "ID", "Name", "HOUSE", "Class" FROM profile_trainee WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 OR "Name" ILIKE $1 LIMIT 1',
+      'SELECT "ID", "Name", "HOUSE", "Class" FROM profile_trainee WHERE "ID" = $1 LIMIT 1',
       [profile.ID]
     );
     if (profRes.rows.length > 0) {
@@ -38,7 +38,7 @@ async function getTraineeProfile(traineeId) {
     }
 
     const credRes = await db.query(
-      'SELECT "ID", "Name" FROM credential_portal WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 OR "Name" ILIKE $1 LIMIT 1',
+      'SELECT "ID", "Name" FROM credential_portal WHERE "ID" = $1 LIMIT 1',
       [profile.ID]
     );
     if (credRes.rows.length > 0) {

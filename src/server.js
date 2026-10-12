@@ -5,6 +5,7 @@ const cors = require('cors');
 // Import Route Handlers from src/portal/
 const credentialRoutes = require('./portal/credential_portal/credentialRoutes');
 const profileTraineeRoutes = require('./portal/profile_trainee_portal/profileTraineeRoutes');
+const avatarRoutes = require('./portal/profile_trainee_portal/avatarRoutes');
 const monthlyGoldPointRoutes = require('./portal/id_gold_point/monthlyGoldPointRoutes');
 const houseRankRoutes = require('./portal/house_rank_dan_class/houseRankRoutes');
 const reportProgresRoutes = require('./portal/report_progres/reportProgresRoutes');
@@ -58,7 +59,7 @@ app.get(['/api/dashboard-summary/:id', '/api/portal/dashboard-summary/:id'], asy
         `SELECT "Class", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
           "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
           "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
-          "Trainee WhatsApp Number", "School Name"
+          "Trainee WhatsApp Number", "School Name", "avatar_url"
         FROM profile_trainee WHERE "ID" = $1 LIMIT 1`,
         [cleanId]
       ),
@@ -100,8 +101,10 @@ app.use('/api/portal/credential', credentialRoutes);
 // ============================================================
 // 2. Profile Trainee Portal
 // ============================================================
+app.use('/api/profile-trainee', avatarRoutes);
 app.use('/api/profile-trainee', profileTraineeRoutes);
 app.use('/api/webhook/profile-trainee', profileTraineeRoutes);
+app.use('/api/portal/profile-trainee', avatarRoutes);
 app.use('/api/portal/profile-trainee', profileTraineeRoutes);
 
 // ============================================================

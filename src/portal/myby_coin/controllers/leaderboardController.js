@@ -112,6 +112,10 @@ async function handleGetLeaderboardReferral(req, res) {
         FROM referral_link rl
         LEFT JOIN referral_code rc ON LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."Referral Code")) OR LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."ID"))
         WHERE rl."Referal By" IS NOT NULL AND rl."Referal By" != ''
+          AND LOWER(TRIM(rl."ID")) != LOWER(TRIM(COALESCE(rc."ID", '')))
+          AND LOWER(TRIM(rl."ID")) != LOWER(TRIM(rl."Referal By"))
+          AND LOWER(TRIM(rl."Referal By")) != LOWER(CONCAT('smlone-', TRIM(rl."ID")))
+          AND LOWER(TRIM(rl."Referal By")) != LOWER(CONCAT('myby-', TRIM(rl."ID")))
         GROUP BY COALESCE(
           rc."ID",
           CASE
@@ -150,7 +154,7 @@ async function handleGetLeaderboardReferral(req, res) {
         COALESCE(l.link_count, 0)::int AS total_referrals,
         CASE 
           WHEN COALESCE(t.tx_coins, 0) > 0 THEN t.tx_coins::int 
-          ELSE (COALESCE(l.link_count, 0) * 1)::int 
+          ELSE (COALESCE(l.link_count, 0) * 2)::int 
         END AS bonus_coins
       FROM all_trainees a
       LEFT JOIN link_agg l ON a.trainee_id = l.trainee_id
@@ -176,15 +180,19 @@ async function handleGetLeaderboardReferral(req, res) {
           class: r.class || 'Public Speaking Alpha',
           totalReferrals: Number(r.total_referrals || 0),
           bonusCoins: Number(r.bonus_coins || 0),
+          teman_diajak: Number(r.total_referrals || 0),
+          bonus_koin: Number(r.bonus_coins || 0),
+          koin: Number(r.bonus_coins || 0),
+          coins: Number(r.bonus_coins || 0),
         });
       }
     });
 
-    // Cek apakah user saat ini ada di list, jika belum maka tambahkan dengan 0 referral
-    if (currentUserId && !mapById.has(currentUserId)) {
+    // Cek apakah user saat ini ada di list (hanya jika sudah ada kompetisi referral berjalan)
+    if (currentUserId && mapById.size > 0 && !mapById.has(currentUserId)) {
       try {
         const u = await db.query(
-          'SELECT "ID" AS id, "Name" AS name, "HOUSE" AS house, "Class" AS class FROM profile_trainee WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) LIMIT 1',
+          'SELECT "ID" AS id, "Name" AS name, "HOUSE" AS house, "Class" AS class FROM profile_trainee WHERE "ID" = $1 LIMIT 1',
           [currentUserId]
         );
         if (u.rows.length > 0) {

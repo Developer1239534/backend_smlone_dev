@@ -2,7 +2,6 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const db = require('../db/neonClient');
 const { ensureMyByCoinTables, getTraineeProfile } = require('../portal/myby_coin/mybyCoinDatabase');
-const { generateClaimPdf } = require('../utils/generateClaimPdf');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'smlone_secret_key_12345';
 
@@ -21,6 +20,13 @@ const GIFT_MAP = {
   'rew-6': { catalogId: 'rew-6', nama: 'Tumblr SMLONE', cost: 200 },
   'rew-7': { catalogId: 'rew-7', nama: 'Jaket / Tas SMLONE', cost: 250 },
 };
+
+function genClaimCode(){
+  const d=new Date();
+  const yyyymmdd=d.toISOString().slice(0,10).replace(/-/g,'');
+  const rand=String(Math.floor(100000+Math.random()*900000));
+  return `SML-${yyyymmdd}-${rand}`;
+}
 
 const N8N_GIFT_WEBHOOK =
   process.env.N8N_GIFT_WEBHOOK_URL ||
@@ -219,10 +225,11 @@ async function handleGiftClaim(req, res) {
       );
 
       const claimId = `claim-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const claimCode = genClaimCode();
       await db.query(
-        `INSERT INTO gift_claims (id, user_id, gift_id, gift_name, coin_cost, remaining_coin, status, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, 'claimed', NOW())`,
-        [claimId, profile.ID, rawGiftId, gift.nama, gift.cost, remaining]
+        `INSERT INTO gift_claims (id, user_id, gift_id, gift_name, coin_cost, remaining_coin, status, claim_code, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 'claimed', $7, NOW())`,
+        [claimId, profile.ID, rawGiftId, gift.nama, gift.cost, remaining, claimCode]
       );
 
       // Sekaligus catat mutasi buku kas koin (badge: 'Klaim Hadiah') & redeem request
@@ -232,9 +239,9 @@ async function handleGiftClaim(req, res) {
         [`tx-${claimId}`, profile.ID, profile.Name, `Klaim Hadiah: ${gift.nama}`, gift.cost]
       );
       await db.query(
-        `INSERT INTO myby_redeem_requests (id, trainee_id, "Name", reward_id, reward_title, coins_spent, notes, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
-        [`red-${claimId}`, profile.ID, profile.Name, gift.catalogId || rawGiftId, gift.nama, gift.cost, null]
+        `INSERT INTO myby_redeem_requests (id, trainee_id, "Name", reward_id, reward_title, coins_spent, notes, status, claim_code)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)`,
+        [`red-${claimId}`, profile.ID, profile.Name, gift.catalogId || rawGiftId, gift.nama, gift.cost, null, claimCode]
       );
       if (gift.catalogId) {
         await db.query(
@@ -248,35 +255,19 @@ async function handleGiftClaim(req, res) {
       // 6. Langsung return 200 ke portal
       res.status(200).json({
         success: true,
-        message: 'Hadiah berhasil diklaim!',
+        message: 'Hadiah berhasil diklaim! Tunjukkan barcode kepada CRO untuk pengambilan hadiah.',
         data: {
           gift: gift.nama,
           coin_cost: gift.cost,
-          remaining_coin: remaining
+          remaining_coin: remaining,
+          claim_code: claimCode,
+          redeem_id: `red-${claimId}`
         }
       });
 
       // 5. Setelah commit sukses, forward ASYNC (fire-and-forget, timeout 10 detik, sertakan PDF attachment)
       setImmediate(async () => {
         try {
-          let pdfBase64 = '';
-          try {
-            const pdfBuffer = await generateClaimPdf({
-              redeemId: `CLM-${Date.now().toString().slice(-6)}`,
-              traineeId: profile.ID,
-              traineeName: userName,
-              recipientEmail: userEmail,
-              rewardTitle: gift.nama,
-              coinsSpent: gift.cost,
-              remainingBalance: remaining,
-              branch: profile.Branch || profile.Cabang || '',
-              program: profile.Program || ''
-            });
-            pdfBase64 = pdfBuffer.toString('base64');
-          } catch (pdfErr) {
-            console.error('[GIFT CLAIM] PDF gen error:', pdfErr.message);
-          }
-
           await axios.post(
             N8N_GIFT_WEBHOOK,
             {
@@ -287,8 +278,7 @@ async function handleGiftClaim(req, res) {
               gift_image: gift.image || '',
               coin_cost: gift.cost,
               remaining_coin: remaining,
-              pdf_base64: pdfBase64,
-              pdf_filename: `Bukti_Klaim_Hadiah_${profile.ID}.pdf`
+              claim_code: claimCode
             },
             {
               headers: { 'Content-Type': 'application/json' },

@@ -30,10 +30,10 @@ async function handleGetTransactions(req, res) {
     const result = await db.query(`
       SELECT id, trainee_id AS "ID", "Name", title, amount, type, badge, created_at
       FROM myby_coin_transactions
-      WHERE (trainee_id = $1 OR LOWER(trainee_id) = LOWER($1) OR "Name" = $2 OR LOWER("Name") = LOWER($2))
+      WHERE trainee_id = $1
       ORDER BY created_at DESC
-      LIMIT $3
-    `, [profile.ID, profile.Name, Number(limit)]);
+      LIMIT $2
+    `, [profile.ID, Number(limit)]);
 
     const data = result.rows.map(row => ({
       id: row.id,

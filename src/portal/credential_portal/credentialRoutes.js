@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
   try {
     await ensureCredentialPortalTable();
     const { search } = req.query;
-    let query = 'SELECT * FROM credential_portal';
+    let query = 'SELECT "ID", "Name", "MEMBERSHIP STATUS" FROM credential_portal';
     let params = [];
 
     if (search) {
@@ -60,7 +60,7 @@ router.get('/:id', async (req, res) => {
 
   try {
     const result = await db.query(
-      'SELECT * FROM credential_portal WHERE "ID" = $1 OR "ID" ILIKE $1 LIMIT 1',
+      'SELECT "ID", "Name", "MEMBERSHIP STATUS", "Password" FROM credential_portal WHERE "ID" = $1 LIMIT 1',
       [id]
     );
 
@@ -253,10 +253,13 @@ router.put('/:id', async (req, res) => {
       RETURNING *;
     `, [id, updateName, updateStatus, updatePass]);
 
+    const finalRes = await db.query('SELECT * FROM credential_portal WHERE "ID" = $1', [id]);
+    const updatedRow = finalRes.rows[0] || updateRes.rows[0];
+
     return res.status(200).json({
       success: true,
       message: `Data ID: ${id} berhasil diperbarui.`,
-      data: updateRes.rows[0]
+      data: updatedRow
     });
   } catch (error) {
     console.error('[Credential Portal] PUT /:id error:', error.message);

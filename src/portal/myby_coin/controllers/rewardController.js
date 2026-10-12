@@ -10,8 +10,13 @@
  */
 
 const db = require('../../../db/neonClient');
+function genClaimCode(){
+  const d=new Date();
+  const yyyymmdd=d.toISOString().slice(0,10).replace(/-/g,'');
+  const rand=String(Math.floor(100000+Math.random()*900000));
+  return `SML-${yyyymmdd}-${rand}`;
+}
 const { ensureMyByCoinTables, getTraineeProfile } = require('../mybyCoinDatabase');
-const { generateClaimPdf } = require('../../../utils/generateClaimPdf');
 
 /**
  * GET /rewards
@@ -76,8 +81,8 @@ async function handleRedeemReward(req, res) {
 
     // 2. Ambil saldo wallet anak (auto-init jika belum ada)
     let walletRes = await db.query(
-      'SELECT * FROM myby_trainee_wallets WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) OR "Name" = $2 LIMIT 1',
-      [profile.ID, profile.Name]
+      'SELECT * FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1',
+      [profile.ID]
     );
     if (walletRes.rows.length === 0) {
       await db.query(
@@ -85,7 +90,7 @@ async function handleRedeemReward(req, res) {
         [profile.ID, profile.Name]
       );
       walletRes = await db.query(
-        'SELECT * FROM myby_trainee_wallets WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) LIMIT 1',
+        'SELECT * FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1',
         [profile.ID]
       );
     }
@@ -126,10 +131,11 @@ async function handleRedeemReward(req, res) {
 
     // Catat pengajuan redeem
     const redeemId = `red-${Date.now()}`;
+    const claimCode = genClaimCode();
     await db.query(`
-      INSERT INTO myby_redeem_requests (id, trainee_id, "Name", reward_id, reward_title, coins_spent, notes)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `, [redeemId, profile.ID, profile.Name, reward.id, reward.title, reward.cost, notes || '']);
+      INSERT INTO myby_redeem_requests (id, trainee_id, "Name", reward_id, reward_title, coins_spent, notes, claim_code, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+    `, [redeemId, profile.ID, profile.Name, reward.id, reward.title, reward.cost, notes || '', claimCode]);
 
     await db.query('COMMIT');
 
@@ -139,24 +145,6 @@ async function handleRedeemReward(req, res) {
     const claimEmail = req.body.email || profile.Email || profile.email || profile['Parents Email Account'] || '';
     setImmediate(async () => {
       try {
-        let pdfBase64 = '';
-        try {
-          const pdfBuffer = await generateClaimPdf({
-            redeemId,
-            traineeId: profile.ID,
-            traineeName: profile.Name,
-            recipientEmail: claimEmail,
-            rewardTitle: reward.title,
-            coinsSpent: Number(reward.cost),
-            remainingBalance: Number(remainingBal),
-            branch: profile.Branch || profile.Cabang || '',
-            program: profile.Program || ''
-          });
-          pdfBase64 = pdfBuffer.toString('base64');
-        } catch (pdfErr) {
-          console.error('[MyBy Coin] PDF gen error:', pdfErr.message);
-        }
-
         await fetch('https://n8n-jua7.srv1825659.hstgr.cloud/webhook/gift-claim', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -168,8 +156,8 @@ async function handleRedeemReward(req, res) {
             gift_image: reward.image_url || '',
             coin_cost: Number(reward.cost),
             remaining_coin: Number(remainingBal),
-            pdf_base64: pdfBase64,
-            pdf_filename: `Bukti_Klaim_Hadiah_${profile.ID}.pdf`
+            claim_code: claimCode,
+            redeem_id: redeemId
           })
         });
       } catch (err) {
@@ -179,9 +167,10 @@ async function handleRedeemReward(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: `Berhasil menukarkan "${reward.title}"! Tim SMLONE akan segera memproses hadiah Anda.`,
+      message: `Berhasil menukarkan "${reward.title}"! Tunjukkan barcode kepada CRO untuk pengambilan hadiah.`,
       data: {
         redeemId,
+        claimCode,
         rewardTitle: reward.title,
         coinsSpent: Number(reward.cost),
         remainingBalance: Number(remainingBal)
@@ -209,13 +198,13 @@ async function handleGetTraineeRedeems(req, res) {
     const profile = await getTraineeProfile(traineeId);
 
     const result = await db.query(
-      `SELECT r.id, r.trainee_id, r.trainee_id AS "ID", r."Name", r.reward_id, r.reward_title, r.coins_spent, r.status, r.notes, r.created_at, r.updated_at,
+      `SELECT r.id, r.trainee_id, r.trainee_id AS "ID", r."Name", r.reward_id, r.reward_title, r.coins_spent, r.status, r.notes, r.claim_code, r.scanned_at, r.created_at, r.updated_at,
               c.image_url, c.category, c.cost, c.description
        FROM myby_redeem_requests r
        LEFT JOIN myby_rewards_catalog c ON r.reward_id = c.id
-       WHERE r.trainee_id = $1 OR LOWER(r.trainee_id) = LOWER($1) OR r."Name" = $2
+       WHERE r.trainee_id = $1
        ORDER BY r.created_at DESC`,
-      [profile.ID, profile.Name]
+      [profile.ID]
     );
 
     const rows = result.rows.map(row => ({
@@ -225,6 +214,8 @@ async function handleGetTraineeRedeems(req, res) {
       rewardId: row.reward_id,
       rewardTitle: row.reward_title,
       coinsSpent: Number(row.coins_spent || 0),
+      claimCode: row.claim_code || '',
+      scannedAt: row.scanned_at || null,
       imageUrl: row.image_url || '',
       category: row.category || '',
       createdAt: row.created_at,

@@ -50,22 +50,22 @@ async function handleRegisterCalonSiswa(req, res) {
       inviterName
     ]);
 
-    // Tambahkan 1 koin untuk inviter (referral bonus: 1 coin)
+    // Tambahkan 2 koin untuk inviter (referral bonus: 2 coin per pendaftar)
     if (inviterId) {
       await db.query(`
         INSERT INTO myby_trainee_wallets ("ID", "Name", balance, total_earned)
-        VALUES ($1, $2, 1, 1)
+        VALUES ($1, $2, 2, 2)
         ON CONFLICT ("ID") 
         DO UPDATE SET 
-          balance = myby_trainee_wallets.balance + 1,
-          total_earned = myby_trainee_wallets.total_earned + 1,
+          balance = myby_trainee_wallets.balance + 2,
+          total_earned = myby_trainee_wallets.total_earned + 2,
           "Name" = COALESCE(EXCLUDED."Name", myby_trainee_wallets."Name"),
           updated_at = NOW()
       `, [inviterId, inviterName || 'Trainee SMLONE']).catch(() => {});
 
       await db.query(`
         INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge)
-        VALUES ($1, $2, $3, $4, 1, 'earn', 'Referral Bonus')
+        VALUES ($1, $2, $3, $4, 2, 'earn', 'Referral Bonus')
       `, [`tx-ref-${Date.now()}`, inviterId, inviterName || 'Trainee SMLONE', `Referral: ${name.trim()}`]).catch(() => {});
     }
 

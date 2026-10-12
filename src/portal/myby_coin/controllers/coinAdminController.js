@@ -40,7 +40,7 @@ async function handleAdminGetWallet(req, res) {
   try {
     await ensureMyByCoinTables();
     const result = await db.query(
-      'SELECT "ID", "Name", balance, total_earned, total_spent, created_at, updated_at FROM myby_trainee_wallets WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 OR "Name" ILIKE $1 LIMIT 1',
+      'SELECT "ID", "Name", balance, total_earned, total_spent, created_at, updated_at FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1',
       [id]
     );
     if (result.rows.length === 0) {
@@ -136,9 +136,9 @@ async function handleAdminDeleteWallet(req, res) {
   const { id } = req.params;
   try {
     await ensureMyByCoinTables();
-    const existing = await db.query('SELECT "ID", "Name" FROM myby_trainee_wallets WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1 LIMIT 1;', [id]);
+    const existing = await db.query('SELECT "ID", "Name" FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1;', [id]);
     if (existing.rows.length === 0) return res.status(404).json({ success: false, message: `Wallet "${id}" tidak ditemukan.` });
-    await db.query('DELETE FROM myby_trainee_wallets WHERE "ID" = $1 OR "ID" ILIKE $1 OR "Name" = $1;', [id]);
+    await db.query('DELETE FROM myby_trainee_wallets WHERE "ID" = $1;', [id]);
     return res.status(200).json({ success: true, message: 'Wallet berhasil dihapus.', data: existing.rows[0] });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal menghapus wallet.', error: error.message });
@@ -300,16 +300,25 @@ async function handleAdminListRedeems(req, res) {
   try {
     await ensureMyByCoinTables();
     const { status, search, limit = 50, offset = 0 } = req.query;
-    let query = 'SELECT * FROM myby_redeem_requests';
+    let baseWhere = '';
     const params = [];
     const conds = [];
-    if (status) { params.push(status); conds.push(`status = $${params.length}`); }
-    if (search) { params.push(`%${search}%`); conds.push(`("ID" ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR reward_title ILIKE $${params.length})`); }
-    if (conds.length) query += ' WHERE ' + conds.join(' AND ');
-    query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(Number(limit), Number(offset));
-    const result = await db.query(query, params);
-    return res.status(200).json({ success: true, total: result.rows.length, data: result.rows });
+    if (status) {
+      params.push(status);
+      conds.push(`status = $${params.length}`);
+    }
+    if (search) {
+      params.push(`%${search}%`);
+      conds.push(`(trainee_id ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR reward_title ILIKE $${params.length} OR claim_code ILIKE $${params.length})`);
+    }
+    if (conds.length) baseWhere = ' WHERE ' + conds.join(' AND ');
+
+    const countRes = await db.query('SELECT COUNT(*) as total FROM myby_redeem_requests' + baseWhere, params);
+    const totalCount = Number(countRes.rows[0]?.total || 0);
+
+    let query = 'SELECT *, trainee_id as "ID" FROM myby_redeem_requests' + baseWhere + ` ORDER BY COALESCE(scanned_at, updated_at, created_at) DESC, created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    const dataRes = await db.query(query, [...params, Number(limit), Number(offset)]);
+    return res.status(200).json({ success: true, total: totalCount, data: dataRes.rows });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal mengambil redeem.', error: error.message });
   }
@@ -334,7 +343,8 @@ async function handleAdminUpdateRedeem(req, res) {
     await ensureMyByCoinTables();
     let { status, notes } = req.body;
     if (status) status = String(status).toLowerCase().trim();
-    const allowed = ['pending', 'approved', 'rejected', 'completed'];
+    const allowed = ['pending', 'approved', 'rejected']; // completed hanya via scan barcode CRO
+    if (status === 'completed') return res.status(400).json({ success: false, message: 'Status Selesai hanya bisa via scan barcode CRO (POST /redeems/scan).' });
     if (status && !allowed.includes(status)) {
       return res.status(400).json({ success: false, message: `Status harus salah satu: ${allowed.join(', ')}` });
     }
@@ -353,7 +363,7 @@ async function handleAdminUpdateRedeem(req, res) {
     // refund jika berubah ke rejected dari status non-rejected
     if (status === 'rejected' && prev.status !== 'rejected') {
       await db.query(
-        'UPDATE myby_trainee_wallets SET balance = balance + $2, total_spent = GREATEST(0, total_spent - $2), updated_at = NOW() WHERE "ID" = $1 OR LOWER("ID") = LOWER($1)',
+        'UPDATE myby_trainee_wallets SET balance = balance + $2, total_spent = GREATEST(0, total_spent - $2), updated_at = NOW() WHERE "ID" = $1',
         [traineeId, Number(prev.coins_spent)]
       );
       await db.query(
@@ -388,6 +398,61 @@ async function handleAdminDeleteRedeem(req, res) {
   }
 }
 
+
+// POST /redeems/scan { claim_code, scanned_by? } - CRO scans barcode: only this changes status to completed
+async function handleScanRedeem(req, res) {
+  const { claim_code, claimCode, code, scanned_by, scannedBy } = req.body || {};
+  const rawCode = String(claim_code || claimCode || code || '').trim().toUpperCase();
+  if (!rawCode) return res.status(400).json({ success: false, message: 'claim_code wajib diisi.' });
+  const scanner = String(scanned_by || scannedBy || req.body?.cro_name || 'CRO SMLONE').trim();
+  try {
+    await ensureMyByCoinTables();
+    let check = await db.query('SELECT * FROM myby_redeem_requests WHERE UPPER(claim_code) = $1 LIMIT 1', [rawCode]);
+    if (check.rows.length === 0) {
+      // Check in gift_claims if not yet in myby_redeem_requests
+      const g = await db.query('SELECT * FROM gift_claims WHERE UPPER(claim_code) = $1 LIMIT 1', [rawCode]);
+      if (g.rows.length > 0) {
+        const giftClaim = g.rows[0];
+        const prof = (await db.query('SELECT `Name` FROM profile_trainee WHERE `ID` = ? LIMIT 1', [giftClaim.user_id])).rows[0];
+        const tName = prof ? prof.Name : 'Trainee';
+        const redId = 'red-' + giftClaim.id;
+        await db.query(
+          `INSERT INTO myby_redeem_requests (id, trainee_id, \`Name\`, reward_id, reward_title, coins_spent, status, claim_code, created_at, scanned_at, scanned_by)
+           VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, NOW(), ?)`,
+          [redId, giftClaim.user_id, tName, giftClaim.gift_id, giftClaim.gift_name, giftClaim.coin_cost, giftClaim.claim_code, giftClaim.created_at, scanner]
+        );
+        await db.query('UPDATE gift_claims SET status = "completed", scanned_at = NOW() WHERE UPPER(claim_code) = ?', [rawCode]);
+        const newRecord = (await db.query('SELECT * FROM myby_redeem_requests WHERE id = ?', [redId])).rows[0];
+        return res.status(200).json({
+          success: true,
+          message: `Klaim berhasil diverifikasi dan diserahkan ke ${tName} (${giftClaim.gift_name}). Status kini: Sudah Diambil.`,
+          data: newRecord
+        });
+      }
+      return res.status(404).json({ success: false, message: 'Kode klaim voucher tidak ditemukan.' });
+    }
+    const row = check.rows[0];
+    if (row.status === 'completed' || row.scanned_at) {
+      const scanDate = row.scanned_at ? new Date(row.scanned_at).toLocaleString('id-ID') : 'sebelumnya';
+      return res.status(409).json({
+        success: false,
+        message: `Kupon barcode ini SUDAH PERNAH DIGUNAKAN (Hadiah sudah diambil pada ${scanDate}).`,
+        data: row
+      });
+    }
+    await db.query("UPDATE myby_redeem_requests SET status='completed', scanned_at=NOW(), scanned_by=$2, updated_at=NOW() WHERE id=$1", [row.id, scanner]);
+    try { await db.query("UPDATE gift_claims SET status='completed', scanned_at=NOW() WHERE UPPER(claim_code)=$1", [rawCode]); } catch(_){}
+    const updated = (await db.query('SELECT * FROM myby_redeem_requests WHERE id=$1', [row.id])).rows[0];
+    return res.status(200).json({
+      success: true,
+      message: `Klaim berhasil diverifikasi dan diserahkan ke ${updated.Name || updated.trainee_id} (${updated.reward_title}). Status kini: Sudah Diambil.`,
+      data: updated
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, message: 'Gagal scan barcode.', error: e.message });
+  }
+}
+
 module.exports = {
   handleAdminListWallets,
   handleAdminGetWallet,
@@ -404,5 +469,6 @@ module.exports = {
   handleAdminListRedeems,
   handleAdminGetRedeem,
   handleAdminUpdateRedeem,
-  handleAdminDeleteRedeem
+  handleAdminDeleteRedeem,
+  handleScanRedeem
 };

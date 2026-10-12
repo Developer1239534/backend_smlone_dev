@@ -51,6 +51,8 @@ const {
   handleAdminGetRedeem,
   handleAdminUpdateRedeem,
   handleAdminDeleteRedeem
+,
+  handleScanRedeem
 } = require('./controllers/coinAdminController');
 
 // 1. Overview Saldo & Status Streak
@@ -74,6 +76,7 @@ router.get('/transactions{/:traineeId}', handleGetTransactions);
 // 5. Katalog Reward & Penukaran Hadiah
 router.get('/rewards', handleGetRewards);
 router.post('/redeem', handleRedeemReward);
+router.post('/redeems/scan', handleScanRedeem);
 router.get('/redeems/:traineeId', handleGetTraineeRedeems);
 router.get('/redeems', handleGetTraineeRedeems);
 

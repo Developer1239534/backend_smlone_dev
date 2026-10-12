@@ -47,7 +47,7 @@ async function handleGetOverview(req, res) {
 
     // Ambil Wallet (upsert default jika belum ada dengan balance 0)
     let walletRes = await db.query(
-      'SELECT * FROM myby_trainee_wallets WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) OR "Name" = $1 LIMIT 1',
+      'SELECT * FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1',
       [profile.ID]
     );
     if (walletRes.rows.length === 0) {
@@ -67,7 +67,7 @@ async function handleGetOverview(req, res) {
       SELECT "ID", "Name", current_streak, longest_streak, streak_cycle_day, 
              last_check_in_date::TEXT AS last_check_in_date, total_check_ins 
       FROM myby_trainee_streaks 
-      WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) OR "Name" = $1 LIMIT 1
+      WHERE "ID" = $1 LIMIT 1
     `, [profile.ID]);
 
     if (streakRes.rows.length === 0) {
@@ -174,7 +174,7 @@ async function handleClaimStreak(req, res) {
       SELECT "ID", "Name", current_streak, longest_streak, streak_cycle_day, 
              last_check_in_date::TEXT AS last_check_in_date, total_check_ins 
       FROM myby_trainee_streaks 
-      WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) OR "Name" = $1 LIMIT 1
+      WHERE "ID" = $1 LIMIT 1
     `, [profile.ID]);
     let prevStreak = streakRes.rows[0];
 
@@ -232,7 +232,7 @@ async function handleClaimStreak(req, res) {
           total_check_ins = total_check_ins + 1,
           "Name" = $5,
           updated_at = NOW()
-      WHERE "ID" = $6 OR LOWER("ID") = LOWER($6)
+      WHERE "ID" = $6
     `, [newStreak, newLongest, newCycleDay, today, profile.Name, profile.ID]);
 
     // 2. Update Saldo Wallet
@@ -250,7 +250,7 @@ async function handleClaimStreak(req, res) {
 
     let newBalance = (walletUpdate.rows && walletUpdate.rows[0]) ? walletUpdate.rows[0].balance : 0;
     if (!newBalance) {
-      const wRes = await db.query('SELECT balance FROM myby_trainee_wallets WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) LIMIT 1', [profile.ID]);
+      const wRes = await db.query('SELECT balance FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1', [profile.ID]);
       newBalance = wRes.rows[0] ? wRes.rows[0].balance : bonusCoin;
     }
 
