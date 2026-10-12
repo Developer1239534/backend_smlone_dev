@@ -421,7 +421,7 @@ async function handleScanRedeem(req, res) {
            VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, NOW(), ?)`,
           [redId, giftClaim.user_id, tName, giftClaim.gift_id, giftClaim.gift_name, giftClaim.coin_cost, giftClaim.claim_code, giftClaim.created_at, scanner]
         );
-        await db.query('UPDATE gift_claims SET status = "completed", scanned_at = NOW() WHERE UPPER(claim_code) = ?', [rawCode]);
+        await db.query("UPDATE gift_claims SET status = 'completed', scanned_at = NOW() WHERE UPPER(claim_code) = ?", [rawCode]);
         const newRecord = (await db.query('SELECT * FROM myby_redeem_requests WHERE id = ?', [redId])).rows[0];
         return res.status(200).json({
           success: true,
