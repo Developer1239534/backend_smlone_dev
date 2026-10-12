@@ -21,6 +21,7 @@ const giftRoutes = require('./routes/giftRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const credentialAdminRoutes = require('./portal/credential_admin/credentialAdminRoutes');
 const telemetryRoutes = require('./routes/telemetryRoutes');
+const ticketRoutes = require('./routes/ticketRoutes');
 const db = require('./db/neonClient');
 
 const app = express();
@@ -211,6 +212,10 @@ app.use('/api/admin/credential', credentialAdminRoutes);
 app.use('/api/v1/telemetry', telemetryRoutes);
 app.use('/api/telemetry', telemetryRoutes);
 app.use('/api/portal/telemetry', telemetryRoutes);
+
+// Jira Cloud Ticketing Integration (Project KAN)
+app.use('/api/tickets', ticketRoutes);
+app.use('/api/portal/tickets', ticketRoutes);
 
 // On-demand Google Sheets sync trigger to n8n
 app.post('/api/sync-sheets', async (req, res) => {
