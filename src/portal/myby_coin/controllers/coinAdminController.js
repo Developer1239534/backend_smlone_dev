@@ -343,8 +343,7 @@ async function handleAdminUpdateRedeem(req, res) {
     await ensureMyByCoinTables();
     let { status, notes } = req.body;
     if (status) status = String(status).toLowerCase().trim();
-    const allowed = ['pending', 'approved', 'rejected']; // completed hanya via scan barcode CRO
-    if (status === 'completed') return res.status(400).json({ success: false, message: 'Status Selesai hanya bisa via scan barcode CRO (POST /redeems/scan).' });
+    const allowed = ['pending', 'approved', 'rejected', 'completed'];
     if (status && !allowed.includes(status)) {
       return res.status(400).json({ success: false, message: `Status harus salah satu: ${allowed.join(', ')}` });
     }
@@ -359,6 +358,14 @@ async function handleAdminUpdateRedeem(req, res) {
     );
 
     const traineeId = prev.trainee_id || prev.ID;
+
+    // Jika admin mengubah status ke 'completed', set scanned_at otomatis jika belum ada
+    if (status === 'completed' && !prev.scanned_at) {
+      await db.query(
+        "UPDATE myby_redeem_requests SET scanned_at = NOW(), scanned_by = COALESCE(scanned_by, 'Admin Portal') WHERE id = $1",
+        [id]
+      );
+    }
 
     // refund jika berubah ke rejected dari status non-rejected
     if (status === 'rejected' && prev.status !== 'rejected') {
