@@ -189,11 +189,16 @@ router.get('/', async (req, res) => {
 
     if (limit) {
       const parsedLimit = parseInt(limit, 10) || 50;
-      const parsedPage = parseInt(page, 10) || 1;
-      const offset = (parsedPage - 1) * parsedLimit;
-      params.push(parsedLimit, offset);
+      const parsedOffset = req.query.offset !== undefined ? parseInt(req.query.offset, 10) : ((parseInt(page, 10) || 1) - 1) * parsedLimit;
+      params.push(parsedLimit, parsedOffset);
       query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
     }
+
+    const countRes = await db.query(
+      'SELECT COUNT(*) FROM profile_trainee' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''),
+      params.slice(0, conditions.length)
+    );
+    const totalCount = parseInt(countRes.rows[0].count, 10) || 0;
 
     const result = await db.query(query, params);
     const formatted = result.rows.map(formatProfileRow);
@@ -202,7 +207,8 @@ router.get('/', async (req, res) => {
       success: true,
       message: 'Berhasil mengambil data Profile Trainee.',
       count: formatted.length,
-      total: formatted.length,
+      total: totalCount,
+      grandTotal: totalCount,
       data: formatted
     });
   } catch (error) {
