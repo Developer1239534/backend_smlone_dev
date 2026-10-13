@@ -195,10 +195,10 @@ router.get('/', async (req, res) => {
     }
 
     const countRes = await db.query(
-      'SELECT COUNT(*) FROM profile_trainee' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''),
+      'SELECT COUNT(*)::int AS count FROM profile_trainee' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''),
       params.slice(0, conditions.length)
     );
-    const totalCount = parseInt(countRes.rows[0].count, 10) || 0;
+    const totalCount = parseInt(countRes.rows[0]?.count ?? 0, 10);
 
     const result = await db.query(query, params);
     const formatted = result.rows.map(formatProfileRow);
