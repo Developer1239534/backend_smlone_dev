@@ -21,15 +21,19 @@ async function handleAdminListStreaks(req, res) {
                  created_at, updated_at FROM myby_trainee_streaks`;
     const params = [];
 
+    // Saring hanya trainee yang benar-benar pernah aktif (total_check_ins > 0 atau current_streak > 0)
+    // agar trainee yang belum pernah login/check-in tidak memenuhi tabel streak
+    query += ` WHERE (total_check_ins > 0 OR current_streak > 0)`;
+
     if (search) {
       params.push(`%${search}%`);
-      query += ` WHERE "ID" ILIKE $1 OR "Name" ILIKE $1`;
+      query += ` AND ("ID" ILIKE $1 OR "Name" ILIKE $1)`;
     }
-    query += ` ORDER BY current_streak DESC, "Name" ASC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    query += ` ORDER BY current_streak DESC, total_check_ins DESC, "Name" ASC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(Number(limit), Number(offset));
 
     const result = await db.query(query, params);
-    const countRes = await db.query('SELECT COUNT(*) FROM myby_trainee_streaks');
+    const countRes = await db.query('SELECT COUNT(*) FROM myby_trainee_streaks WHERE (total_check_ins > 0 OR current_streak > 0)');
     return res.status(200).json({
       success: true,
       message: 'Berhasil mengambil data streak trainee.',

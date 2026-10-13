@@ -69,20 +69,9 @@ async function handleGetOverview(req, res) {
       FROM myby_trainee_streaks 
       WHERE "ID" = $1 LIMIT 1
     `, [profile.ID]);
-
-    if (streakRes.rows.length === 0) {
-      await db.query(
-        'INSERT INTO myby_trainee_streaks ("ID", "Name", current_streak, longest_streak, streak_cycle_day) VALUES ($1, $2, 0, 0, 1) ON CONFLICT ("ID") DO UPDATE SET "Name" = EXCLUDED."Name"',
-        [profile.ID, profile.Name]
-      );
-      streakRes = await db.query(`
-        SELECT "ID", "Name", current_streak, longest_streak, streak_cycle_day, 
-               last_check_in_date::TEXT AS last_check_in_date, total_check_ins 
-        FROM myby_trainee_streaks 
-        WHERE "ID" = $1 OR LOWER("ID") = LOWER($1) LIMIT 1
-      `, [profile.ID]);
-    }
-    const streak = streakRes.rows[0] || { current_streak: 0, longest_streak: 0, streak_cycle_day: 1, last_check_in_date: null };
+    
+    // Default fallback in-memory (tanpa otomatis INSERT ke DB jika belum pernah check-in)
+    const streak = streakRes.rows[0] || { current_streak: 0, longest_streak: 0, streak_cycle_day: 1, last_check_in_date: null, total_check_ins: 0 };
 
     // Evaluasi tanggal check in terakhir zona WIB
     let currentStreak = Number(streak.current_streak || 0);
