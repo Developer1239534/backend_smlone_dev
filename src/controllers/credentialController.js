@@ -36,6 +36,24 @@ async function handleSendCredential(req, res) {
     const traineeName = trainee.Name || 'Trainee';
     const sentAt = new Date().toISOString();
 
+    // 2.1 Proteksi 1x Seumur Hidup: Periksa apakah ID ini sudah pernah berhasil menerima kredensial
+    const checkPrior = await db.query(
+      `SELECT id, recipient_email, created_at 
+       FROM public.credential_email_logs 
+       WHERE trainee_id = $1 AND status = 'SUCCESS' 
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [actualId]
+    );
+
+    if (checkPrior.rows.length > 0) {
+      return res.status(403).json({
+        success: false,
+        alreadyRequested: true,
+        error: 'Sesi permintaan kredensial hanya berlaku sekali. Kredensial untuk ID ini sudah pernah dikirimkan. Silakan periksa inbox/spam email Anda atau hubungi Admin di developer@smlone.com jika butuh bantuan.'
+      });
+    }
+
     let dob = '';
     let parentEmail = '';
     try {
