@@ -22,6 +22,10 @@ const {
 } = require('./controllers/streakController');
 
 const { handleGetLeaderboard, handleGetLeaderboardReferral } = require('./controllers/leaderboardController');
+const {
+  handleGetReferralEventStatus,
+  handleClaimReferralCoins
+} = require('./controllers/referralEventController');
 const { handleRegisterCalonSiswa, handleListCalonSiswa } = require('./controllers/calonSiswaController');
 const { handleGetTransactions } = require('./controllers/transactionController');
 const { handleGetRewards, handleRedeemReward, handleGetTraineeRedeems } = require('./controllers/rewardController');
@@ -65,6 +69,10 @@ router.post('/daily-checkin', handleDailyCheckin);
 // 3. Leaderboard Realtime & Referral
 router.get('/leaderboard', handleGetLeaderboard);
 router.get('/leaderboard-referral', handleGetLeaderboardReferral);
+
+// 3.0 Event Referral (Batas 31 Okt 2026 & Klaim Reward)
+router.get('/referral-event/status', handleGetReferralEventStatus);
+router.post('/referral-event/claim', handleClaimReferralCoins);
 
 // 3.1 Calon Siswa Pendaftar SMLONE
 router.get('/calon-siswa', handleListCalonSiswa);
