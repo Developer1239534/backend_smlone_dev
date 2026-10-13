@@ -8,16 +8,16 @@ const { logPortalLogin } = require('../utils/discordPortalLogger');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'smlone_secret_key_12345';
 
-// Rate limiting: Maks 3 request per 10 menit per IP
+// Rate limiting: Toleran untuk pengujian & pengiriman kredensial (15 request / 1 menit)
 const emailLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 menit
-  max: 3,
+  windowMs: 1 * 60 * 1000,
+  max: 15,
   standardHeaders: true,
   legacyHeaders: false,
   validate: { trustProxy: false },
   message: {
     success: false,
-    error: 'Terlalu banyak permintaan. Silakan coba 10 menit lagi.'
+    error: 'Terlalu banyak permintaan dalam waktu singkat. Silakan tunggu 1 menit lagi.'
   }
 });
 
