@@ -127,7 +127,7 @@ function generateClaimPdf(data) {
         .text('1. Tunjukkan dokumen voucher PDF ini (cetak atau via smartphone) kepada staf Admin SMLONE.', 55, guideY + 30)
         .text('2. Pengambilan merchandise dapat dilakukan pada jam operasional cabang masing-masing.', 55, guideY + 48)
         .text('3. Voucher ini adalah bukti sah penukaran saldo MYBY Coin dan berlaku 1x penukaran fisik.', 55, guideY + 66)
-        .text('4. Jika membutuhkan bantuan, hubungi Helpdesk WA SMLONE di 082169833829.', 55, guideY + 84);
+        .text('4. Jika membutuhkan bantuan, hubungi Support Email SMLONE di developer@smlone.com.', 55, guideY + 84);
 
       // ── STAMP & SIGNATURE SECTION ───────────────────────────────────
       const stampY = 550;
@@ -146,7 +146,7 @@ function generateClaimPdf(data) {
 
       // ── FOOTER ──────────────────────────────────────────────────────
       doc.fillColor(slateMuted).fontSize(8).font('Helvetica')
-        .text('SMLONE Indonesia • WhatsApp: 082169833829 • Instagram: @smloneid • https://portal.smlone.com', 40, 780, { align: 'center', width: 515 });
+        .text('SMLONE Indonesia • Email: developer@smlone.com • Instagram: @smloneid • https://portal.smlone.com', 40, 780, { align: 'center', width: 515 });
 
       doc.end();
     } catch (err) {
