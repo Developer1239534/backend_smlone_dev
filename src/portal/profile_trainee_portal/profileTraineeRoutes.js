@@ -102,6 +102,7 @@ function formatProfileRow(row) {
     "Date of Birth": row["Date of Birth"] ?? '',
     "Class in School": row["Class in School"] ?? '',
     "Parents Email Account": row["Parents Email Account"] ?? '',
+    "Trainee Email Account": row["Trainee Email Account"] ?? '',
     "Parent WhatsApp Number": row["Parent WhatsApp Number"] ?? '',
     "Trainee WhatsApp Number": row["Trainee WhatsApp Number"] ?? '',
     "School Name": row["School Name"] ?? '',
@@ -127,6 +128,7 @@ function formatProfileRow(row) {
     date_of_birth: row["Date of Birth"] ?? '',
     class_in_school: row["Class in School"] ?? '',
     parents_email_account: row["Parents Email Account"] ?? '',
+    trainee_email_account: row["Trainee Email Account"] ?? '',
     parent_whatsapp_number: row["Parent WhatsApp Number"] ?? '',
     trainee_whatsapp_number: row["Trainee WhatsApp Number"] ?? '',
     school_name: row["School Name"] ?? '',
@@ -143,7 +145,7 @@ router.get('/', async (req, res) => {
       SELECT 
         "Class", "Program", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
-        "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
+        "Date of Birth", "Class in School", "Parents Email Account", "Trainee Email Account", "Parent WhatsApp Number",
         "Trainee WhatsApp Number", "School Name", "avatar_url"
       FROM profile_trainee
     `;
@@ -230,7 +232,7 @@ router.get('/:id', async (req, res) => {
       `SELECT 
         "Class", "Program", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
-        "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
+        "Date of Birth", "Class in School", "Parents Email Account", "Trainee Email Account", "Parent WhatsApp Number",
         "Trainee WhatsApp Number", "School Name", "avatar_url"
       FROM profile_trainee 
       WHERE "ID" = $1
@@ -295,6 +297,7 @@ router.post('/', async (req, res) => {
     const dob = String(row['Date of Birth'] ?? row['Date of Birthday'] ?? row['date_of_birth'] ?? '').trim();
     const classInSchool = String(row['Class in School'] ?? row['class_in_school'] ?? row['Kelas'] ?? '').trim();
     const parentsEmail = String(row['Parents Email Account'] ?? row['Email Account Parents'] ?? row['emailParents'] ?? '').trim();
+    const traineeEmail = String(row['Trainee Email Account'] ?? row['Email Account Trainee'] ?? row['emailTrainee'] ?? '').trim();
     const parentWa = String(row['Parent WhatsApp Number'] ?? row['Nomor WA Parent'] ?? row['waParent'] ?? '').trim();
     const traineeWa = String(row['Trainee WhatsApp Number'] ?? row['Nomor WA Trainee'] ?? row['waTrainee'] ?? '').trim();
     const schoolName = String(row['School Name'] ?? row['Nama Sekolah'] ?? row['schoolName'] ?? '').trim();
@@ -303,7 +306,7 @@ router.post('/', async (req, res) => {
       INSERT INTO profile_trainee (
         "Class", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
-        "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
+        "Date of Birth", "Class in School", "Parents Email Account", "Trainee Email Account", "Parent WhatsApp Number",
         "Trainee WhatsApp Number", "School Name"
       )
       VALUES (
@@ -330,6 +333,7 @@ router.post('/', async (req, res) => {
           "Date of Birth"           = EXCLUDED."Date of Birth",
           "Class in School"         = EXCLUDED."Class in School",
           "Parents Email Account"   = EXCLUDED."Parents Email Account",
+          "Trainee Email Account"   = EXCLUDED."Trainee Email Account",
           "Parent WhatsApp Number"  = EXCLUDED."Parent WhatsApp Number",
           "Trainee WhatsApp Number" = EXCLUDED."Trainee WhatsApp Number",
           "School Name"             = EXCLUDED."School Name"
@@ -337,7 +341,7 @@ router.post('/', async (req, res) => {
     `, [
       className, day, time, room, branch, id, name, level, house, houseRole,
       traineeHomeroom, homeroomKelas, trainer, membership, expiryDate, firstEnroll,
-      dob, classInSchool, parentsEmail, parentWa, traineeWa, schoolName
+      dob, classInSchool, parentsEmail, traineeEmail, parentWa, traineeWa, schoolName
     ]);
 
     return res.status(201).json({
@@ -405,6 +409,7 @@ router.post('/push', async (req, res) => {
       const dob = String(row['Date of Birth'] ?? row['Date of Birthday'] ?? row['date_of_birth'] ?? '').trim();
       const classInSchool = String(row['Class in School'] ?? row['class_in_school'] ?? row['Kelas'] ?? '').trim();
       const parentsEmail = String(row['Parents Email Account'] ?? row['Email Account Parents'] ?? '').trim();
+      const traineeEmail = String(row['Trainee Email Account'] ?? row['Email Account Trainee'] ?? '').trim();
       const parentWa = String(row['Parent WhatsApp Number'] ?? row['Nomor WA Parent'] ?? '').trim();
       const traineeWa = String(row['Trainee WhatsApp Number'] ?? row['Nomor WA Trainee'] ?? '').trim();
       const schoolName = String(row['School Name'] ?? row['Nama Sekolah'] ?? '').trim();
@@ -414,7 +419,7 @@ router.post('/push', async (req, res) => {
           INSERT INTO profile_trainee (
             "Class", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
             "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
-            "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
+            "Date of Birth", "Class in School", "Parents Email Account", "Trainee Email Account", "Parent WhatsApp Number",
             "Trainee WhatsApp Number", "School Name"
           )
           VALUES (
@@ -447,7 +452,7 @@ router.post('/push', async (req, res) => {
         `, [
           className, day, time, room, branch, id, name, level, house, houseRole,
           traineeHomeroom, homeroomKelas, trainer, membership, expiryDate, firstEnroll,
-          dob, classInSchool, parentsEmail, parentWa, traineeWa, schoolName
+          dob, classInSchool, parentsEmail, traineeEmail, parentWa, traineeWa, schoolName
         ]);
         insertedCount++;
       } catch (rowErr) {
@@ -498,6 +503,7 @@ router.put('/:id', async (req, res) => {
     const updatedDob = b["Date of Birth"] ?? b["Date of Birthday"] ?? b["date_of_birth"] ?? b["birthDate"] ?? existing["Date of Birth"] ?? '';
     const updatedClassInSchool = b["Class in School"] ?? b["class_in_school"] ?? b["Kelas"] ?? b["kelas"] ?? b["newestGrade"] ?? existing["Class in School"] ?? '';
     const updatedParentsEmail = b["Parents Email Account"] ?? b["Email Account Parents"] ?? b["parents_email_account"] ?? b["emailParents"] ?? existing["Parents Email Account"] ?? '';
+    const updatedTraineeEmail = b["Trainee Email Account"] ?? b["Email Account Trainee"] ?? b["trainee_email_account"] ?? b["emailTrainee"] ?? b["Trainee Email"] ?? existing["Trainee Email Account"] ?? '';
     const updatedParentWa = b["Parent WhatsApp Number"] ?? b["Nomor WA Parent"] ?? b["parent_whatsapp_number"] ?? b["waParent"] ?? existing["Parent WhatsApp Number"] ?? '';
     const updatedTraineeWa = b["Trainee WhatsApp Number"] ?? b["Nomor WA Trainee"] ?? b["trainee_whatsapp_number"] ?? b["waTrainee"] ?? existing["Trainee WhatsApp Number"] ?? '';
     const updatedSchoolName = b["School Name"] ?? b["Nama Sekolah"] ?? b["school_name"] ?? b["schoolName"] ?? existing["School Name"] ?? '';
@@ -507,13 +513,13 @@ router.put('/:id', async (req, res) => {
       INSERT INTO profile_trainee (
         "ID", "Class", "Program", "Day", "Time", "Room", "Branch", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
-        "Date of Birth", "Class in School", "Parents Email Account", "Parent WhatsApp Number",
+        "Date of Birth", "Class in School", "Parents Email Account", "Trainee Email Account", "Parent WhatsApp Number",
         "Trainee WhatsApp Number", "School Name"
       )
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-        $21, $22, $23
+        $21, $22, $23, $24
       )
       ON CONFLICT ("ID") DO UPDATE
       SET "Class"                   = EXCLUDED."Class",
@@ -535,6 +541,7 @@ router.put('/:id', async (req, res) => {
           "Date of Birth"           = EXCLUDED."Date of Birth",
           "Class in School"         = EXCLUDED."Class in School",
           "Parents Email Account"   = EXCLUDED."Parents Email Account",
+          "Trainee Email Account"   = EXCLUDED."Trainee Email Account",
           "Parent WhatsApp Number"  = EXCLUDED."Parent WhatsApp Number",
           "Trainee WhatsApp Number" = EXCLUDED."Trainee WhatsApp Number",
           "School Name"             = EXCLUDED."School Name"
@@ -544,7 +551,7 @@ router.put('/:id', async (req, res) => {
       updatedName, updatedLevel, updatedHouse, updatedHouseRole,
       updatedTraineeHomeroom, updatedHomeroomKelas, updatedTrainer,
       updatedMembership, updatedExpiryDate, updatedFirstEnroll,
-      updatedDob, updatedClassInSchool, updatedParentsEmail,
+      updatedDob, updatedClassInSchool, updatedParentsEmail, updatedTraineeEmail,
       updatedParentWa, updatedTraineeWa, updatedSchoolName
     ]);
 

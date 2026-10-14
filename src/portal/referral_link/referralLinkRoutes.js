@@ -345,21 +345,21 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // 1 referral wajib 1 ID unik
+    // 1 referral wajib 1 ID unik seumur hidup
     const existingCheck = await db.query(
       'SELECT "ID", "Referal By" FROM referral_link WHERE "ID" = $1 LIMIT 1',
       [id]
     );
-    const isNewReferral = existingCheck.rows.length === 0;
+    if (existingCheck.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `ID Trainee ${id} sudah pernah terdaftar melalui referral sebelumnya. Pendaftaran referral hanya berlaku 1 kali seumur hidup.`
+      });
+    }
 
     const upsertQuery = `
       INSERT INTO referral_link ("ID", "Name", "Class", "Referal By", "created_at", "updated_at")
       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      ON CONFLICT ("ID") DO UPDATE SET
-        "Name"       = EXCLUDED."Name",
-        "Class"      = EXCLUDED."Class",
-        "Referal By" = EXCLUDED."Referal By",
-        "updated_at" = CURRENT_TIMESTAMP
       RETURNING *;
     `;
 
@@ -367,7 +367,7 @@ router.post('/', async (req, res) => {
     const saved = formatReferralLinkRow(result.rows[0]);
 
     // Berikan reward 2 koin kepada inviter jika pendaftaran referral baru valid
-    if (isNewReferral && referalBy) {
+    if (referalBy) {
       try {
         let inviterId = referalBy.trim();
         let inviterName = 'Trainee SMLONE';

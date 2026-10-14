@@ -282,15 +282,62 @@ const REPORT_PROGRES_COLS = `
 `;
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
+  const cleanId = String(id).replace(/^sml-?/i, '').trim();
+
   try {
+    // 1. Ambil data terbaru kurikulum dari student_curriculum_progress (Report Link sheet)
+    let currRow = null;
+    try {
+      const currRes = await db.query(
+        'SELECT * FROM student_curriculum_progress WHERE student_id = ? OR student_id = ? LIMIT 1',
+        [cleanId, String(id).trim()]
+      );
+      if (currRes.rows && currRes.rows.length > 0) {
+        currRow = currRes.rows[0];
+      }
+    } catch (e) {
+      console.warn('[Report Progres] student_curriculum_progress query error:', e.message);
+    }
+
+    // 2. Ambil data feedback / mingguan dari report_progres jika ada
+    let latest = {};
     const result = await db.query(
       `SELECT ${REPORT_PROGRES_COLS} FROM report_progres WHERE "ID" = $1 ORDER BY created_at DESC LIMIT 1`,
-      [String(id).trim()]
+      [cleanId]
     );
 
     if (result.rows.length > 0) {
-      const latest = formatReportProgresRow(result.rows[0]);
+      latest = formatReportProgresRow(result.rows[0]);
+    }
 
+    // 3. Jika ada data kurikulum baru, gabungkan dan utamakan data terbaru
+    if (currRow) {
+      const spPct = currRow.speaking_pct || '0%';
+      const lpPct = currRow.life_pct || '0%';
+      
+      latest['Speaking Project to Next Level'] = spPct;
+      latest['Life Project to Next Level'] = lpPct;
+      latest['Latest Speaking Project'] = currRow.last_speaker_date ? `L. Speaking (${currRow.last_speaker_date})` : (latest['Latest Speaking Project'] || 'Speaking Project');
+      latest['Latest Life Project'] = currRow.last_life_project || latest['Latest Life Project'] || 'Life Project';
+      latest['Last Speaker date'] = currRow.last_speaker_date || '';
+      latest['Last Life Project date'] = currRow.last_life_project_date || '';
+      latest['Last Attendance'] = currRow.last_attendance || '';
+      latest['Level'] = currRow.level || latest['Level'] || '';
+      
+      // Data rincian modul
+      latest['curriculum_progress'] = currRow;
+
+      return res.json({
+        success: true,
+        count: 1,
+        data: latest,
+        latest: latest,
+        curriculum: currRow,
+        ...latest
+      });
+    }
+
+    if (result.rows.length > 0) {
       return res.json({
         success: true,
         count: 1,
