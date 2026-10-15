@@ -607,6 +607,96 @@ router.delete('/:identifier', async (req, res) => {
 });
 
 // ============================================================
+// 8. POST /sync-from-sheet
+// Menarik data langsung dari Google Sheet Masterfiles Real Stage 26 (tab TAF Digital x RS)
+// Berdasarkan ID siswa yang memiliki RS VOUCHER LINK
+// ============================================================
+const fs = require('fs');
+
+async function getGoogleAccessToken() {
+  const creds = JSON.parse(fs.readFileSync('/root/sa_creds.json'));
+  const postData = new URLSearchParams({
+    client_id: creds.clientId,
+    client_secret: creds.clientSecret,
+    refresh_token: creds.oauthTokenData.refresh_token,
+    grant_type: 'refresh_token'
+  }).toString();
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: postData
+  });
+  const json = await res.json();
+  return json.access_token;
+}
+
+router.post('/sync-from-sheet', async (req, res) => {
+  try {
+    await ensureVoucherRealStageTable();
+    const token = await getGoogleAccessToken();
+
+    const ssId = '1pdcdOVQbK6UlCe8UUmdSz1rVicsVzK5LRR1AkZAaA5Y';
+    const tabName = 'TAF Digital x RS';
+
+    // Ambil baris A6:I1000 lengkap dengan hyperlink formula
+    const sheetRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${ssId}?ranges=${encodeURIComponent(tabName + '!A6:I1000')}&fields=sheets(data(rowData(values(hyperlink,formattedValue))))`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const sheetData = await sheetRes.json();
+    const rows = sheetData.sheets?.[0]?.data?.[0]?.rowData || [];
+
+    let insertedCount = 0;
+    const syncedList = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const cols = rows[i].values || [];
+      const id = cols[0]?.formattedValue ? String(cols[0].formattedValue).trim() : '';
+      const name = cols[1]?.formattedValue ? String(cols[1].formattedValue).trim() : '';
+      const noVoucher = cols[7]?.formattedValue ? String(cols[7].formattedValue).trim() : '';
+      const voucherLink = cols[8]?.hyperlink || (cols[8]?.formattedValue ? String(cols[8].formattedValue).trim() : '');
+
+      // Wajib ada ID, NoVoucher, dan Link Google Drive valid
+      if (id && noVoucher && voucherLink && voucherLink.startsWith('http')) {
+        await db.query(`
+          INSERT INTO voucher_real_stage (
+            "NoVoucher",
+            "NamaTrainee",
+            "ID",
+            "LinkVoucherRealStage"
+          )
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT ("NoVoucher")
+          DO UPDATE SET
+            "NamaTrainee" = EXCLUDED."NamaTrainee",
+            "ID" = EXCLUDED."ID",
+            "LinkVoucherRealStage" = EXCLUDED."LinkVoucherRealStage";
+        `, [noVoucher, name, id, voucherLink]);
+
+        insertedCount++;
+        syncedList.push({ id, name, noVoucher, voucherLink });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Berhasil menyinkronkan ${insertedCount} data RS Voucher Link dari Google Sheet.`,
+      count: insertedCount,
+      sample: syncedList.slice(0, 5)
+    });
+
+  } catch (error) {
+    console.error('[Voucher Real Stage] Sync from sheet error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal melakukan sinkronisasi data dari Google Sheet.',
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
 // 7. DELETE /truncate
 // ============================================================
 router.delete('/truncate', async (req, res) => {
