@@ -29,7 +29,7 @@ async function handleGetRewards(req, res) {
       SELECT id, title, category, cost, stock, image_url, tag, description
       FROM myby_rewards_catalog
       WHERE is_active = TRUE
-      ORDER BY cost ASC
+      ORDER BY CASE WHEN tag = 'PROMO' THEN 0 ELSE 1 END, cost ASC
     `);
 
     const data = result.rows.map(r => ({
