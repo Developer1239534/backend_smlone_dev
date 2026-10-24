@@ -103,24 +103,40 @@ async function handleRedeemReward(req, res) {
       });
     }
 
-    // Eksekusi transaksi potong saldo & potong stok
+    // Eksekusi transaksi potong saldo & potong stok (Atomic & Concurrency-Safe)
     await db.query('BEGIN');
 
-    // Potong koin
-    await db.query(`
+    // 1. Potong koin dengan validasi saldo atomik (mencegah saldo minus / concurrent double-spend)
+    const walletUpdate = await db.query(`
       UPDATE myby_trainee_wallets
       SET balance = balance - $1,
           total_spent = total_spent + $1,
           updated_at = NOW()
-      WHERE "ID" = $2
+      WHERE "ID" = $2 AND balance >= $1
     `, [reward.cost, profile.ID]);
 
-    // Kurangi stok
-    await db.query(`
+    if (walletUpdate.affectedRows === 0) {
+      await db.query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'Saldo MYBY Coin tidak mencukupi untuk melakukan penukaran.'
+      });
+    }
+
+    // 2. Kurangi stok dengan proteksi anti-overselling (mencegah stok minus jika diklaim bersamaan)
+    const stockUpdate = await db.query(`
       UPDATE myby_rewards_catalog
       SET stock = stock - 1
-      WHERE id = $1
+      WHERE id = $1 AND stock > 0
     `, [rewardId]);
+
+    if (stockUpdate.affectedRows === 0) {
+      await db.query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'Stok hadiah ini baru saja habis. Silakan pilih hadiah lain.'
+      });
+    }
 
     // Catat mutasi spend
     const txId = `tx-red-${Date.now()}`;

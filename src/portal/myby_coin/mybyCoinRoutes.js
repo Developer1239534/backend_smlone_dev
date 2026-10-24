@@ -15,10 +15,19 @@
 const express = require('express');
 const router = express.Router();
 
+// Middleware Anti-Cache: Menjamin seluruh response data mutasi koin, streak, dan katalog selalu REAL-TIME
+router.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 const {
   handleGetOverview,
   handleClaimStreak,
-  handleDailyCheckin
+  handleDailyCheckin,
+  handleGetStreakCalendar,
 } = require('./controllers/streakController');
 
 const { handleGetLeaderboard, handleGetLeaderboardReferral } = require('./controllers/leaderboardController');
@@ -65,6 +74,8 @@ router.get('/overview{/:traineeId}', handleGetOverview);
 // 2. Klaim Koin Daily Streak (Atomic DB Transaction)
 router.post('/streak/claim', handleClaimStreak);
 router.post('/daily-checkin', handleDailyCheckin);
+router.get('/streak/calendar{/:traineeId}', handleGetStreakCalendar);
+router.get('/streak/calendar', handleGetStreakCalendar);
 
 // 3. Leaderboard Realtime & Referral
 router.get('/leaderboard', handleGetLeaderboard);
