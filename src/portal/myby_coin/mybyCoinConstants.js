@@ -50,7 +50,7 @@ const DEFAULT_REWARDS = [
     stock: 20,
     tag: 'Pilihan Seru',
     image_url: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=600&q=80',
-    description: 'Payung lipat eksklusif tahan cuaca atau 1 voucher tiket nonton bioskop XXI/CGV.'
+    description: 'Payung lipat eksklusif tahan cuaca atau 1 voucher tiket nonton bioskop XXI/CGV. (Note: Tiket Nonton hanya berlaku untuk trainee di program Core & Orator)'
   },
   {
     id: 'rew-5',
@@ -60,7 +60,7 @@ const DEFAULT_REWARDS = [
     stock: 18,
     tag: 'Spesial',
     image_url: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=600&q=80',
-    description: 'Buku agenda kerja eksklusif SMLONE atau paket 2 voucher tiket nonton bioskop.'
+    description: 'Buku agenda kerja eksklusif SMLONE atau paket 2 voucher tiket nonton bioskop. (Note: Tiket Nonton hanya berlaku untuk trainee di program Core & Orator)'
   },
   {
     id: 'rew-6',
