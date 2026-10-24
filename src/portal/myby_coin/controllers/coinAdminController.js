@@ -344,7 +344,7 @@ async function handleAdminListRewards(req, res) {
     const { includeInactive } = req.query;
     let query = 'SELECT * FROM myby_rewards_catalog';
     if (!includeInactive || includeInactive === 'false') query += ' WHERE is_active = TRUE';
-    query += ' ORDER BY cost ASC';
+    query += " ORDER BY CASE WHEN tag = 'PROMO' THEN 0 ELSE 1 END, cost ASC";
     const result = await db.query(query);
     return res.status(200).json({ success: true, total: result.rows.length, data: result.rows });
   } catch (error) {
