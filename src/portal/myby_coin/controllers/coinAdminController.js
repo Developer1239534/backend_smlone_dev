@@ -247,7 +247,14 @@ async function handleAdminListTransactions(req, res) {
       params.push(`%${search}%`);
       conds.push(`(trainee_id ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR title ILIKE $${params.length} OR admin_email ILIKE $${params.length})`);
     }
-    if (type) { params.push(type); conds.push(`type = $${params.length}`); }
+    if (type) {
+      if (type === 'redeem') {
+        conds.push(`(badge ILIKE '%Hadiah%' OR badge ILIKE '%Redeem%' OR title ILIKE '%Klaim Hadiah%')`);
+      } else {
+        params.push(type);
+        conds.push(`type = $${params.length}`);
+      }
+    }
     if (timeFilter === 'today') {
       conds.push(`DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00'))`);
     } else if (timeFilter === 'last_week') {
