@@ -162,28 +162,34 @@ function requireSuperAdmin(req, res, next) {
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim();
 
-  // Izinkan bypass jika menyertakan header x-admin-email: developer@smlone.com (untuk CLI / automation internal)
+  // Izinkan bypass jika menyertakan header x-admin-email Super Admin (untuk CLI / automation internal)
   const adminEmailHeader = String(req.headers['x-admin-email'] || '').trim().toLowerCase();
-  if (adminEmailHeader === 'developer@smlone.com') {
+  if (
+    adminEmailHeader === 'developer@smlone.com' ||
+    adminEmailHeader === 'muhammadakbar@smlone.com'
+  ) {
     return next();
   }
 
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: 'Otorisasi dibutuhkan. Silakan sertakan token login Super Admin (developer@smlone.com).'
+      message: 'Otorisasi dibutuhkan. Silakan sertakan token login Super Admin (developer@smlone.com / muhammadakbar@smlone.com).'
     });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const emailLower = String(decoded.email || '').toLowerCase();
-    const isSuper = decoded.role === 'superadmin' || emailLower === 'developer@smlone.com';
+    const isSuper =
+      decoded.role === 'superadmin' ||
+      emailLower === 'developer@smlone.com' ||
+      emailLower === 'muhammadakbar@smlone.com';
 
     if (!isSuper) {
       return res.status(403).json({
         success: false,
-        message: 'Akses ditolak. Hanya Super Admin (developer@smlone.com) yang berwenang mengakses dan menentukan role divisi staf.'
+        message: 'Akses ditolak. Hanya Super Admin (Sir Rakha / developer@smlone.com) yang berwenang mengakses dan menentukan role divisi staf.'
       });
     }
 
@@ -380,7 +386,11 @@ router.get('/auth/me', authenticateAdminToken, async (req, res) => {
         role: admin.role,
         role_title: getRoleTitle(admin.role),
         status: admin.status,
-        is_pending: admin.status === 'pending' || admin.role === 'pending',
+        is_pending:
+          admin.status === 'pending' ||
+          admin.status === 'suspended' ||
+          admin.status === 'inactive' ||
+          admin.role === 'pending',
         last_login: admin.last_login,
         created_at: admin.created_at,
         updated_at: admin.updated_at
@@ -435,7 +445,11 @@ router.get('/users', requireSuperAdmin, async (req, res) => {
     const enriched = result.rows.map(user => ({
       ...user,
       role_title: getRoleTitle(user.role),
-      is_pending: user.status === 'pending' || user.role === 'pending'
+      is_pending:
+        user.status === 'pending' ||
+        user.status === 'suspended' ||
+        user.status === 'inactive' ||
+        user.role === 'pending'
     }));
 
     return res.status(200).json({
