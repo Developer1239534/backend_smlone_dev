@@ -20,7 +20,7 @@ const DEFAULT_REWARDS = [
     stock: 100,
     tag: 'PROMO',
     image_url: '/asset/bubo_idle.png',
-    description: 'Program Khusus Masa Implementasi: 100 trainee pertama yang menukarkan 5 MYBY Coin mendapatkan 1 (satu) Bubo Custom A5 Notebook SMLONE.'
+    description: 'Buku catatan eksklusif A5 edisi kustom maskot Bubo SMLONE.'
   },
   {
     id: 'rew-1',
