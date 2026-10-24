@@ -141,13 +141,28 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    let userRole = 'cro';
+    let userStatus = 'active';
+    try {
+      const uRes = await db.query(
+        'SELECT role, status FROM admin_users WHERE email = $1 OR LOWER(email) = LOWER($1) LIMIT 1',
+        [admin.Nama]
+      );
+      if (uRes.rows.length > 0) {
+        userRole = uRes.rows[0].role || 'cro';
+        userStatus = uRes.rows[0].status || 'active';
+      }
+    } catch (_) {}
+
     return res.status(200).json({
       success: true,
       message: 'Login admin berhasil.',
       data: {
         id: admin.id,
         Nama: admin.Nama,
-        email: admin.Nama
+        email: admin.Nama,
+        role: userRole,
+        status: userStatus
       }
     });
   } catch (error) {

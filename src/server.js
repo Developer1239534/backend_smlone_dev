@@ -20,6 +20,7 @@ const authRoutes = require('./routes/authRoutes');
 const giftRoutes = require('./routes/giftRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const credentialAdminRoutes = require('./portal/credential_admin/credentialAdminRoutes');
+const adminRbacRoutes = require('./portal/credential_admin/adminRbacRoutes');
 const telemetryRoutes = require('./routes/telemetryRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const db = require('./db/neonClient');
@@ -202,8 +203,10 @@ app.use('/api/students', studentRoutes);
 app.use('/api/portal/students', studentRoutes);
 
 // ============================================================
-// 15. Credential Admin
+// 15. Credential Admin & Admin RBAC Google OAuth
 // ============================================================
+app.use('/api/admin', adminRbacRoutes);
+app.use('/api/portal/admin', adminRbacRoutes);
 app.use('/api/credential-admin', credentialAdminRoutes);
 app.use('/api/portal/credential-admin', credentialAdminRoutes);
 app.use('/api/admin/credential', credentialAdminRoutes);
@@ -214,6 +217,15 @@ app.use('/api/telemetry', telemetryRoutes);
 app.use('/api/portal/telemetry', telemetryRoutes);
 
 // Jira Cloud Ticketing Integration (Project KAN)
+// Alias publik singkat untuk form tiket & papan monitoring: /bantuan, /tiket, /helpdesk, /board, /admin-tiket
+app.get('/bantuan', (req, res) => res.redirect(302, '/api/tickets/form'));
+app.get('/tiket', (req, res) => res.redirect(302, '/api/tickets/form'));
+app.get('/helpdesk', (req, res) => res.redirect(302, '/api/tickets/form'));
+app.get('/board', (req, res) => res.redirect(302, '/api/tickets/board'));
+app.get('/pantau', (req, res) => res.redirect(302, '/api/tickets/board'));
+app.get('/admin-tiket', (req, res) => res.redirect(302, '/api/tickets/admin-dashboard'));
+app.get('/admin-board', (req, res) => res.redirect(302, '/api/tickets/admin-dashboard'));
+
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/portal/tickets', ticketRoutes);
 
