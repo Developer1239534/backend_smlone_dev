@@ -19,6 +19,7 @@ const GIFT_MAP = {
   'rew-5': { catalogId: 'rew-5', nama: 'Agenda SMLONE / 2 Tiket Nonton', cost: 150 },
   'rew-6': { catalogId: 'rew-6', nama: 'Tumblr SMLONE', cost: 200 },
   'rew-7': { catalogId: 'rew-7', nama: 'Jaket / Tas SMLONE', cost: 250 },
+  'rew-promo-bubo': { catalogId: 'rew-promo-bubo', nama: 'Bubo Custom A5 Notebook SMLONE', cost: 5 },
 };
 
 function genClaimCode(){
@@ -213,6 +214,15 @@ async function handleGiftClaim(req, res) {
       if (Number(wallet.balance) < gift.cost) {
         await db.query('ROLLBACK');
         return res.status(400).json({ success: false, error: 'Koin tidak cukup' });
+      }
+
+      // Validasi sisa stok
+      if (gift.catalogId) {
+        const stockCheck = await db.query('SELECT stock FROM myby_rewards_catalog WHERE id = $1 LIMIT 1', [gift.catalogId]);
+        if (stockCheck.rows.length > 0 && Number(stockCheck.rows[0].stock) <= 0) {
+          await db.query('ROLLBACK');
+          return res.status(400).json({ success: false, error: 'Stok hadiah promo telah habis (kuota 100 tercapai).' });
+        }
       }
 
       // 4. Kurangi koin + insert ke tabel gift_claims (id, user_id, gift_id, gift_name, coin_cost, remaining_coin, status, created_at)
