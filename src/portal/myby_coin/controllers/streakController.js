@@ -94,15 +94,18 @@ async function handleGetOverview(req, res) {
     const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
     const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
-    // Ambil riwayat tanggal streak trainee dari transaksi untuk pengecekan status done
+    // Ambil riwayat tanggal streak trainee dari transaksi untuk pengecekan status done & amount riil
     const recentTxRes = await db.query(`
-      SELECT DISTINCT DATE_FORMAT(created_at, '%Y-%m-%d') AS date
+      SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date, amount
       FROM myby_coin_transactions
       WHERE trainee_id = $1 AND (badge = 'Streak Reward' OR title LIKE '%Streak%')
     `, [profile.ID]);
-    const claimedDatesSet = new Set(recentTxRes.rows.map(r => r.date));
+    const claimedDatesMap = new Map();
+    for (const r of recentTxRes.rows) {
+      claimedDatesMap.set(r.date, Number(r.amount) || 2);
+    }
     if (hasCheckedInToday) {
-      claimedDatesSet.add(today);
+      claimedDatesMap.set(today, 1);
     }
 
     // Bentuk data visual 7 hari berjalan nyata (H-6 s/d Hari Ini YYYY-MM-DD WIB)
@@ -115,7 +118,11 @@ async function handleGetOverview(req, res) {
       const dayOfMonth = dNum;
       const monthShort = monthNamesShort[m - 1];
       const isCurrentDay = iso === today;
-      const isDone = claimedDatesSet.has(iso);
+      const isDone = claimedDatesMap.has(iso);
+      // Hari sebelum hari ini tetap +2, mulai hari ini (today) dan seterusnya adalah +1
+      const dayBonus = claimedDatesMap.has(iso)
+        ? claimedDatesMap.get(iso)
+        : (iso < today ? 2 : 1);
 
       days.push({
         name: `${dayOfWeek}, ${dayOfMonth} ${monthShort}`,
@@ -123,7 +130,7 @@ async function handleGetOverview(req, res) {
         dayOfWeek,
         date: iso,
         label: `${dayOfMonth} ${monthShort}`,
-        bonus: 1,
+        bonus: dayBonus,
         done: isDone,
         isToday: isCurrentDay
       });
