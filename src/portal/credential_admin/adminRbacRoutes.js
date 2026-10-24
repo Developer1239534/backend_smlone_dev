@@ -132,7 +132,7 @@ async function verifyGoogleToken(token, idToken, accessToken, credential) {
   return null;
 }
 
-// Middleware: Extract Bearer Token
+// Middleware: Extract Any Authenticated Admin Token
 function authenticateAdminToken(req, res, next) {
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim();
@@ -152,6 +152,47 @@ function authenticateAdminToken(req, res, next) {
     return res.status(401).json({
       success: false,
       message: 'Sesi login telah kadaluarsa atau token tidak valid.',
+      error: err.message
+    });
+  }
+}
+
+// Middleware: Strict Super Admin Authorization
+function requireSuperAdmin(req, res, next) {
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim();
+
+  // Izinkan bypass jika menyertakan header x-admin-email: developer@smlone.com (untuk CLI / automation internal)
+  const adminEmailHeader = String(req.headers['x-admin-email'] || '').trim().toLowerCase();
+  if (adminEmailHeader === 'developer@smlone.com') {
+    return next();
+  }
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: 'Otorisasi dibutuhkan. Silakan sertakan token login Super Admin (developer@smlone.com).'
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const emailLower = String(decoded.email || '').toLowerCase();
+    const isSuper = decoded.role === 'superadmin' || emailLower === 'developer@smlone.com';
+
+    if (!isSuper) {
+      return res.status(403).json({
+        success: false,
+        message: 'Akses ditolak. Hanya Super Admin (developer@smlone.com) yang berwenang mengakses dan menentukan role divisi staf.'
+      });
+    }
+
+    req.adminUser = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({
+      success: false,
+      message: 'Sesi token tidak valid atau telah kadaluarsa.',
       error: err.message
     });
   }
@@ -358,7 +399,7 @@ router.get('/auth/me', authenticateAdminToken, async (req, res) => {
 // -------------------------------------------------------------
 // 3. GET /users - Daftar Seluruh Staf Admin & Role-nya (Super Admin)
 // -------------------------------------------------------------
-router.get('/users', async (req, res) => {
+router.get('/users', requireSuperAdmin, async (req, res) => {
   try {
     await ensureAdminTables();
     const { role, status, search } = req.query;
@@ -417,7 +458,7 @@ router.get('/users', async (req, res) => {
 // -------------------------------------------------------------
 // 4. PATCH /users/:id/role - Penentuan / Perubahan Role Divisi Staf
 // -------------------------------------------------------------
-router.patch('/users/:id/role', async (req, res) => {
+router.patch('/users/:id/role', requireSuperAdmin, async (req, res) => {
   const { id } = req.params;
   const { role, status, name } = req.body || {};
 
