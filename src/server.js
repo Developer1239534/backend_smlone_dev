@@ -34,7 +34,7 @@ app.set('trust proxy', true);
 app.use(cors({
   origin: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-api-key', 'x-admin-email'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-api-key', 'x-admin-email', 'Cache-Control', 'cache-control', 'Pragma', 'pragma', 'Expires', 'expires'],
   credentials: true,
 }));
 app.options(/(.*)/, cors());
