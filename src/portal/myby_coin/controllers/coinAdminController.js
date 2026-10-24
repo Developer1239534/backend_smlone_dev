@@ -18,18 +18,41 @@ const { ensureMyByCoinTables, getTraineeProfile } = require('../mybyCoinDatabase
 async function handleAdminListWallets(req, res) {
   try {
     await ensureMyByCoinTables();
-    const { search, limit = 50, offset = 0 } = req.query;
+    const { search, timeFilter, limit = 50, offset = 0 } = req.query;
     let query = 'SELECT "ID", "Name", balance, total_earned, total_spent, created_at, updated_at FROM myby_trainee_wallets';
     const params = [];
+    const conds = [];
+
     if (search) {
       params.push(`%${search}%`);
-      query += ' WHERE "ID" ILIKE $1 OR "Name" ILIKE $1';
+      conds.push(`("ID" ILIKE $${params.length} OR "Name" ILIKE $${params.length})`);
     }
+
+    if (timeFilter === 'today') {
+      conds.push(`DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00'))`);
+    } else if (timeFilter === 'last_week') {
+      conds.push(`created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`);
+    } else if (timeFilter === 'last_month') {
+      conds.push(`created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`);
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(timeFilter)) {
+      conds.push(`DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = '${timeFilter}'`);
+    }
+
+    if (conds.length) {
+      query += ' WHERE ' + conds.join(' AND ');
+    }
+
     query += ` ORDER BY balance DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(Number(limit), Number(offset));
     const result = await db.query(query, params);
-    const countRes = await db.query('SELECT COUNT(*) FROM myby_trainee_wallets');
-    return res.status(200).json({ success: true, message: 'Berhasil mengambil data wallet.', total: result.rows.length, grandTotal: Number(countRes.rows[0].count), data: result.rows });
+
+    let countQuery = 'SELECT COUNT(*) AS count FROM myby_trainee_wallets';
+    if (conds.length) {
+      countQuery += ' WHERE ' + conds.join(' AND ');
+    }
+    const countRes = await db.query(countQuery, params.slice(0, conds.length ? (search ? 1 : 0) : 0));
+    const countVal = countRes.rows && countRes.rows[0] ? (countRes.rows[0].count ?? countRes.rows[0]['COUNT(*)'] ?? 0) : 0;
+    return res.status(200).json({ success: true, message: 'Berhasil mengambil data wallet.', total: result.rows.length, grandTotal: Number(countVal), data: result.rows });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal mengambil data wallet.', error: error.message });
   }
@@ -75,11 +98,20 @@ async function handleAdminGetWallet(req, res) {
 async function handleAdminUpsertWallet(req, res) {
   try {
     await ensureMyByCoinTables();
-    const { ID, id, traineeId, Name, name, balance, total_earned, total_spent, adjust } = req.body;
+    const { ID, id, traineeId, Name, name, balance, total_earned, total_spent, adjust, title, admin_email } = req.body;
     const rawId = String(ID ?? id ?? traineeId ?? '').trim();
     if (!rawId) return res.status(400).json({ success: false, message: 'Field "ID" / traineeId wajib diisi.' });
     const profile = await getTraineeProfile(rawId);
     const finalName = String(Name ?? name ?? profile.Name ?? '').trim();
+
+    const adminEmail = String(
+      req.headers['x-admin-email'] ||
+      admin_email ||
+      req.body.admin_email ||
+      req.body.adminEmail ||
+      (req.adminUser ? req.adminUser.email : null) ||
+      ''
+    ).trim().toLowerCase();
 
     await db.query(
       `INSERT INTO myby_trainee_wallets ("ID", "Name", balance, total_earned, total_spent)
@@ -89,7 +121,50 @@ async function handleAdminUpsertWallet(req, res) {
     );
 
     let result;
-    if (adjust !== undefined && adjust !== null && adjust !== '') {
+    if (balance !== undefined && balance !== null && balance !== '') {
+      const existingWallet = (await db.query('SELECT balance FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1', [profile.ID])).rows[0];
+      const prevBalance = Number(existingWallet?.balance || 0);
+      const targetBalance = Math.max(0, Number(balance));
+      const delta = targetBalance - prevBalance;
+
+      result = await db.query(
+        `UPDATE myby_trainee_wallets SET
+           balance = $2,
+           total_earned = CASE WHEN $3 > 0 THEN total_earned + $3 ELSE total_earned END,
+           total_spent = CASE WHEN $3 < 0 THEN total_spent + ABS($3) ELSE total_spent END,
+           "Name" = CASE WHEN $4 != '' THEN $4 ELSE "Name" END,
+           updated_at = NOW()
+         WHERE "ID" = $1 RETURNING *`,
+        [profile.ID, targetBalance, delta, finalName]
+      );
+
+      if (delta !== 0) {
+        const customTitle = String(title || '').trim();
+        const badge = delta > 0 ? 'Deposit Admin' : 'Koreksi Saldo';
+        const defaultTitle = delta > 0 ? `Set Saldo Admin (+${delta})` : `Set Saldo Admin (${delta})`;
+        const txTitle = customTitle || defaultTitle;
+        await db.query(
+          `INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge, admin_email, metadata)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            `tx-adj-${Date.now()}`,
+            profile.ID,
+            finalName || profile.Name,
+            txTitle,
+            Math.abs(delta),
+            delta > 0 ? 'earn' : 'spend',
+            badge,
+            adminEmail || null,
+            JSON.stringify({
+              by: adminEmail || 'admin',
+              admin_email: adminEmail || null,
+              set_balance: targetBalance,
+              reason: customTitle
+            })
+          ]
+        ).catch((err) => console.error('[CoinAdmin] Insert tx error:', err.message));
+      }
+    } else if (adjust !== undefined && adjust !== null && adjust !== '') {
       const delta = Number(adjust);
       result = await db.query(
         `UPDATE myby_trainee_wallets SET
@@ -102,24 +177,38 @@ async function handleAdminUpsertWallet(req, res) {
         [profile.ID, delta, finalName]
       );
       // catat mutasi audit admin: badge "Deposit Admin" (+) atau "Koreksi Saldo" (-)
+      const customTitle = String(title || '').trim();
       const badge = delta >= 0 ? 'Deposit Admin' : 'Koreksi Saldo';
-      const txTitle = delta >= 0 ? `Deposit Admin (+${delta})` : `Koreksi Saldo (${delta})`;
+      const defaultTitle = delta >= 0 ? `Deposit Admin (+${delta})` : `Koreksi Saldo (${delta})`;
+      const txTitle = customTitle || defaultTitle;
       await db.query(
-        `INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge, metadata)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [`tx-adj-${Date.now()}`, profile.ID, finalName || profile.Name, txTitle, Math.abs(delta), delta >= 0 ? 'earn' : 'spend', badge, JSON.stringify({ by: 'admin' })]
-      ).catch(() => {});
+        `INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge, admin_email, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          `tx-adj-${Date.now()}`,
+          profile.ID,
+          finalName || profile.Name,
+          txTitle,
+          Math.abs(delta),
+          delta >= 0 ? 'earn' : 'spend',
+          badge,
+          adminEmail || null,
+          JSON.stringify({
+            by: adminEmail || 'admin',
+            admin_email: adminEmail || null,
+            reason: customTitle
+          })
+        ]
+      ).catch((err) => console.error('[CoinAdmin] Insert tx error:', err.message));
     } else {
       result = await db.query(
         `UPDATE myby_trainee_wallets SET
-           balance = COALESCE($2, balance),
-           total_earned = COALESCE($3, total_earned),
-           total_spent = COALESCE($4, total_spent),
-           "Name" = CASE WHEN $5 != '' THEN $5 ELSE "Name" END,
+           total_earned = COALESCE($2, total_earned),
+           total_spent = COALESCE($3, total_spent),
+           "Name" = CASE WHEN $4 != '' THEN $4 ELSE "Name" END,
            updated_at = NOW()
          WHERE "ID" = $1 RETURNING *`,
         [profile.ID,
-          balance !== undefined ? Number(balance) : null,
           total_earned !== undefined ? Number(total_earned) : null,
           total_spent !== undefined ? Number(total_spent) : null,
           finalName]
@@ -150,17 +239,50 @@ async function handleAdminDeleteWallet(req, res) {
 async function handleAdminListTransactions(req, res) {
   try {
     await ensureMyByCoinTables();
-    const { search, type, limit = 50, offset = 0 } = req.query;
-    let query = 'SELECT id, trainee_id AS "ID", "Name", title, amount, type, badge, metadata, created_at FROM myby_coin_transactions';
+    const { search, type, timeFilter, limit = 50, offset = 0 } = req.query;
+    let query = 'SELECT id, trainee_id AS "ID", "Name", title, amount, type, badge, admin_email, metadata, created_at FROM myby_coin_transactions';
     const params = [];
     const conds = [];
-    if (search) { params.push(`%${search}%`); conds.push(`(trainee_id ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR title ILIKE $${params.length})`); }
+    if (search) {
+      params.push(`%${search}%`);
+      conds.push(`(trainee_id ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR title ILIKE $${params.length} OR admin_email ILIKE $${params.length})`);
+    }
     if (type) { params.push(type); conds.push(`type = $${params.length}`); }
+    if (timeFilter === 'today') {
+      conds.push(`DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00'))`);
+    } else if (timeFilter === 'last_week') {
+      conds.push(`created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`);
+    } else if (timeFilter === 'last_month') {
+      conds.push(`created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`);
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(timeFilter)) {
+      conds.push(`DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = '${timeFilter}'`);
+    }
     if (conds.length) query += ' WHERE ' + conds.join(' AND ');
     query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(Number(limit), Number(offset));
     const result = await db.query(query, params);
-    return res.status(200).json({ success: true, total: result.rows.length, data: result.rows });
+
+    let countQuery = 'SELECT COUNT(*) AS count FROM myby_coin_transactions';
+    if (conds.length) countQuery += ' WHERE ' + conds.join(' AND ');
+    const countRes = await db.query(countQuery, params.slice(0, conds.length ? (params.length - 2) : 0));
+    const grandTotal = Number(countRes.rows[0]?.count ?? countRes.rows[0]?.['COUNT(*)'] ?? result.rows.length);
+
+    const enrichedRows = result.rows.map(row => {
+      let parsedMeta = {};
+      try {
+        parsedMeta = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata || {});
+      } catch (e) {}
+
+      const resolvedAdminEmail = row.admin_email || parsedMeta.admin_email || (parsedMeta.by && parsedMeta.by.includes('@') ? parsedMeta.by : null);
+
+      return {
+        ...row,
+        admin_email: resolvedAdminEmail,
+        metadata: parsedMeta
+      };
+    });
+
+    return res.status(200).json({ success: true, total: enrichedRows.length, grandTotal, data: enrichedRows });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal mengambil transaksi.', error: error.message });
   }
@@ -169,7 +291,7 @@ async function handleAdminListTransactions(req, res) {
 async function handleAdminCreateTransaction(req, res) {
   try {
     await ensureMyByCoinTables();
-    const { ID, id, traineeId, Name, name, title, amount, type = 'earn', badge = 'Admin Adjustment', metadata } = req.body;
+    const { ID, id, traineeId, Name, name, title, amount, type = 'earn', badge = 'Admin Adjustment', metadata, admin_email } = req.body;
     const rawId = String(ID ?? id ?? traineeId ?? '').trim();
     if (!rawId || !title || amount === undefined) {
       return res.status(400).json({ success: false, message: 'Field ID/traineeId, title, dan amount wajib diisi.' });
@@ -177,10 +299,23 @@ async function handleAdminCreateTransaction(req, res) {
     const profile = await getTraineeProfile(rawId);
     const finalName = String(Name ?? name ?? profile.Name ?? '').trim();
     const txId = `tx-adm-${Date.now()}`;
+
+    const adminEmail = String(
+      req.headers['x-admin-email'] ||
+      admin_email ||
+      req.body.admin_email ||
+      req.body.adminEmail ||
+      (req.adminUser ? req.adminUser.email : null) ||
+      ''
+    ).trim().toLowerCase();
+
+    const metaObj = metadata && typeof metadata === 'object' ? { ...metadata } : {};
+    if (adminEmail) metaObj.admin_email = adminEmail;
+
     const result = await db.query(
-      `INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [txId, profile.ID, finalName, title, Number(amount), type, badge, metadata ? JSON.stringify(metadata) : '{}']
+      `INSERT INTO myby_coin_transactions (id, trainee_id, "Name", title, amount, type, badge, admin_email, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [txId, profile.ID, finalName, title, Number(amount), type, badge, adminEmail || null, JSON.stringify(metaObj)]
     );
     return res.status(201).json({ success: true, message: 'Transaksi manual berhasil dicatat.', data: result.rows[0] });
   } catch (error) {
