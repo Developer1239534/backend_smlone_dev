@@ -88,7 +88,7 @@ async function handleGetOverview(req, res) {
       cycleDay = 1;
     }
 
-    const todayBonusAvailable = today >= '2026-10-25' ? 1 : (CYCLE_BONUSES[(cycleDay - 1) % 7] || 2);
+    const todayBonusAvailable = 1;
 
     // Ambil tanggal 6 hari ke belakang sampai hari ini (Total 7 Hari Berjalan Nyata sesuai WIB)
     const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
@@ -123,7 +123,7 @@ async function handleGetOverview(req, res) {
         dayOfWeek,
         date: iso,
         label: `${dayOfMonth} ${monthShort}`,
-        bonus: iso >= '2026-10-25' ? 1 : 2,
+        bonus: 1,
         done: isDone,
         isToday: isCurrentDay
       });
@@ -227,7 +227,7 @@ async function handleClaimStreak(req, res) {
 
     const prevLongest = Number(prevStreak.longest_streak || 0);
     const newLongest = Math.max(prevLongest, newStreak);
-    const bonusCoin = today >= '2026-10-25' ? 1 : (CYCLE_BONUSES[(newCycleDay - 1) % 7] || 2);
+    const bonusCoin = 1;
 
     // Eksekusi Transaksi Database (Atomic)
     await db.query('BEGIN');
