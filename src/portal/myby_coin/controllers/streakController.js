@@ -88,25 +88,46 @@ async function handleGetOverview(req, res) {
       cycleDay = 1;
     }
 
-    const todayBonusAvailable = CYCLE_BONUSES[(cycleDay - 1) % 7] || 2;
+    const todayBonusAvailable = today >= '2026-10-25' ? 1 : (CYCLE_BONUSES[(cycleDay - 1) % 7] || 2);
 
-    // Bentuk data visual 7 hari
-    const days = DAY_NAMES.map((name, idx) => {
-      const dayNum = idx + 1;
-      let done = false;
-      if (hasCheckedInToday) {
-        done = dayNum <= cycleDay;
-      } else {
-        done = dayNum < cycleDay;
-      }
-      return {
-        name,
-        label: `Day ${dayNum}`,
-        bonus: CYCLE_BONUSES[idx],
-        done,
-        isToday: dayNum === cycleDay
-      };
-    });
+    // Ambil tanggal 6 hari ke belakang sampai hari ini (Total 7 Hari Berjalan Nyata sesuai WIB)
+    const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+    // Ambil riwayat tanggal streak trainee dari transaksi untuk pengecekan status done
+    const recentTxRes = await db.query(`
+      SELECT DISTINCT DATE_FORMAT(created_at, '%Y-%m-%d') AS date
+      FROM myby_coin_transactions
+      WHERE trainee_id = $1 AND (badge = 'Streak Reward' OR title LIKE '%Streak%')
+    `, [profile.ID]);
+    const claimedDatesSet = new Set(recentTxRes.rows.map(r => r.date));
+    if (hasCheckedInToday) {
+      claimedDatesSet.add(today);
+    }
+
+    // Bentuk data visual 7 hari berjalan nyata (H-6 s/d Hari Ini YYYY-MM-DD WIB)
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const iso = getWIBDate(-i);
+      const [y, m, dNum] = iso.split('-').map(Number);
+      const d = new Date(Date.UTC(y, m - 1, dNum, 12, 0, 0)); // UTC noon prevents day shift
+      const dayOfWeek = dayNamesShort[d.getUTCDay()];
+      const dayOfMonth = dNum;
+      const monthShort = monthNamesShort[m - 1];
+      const isCurrentDay = iso === today;
+      const isDone = claimedDatesSet.has(iso);
+
+      days.push({
+        name: `${dayOfWeek}, ${dayOfMonth} ${monthShort}`,
+        shortName: `${dayOfMonth} ${monthShort}`,
+        dayOfWeek,
+        date: iso,
+        label: `${dayOfMonth} ${monthShort}`,
+        bonus: iso >= '2026-10-25' ? 1 : 2,
+        done: isDone,
+        isToday: isCurrentDay
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -206,7 +227,7 @@ async function handleClaimStreak(req, res) {
 
     const prevLongest = Number(prevStreak.longest_streak || 0);
     const newLongest = Math.max(prevLongest, newStreak);
-    const bonusCoin = CYCLE_BONUSES[(newCycleDay - 1) % 7] || 2;
+    const bonusCoin = today >= '2026-10-25' ? 1 : (CYCLE_BONUSES[(newCycleDay - 1) % 7] || 2);
 
     // Eksekusi Transaksi Database (Atomic)
     await db.query('BEGIN');
@@ -283,8 +304,117 @@ function handleDailyCheckin(req, res, next) {
   return handleClaimStreak(req, res);
 }
 
+/**
+ * GET /streak/calendar/:traineeId
+ * Mengambil riwayat tanggal dan total streak trainee untuk visualisasi kalender
+ */
+async function handleGetStreakCalendar(req, res) {
+  const traineeId = req.params.traineeId || req.query.traineeId || req.query.id;
+  if (!traineeId) {
+    return res.status(400).json({ success: false, message: 'traineeId wajib disertakan.' });
+  }
+
+  try {
+    await ensureMyByCoinTables();
+    const profile = await getTraineeProfile(traineeId);
+
+    // Ambil info ringkasan streak
+    const streakRes = await db.query(`
+      SELECT current_streak, longest_streak, streak_cycle_day, total_check_ins,
+             last_check_in_date::TEXT AS last_check_in_date
+      FROM myby_trainee_streaks
+      WHERE "ID" = $1 LIMIT 1
+    `, [profile.ID]);
+    const streakInfo = streakRes.rows[0] || {
+      current_streak: 0,
+      longest_streak: 0,
+      streak_cycle_day: 1,
+      total_check_ins: 0,
+      last_check_in_date: null
+    };
+
+    // Ambil riwayat seluruh transaksi streak (WIB)
+    const txRes = await db.query(`
+      SELECT 
+        DATE_FORMAT(created_at, '%Y-%m-%d') AS date,
+        title,
+        amount,
+        DATE_FORMAT(created_at, '%H:%i:%s') AS time_wib,
+        created_at
+      FROM myby_coin_transactions
+      WHERE trainee_id = $1 AND (badge = 'Streak Reward' OR title LIKE '%Streak%')
+      ORDER BY created_at ASC
+    `, [profile.ID]);
+
+    const datesMap = {};
+    for (const row of txRes.rows) {
+      if (!datesMap[row.date]) {
+        datesMap[row.date] = {
+          date: row.date,
+          count: 1,
+          earned: Number(row.amount || 2),
+          titles: [row.title],
+          firstCheckInTime: row.time_wib
+        };
+      } else {
+        datesMap[row.date].count += 1;
+        datesMap[row.date].earned += Number(row.amount || 0);
+        datesMap[row.date].titles.push(row.title);
+      }
+    }
+
+    const checkInDates = Object.values(datesMap);
+
+    // Bila total_check_ins tercatat di sistem lebih banyak daripada transaksi yang tersimpan,
+    // hitung mundur tanggal-tanggal streak sebelumnya agar riwayat kalender sinkron dengan total check-in
+    if (streakInfo.last_check_in_date && checkInDates.length < Number(streakInfo.total_check_ins || 0)) {
+      try {
+        const lastDateObj = new Date(streakInfo.last_check_in_date);
+        const needed = Number(streakInfo.total_check_ins || 0) - checkInDates.length;
+        for (let i = 1; i <= needed; i++) {
+          const d = new Date(lastDateObj);
+          d.setDate(d.getDate() - i);
+          const iso = d.toISOString().split('T')[0];
+          if (!datesMap[iso]) {
+            datesMap[iso] = {
+              date: iso,
+              count: 1,
+              earned: 2,
+              titles: [`Day ${Math.max(1, (streakInfo.current_streak || 1) - i)} Streak`],
+              firstCheckInTime: '10:00:00'
+            };
+          }
+        }
+      } catch (e) {
+        console.warn('Fallback streak dates calculation error:', e.message);
+      }
+    }
+
+    const finalDates = Object.values(datesMap).sort((a, b) => a.date.localeCompare(b.date));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Berhasil mengambil riwayat kalender streak.',
+      data: {
+        traineeId: profile.ID,
+        name: profile.Name,
+        totalCheckIns: Number(streakInfo.total_check_ins || finalDates.length),
+        currentStreak: Number(streakInfo.current_streak || 0),
+        longestStreak: Number(streakInfo.longest_streak || 0),
+        lastCheckInDate: streakInfo.last_check_in_date,
+        streakDaysCount: finalDates.length,
+        dates: finalDates
+      }
+    });
+  } catch (error) {
+    console.error('[MyBy Coin] GET /streak/calendar error:', error.message);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
 module.exports = {
   handleGetOverview,
   handleClaimStreak,
-  handleDailyCheckin
+  handleDailyCheckin,
+  handleGetStreakCalendar
 };

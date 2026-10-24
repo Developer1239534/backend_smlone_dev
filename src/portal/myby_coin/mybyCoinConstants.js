@@ -4,8 +4,8 @@
  * ============================================================
  */
 
-// Bonus koin per hari dalam 1 siklus 7 hari (2 koin per hari)
-const CYCLE_BONUSES = [2, 2, 2, 2, 2, 2, 2];
+// Bonus koin per hari dalam 1 siklus 7 hari (mulai 25 Okt 2026: 1 koin per hari)
+const CYCLE_BONUSES = [1, 1, 1, 1, 1, 1, 1];
 
 // Nama-nama hari siklus (Minggu - Sabtu)
 const DAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
