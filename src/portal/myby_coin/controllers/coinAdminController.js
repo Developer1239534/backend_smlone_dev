@@ -451,14 +451,29 @@ async function handleAdminListRedeems(req, res) {
     }
     if (search) {
       params.push(`%${search}%`);
-      conds.push(`(trainee_id ILIKE $${params.length} OR "Name" ILIKE $${params.length} OR reward_title ILIKE $${params.length} OR claim_code ILIKE $${params.length})`);
+      conds.push(`(r.trainee_id ILIKE $${params.length} OR r.Name ILIKE $${params.length} OR r.reward_title ILIKE $${params.length} OR r.claim_code ILIKE $${params.length} OR r.Branch ILIKE $${params.length} OR p.Branch ILIKE $${params.length})`);
     }
     if (conds.length) baseWhere = ' WHERE ' + conds.join(' AND ');
 
-    const countRes = await db.query('SELECT COUNT(*) as total FROM myby_redeem_requests' + baseWhere, params);
+    const countRes = await db.query('SELECT COUNT(*) as total FROM myby_redeem_requests r LEFT JOIN profile_trainee p ON r.trainee_id = p.ID' + baseWhere, params);
     const totalCount = Number(countRes.rows[0]?.total || 0);
 
-    let query = 'SELECT *, trainee_id as "ID" FROM myby_redeem_requests' + baseWhere + ` ORDER BY COALESCE(scanned_at, updated_at, created_at) DESC, created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    let query = `
+      SELECT r.*, r.trainee_id as "ID",
+             COALESCE(
+               NULLIF(TRIM(r.Branch), ''),
+               NULLIF(TRIM(p.Branch), ''),
+               CASE 
+                 WHEN r.trainee_id LIKE '901%' THEN 'Cemara Asri'
+                 WHEN r.trainee_id LIKE '701%' THEN 'Tritura'
+                 WHEN LENGTH(r.trainee_id) <= 4 THEN 'Timor'
+                 ELSE 'Timor'
+               END
+             ) AS "Branch",
+             COALESCE(NULLIF(TRIM(p.Class), ''), '-') AS "Class"
+      FROM myby_redeem_requests r
+      LEFT JOIN profile_trainee p ON r.trainee_id = p.ID
+    ` + baseWhere + ` ORDER BY COALESCE(r.scanned_at, r.updated_at, r.created_at) DESC, r.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     const dataRes = await db.query(query, [...params, Number(limit), Number(offset)]);
     return res.status(200).json({ success: true, total: totalCount, data: dataRes.rows });
   } catch (error) {
@@ -470,7 +485,23 @@ async function handleAdminGetRedeem(req, res) {
   const { id } = req.params;
   try {
     await ensureMyByCoinTables();
-    const result = await db.query('SELECT * FROM myby_redeem_requests WHERE id = $1 LIMIT 1', [id]);
+    const result = await db.query(`
+      SELECT r.*, r.trainee_id as "ID",
+             COALESCE(
+               NULLIF(TRIM(r.Branch), ''),
+               NULLIF(TRIM(p.Branch), ''),
+               CASE 
+                 WHEN r.trainee_id LIKE '901%' THEN 'Cemara Asri'
+                 WHEN r.trainee_id LIKE '701%' THEN 'Tritura'
+                 WHEN LENGTH(r.trainee_id) <= 4 THEN 'Timor'
+                 ELSE 'Timor'
+               END
+             ) AS "Branch",
+             COALESCE(NULLIF(TRIM(p.Class), ''), '-') AS "Class"
+      FROM myby_redeem_requests r
+      LEFT JOIN profile_trainee p ON r.trainee_id = p.ID
+      WHERE r.id = $1 LIMIT 1
+    `, [id]);
     if (result.rows.length === 0) return res.status(404).json({ success: false, message: `Redeem "${id}" tidak ditemukan.` });
     return res.status(200).json({ success: true, data: result.rows[0] });
   } catch (error) {

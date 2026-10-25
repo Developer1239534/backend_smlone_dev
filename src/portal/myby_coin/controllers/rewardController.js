@@ -148,10 +148,16 @@ async function handleRedeemReward(req, res) {
     // Catat pengajuan redeem
     const redeemId = `red-${Date.now()}`;
     const claimCode = genClaimCode();
+    let branchName = profile.Branch || profile.branch || null;
+    if (!branchName) {
+      if (String(profile.ID).startsWith('901')) branchName = 'Cemara Asri';
+      else if (String(profile.ID).startsWith('701')) branchName = 'Tritura';
+      else branchName = 'Timor';
+    }
     await db.query(`
-      INSERT INTO myby_redeem_requests (id, trainee_id, "Name", reward_id, reward_title, coins_spent, notes, claim_code, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
-    `, [redeemId, profile.ID, profile.Name, reward.id, reward.title, reward.cost, notes || '', claimCode]);
+      INSERT INTO myby_redeem_requests (id, trainee_id, "Name", Branch, reward_id, reward_title, coins_spent, notes, claim_code, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+    `, [redeemId, profile.ID, profile.Name, branchName, reward.id, reward.title, reward.cost, notes || '', claimCode]);
 
     await db.query('COMMIT');
 

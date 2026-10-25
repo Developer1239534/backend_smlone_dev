@@ -248,10 +248,22 @@ async function handleGiftClaim(req, res) {
          VALUES ($1, $2, $3, $4, $5, 'spend', 'Klaim Hadiah')`,
         [`tx-${claimId}`, profile.ID, profile.Name, `Klaim Hadiah: ${gift.nama}`, gift.cost]
       );
+      // Ambil cabang trainee
+      let branchName = null;
+      try {
+        const bRes = await db.query('SELECT Branch FROM profile_trainee WHERE ID = $1 LIMIT 1', [profile.ID]);
+        branchName = bRes.rows[0]?.Branch;
+      } catch (_) {}
+      if (!branchName) {
+        if (String(profile.ID).startsWith('901')) branchName = 'Cemara Asri';
+        else if (String(profile.ID).startsWith('701')) branchName = 'Tritura';
+        else branchName = 'Timor';
+      }
+
       await db.query(
-        `INSERT INTO myby_redeem_requests (id, trainee_id, "Name", reward_id, reward_title, coins_spent, notes, status, claim_code)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)`,
-        [`red-${claimId}`, profile.ID, profile.Name, gift.catalogId || rawGiftId, gift.nama, gift.cost, null, claimCode]
+        `INSERT INTO myby_redeem_requests (id, trainee_id, "Name", Branch, reward_id, reward_title, coins_spent, notes, status, claim_code)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9)`,
+        [`red-${claimId}`, profile.ID, profile.Name, branchName, gift.catalogId || rawGiftId, gift.nama, gift.cost, null, claimCode]
       );
       if (gift.catalogId) {
         await db.query(
