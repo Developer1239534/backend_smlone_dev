@@ -5,6 +5,17 @@ const {
   upsertStudentLevel6Reports
 } = require('../controllers/studentLevel6Controller');
 
+// GET /api/v1/students
+router.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'SMLONE Students API ready',
+    endpoints: {
+      level6Reports: '/api/v1/students/:id/level6-reports'
+    }
+  });
+});
+
 // GET /api/v1/students/:id/level6-reports
 router.get('/:id/level6-reports', getStudentLevel6Reports);
 
