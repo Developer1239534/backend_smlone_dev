@@ -20,6 +20,78 @@ async function ensureCredentialPortalTable() {
 }
 
 // 1. GET / - Ambil semua data Credential Portal
+// 1b. GET /audit/password-changes - Audit Trainee yang ganti password
+router.get('/audit/password-changes', async (req, res) => {
+  try {
+    const { all, search, limit, offset } = req.query;
+    let whereConditions = [];
+    let params = [];
+
+    if (all !== 'true' && (!search || !search.trim())) {
+      whereConditions.push(`(c.Password != CONCAT('SML', c.ID) OR (c.updated_at IS NOT NULL AND c.created_at IS NOT NULL AND TIMESTAMPDIFF(SECOND, c.created_at, c.updated_at) > 60))`);
+    }
+
+    if (search && search.trim()) {
+      params.push(`%${search.trim()}%`);
+      const pIdx = params.length;
+      whereConditions.push(`(c.ID ILIKE $${pIdx} OR c.Name ILIKE $${pIdx} OR c.Password ILIKE $${pIdx} OR p.Program ILIKE $${pIdx})`);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    let limitClause = '';
+    if (limit) {
+      const parsedLimit = parseInt(limit, 10);
+      if (!isNaN(parsedLimit) && parsedLimit > 0) {
+        params.push(parsedLimit);
+        limitClause = ` LIMIT $${params.length}`;
+        if (offset) {
+          const parsedOffset = parseInt(offset, 10);
+          if (!isNaN(parsedOffset) && parsedOffset >= 0) {
+            params.push(parsedOffset);
+            limitClause += ` OFFSET $${params.length}`;
+          }
+        }
+      }
+    }
+
+    const query = `
+      SELECT 
+        c.ID AS id,
+        c.Name AS name,
+        p.Program AS program,
+        p.avatar_url AS avatar_url,
+        CONCAT('SML', c.ID) AS default_password,
+        c.Password AS current_password,
+        c.created_at,
+        c.updated_at,
+        CASE 
+          WHEN c.Password != CONCAT('SML', c.ID) THEN 1 
+          ELSE 0 
+        END AS is_custom_password
+      FROM credential_portal c
+      LEFT JOIN profile_trainee p ON c.ID = p.ID
+      ${whereClause}
+      ORDER BY c.updated_at DESC
+      ${limitClause};
+    `;
+    const result = await db.query(query, params);
+    return res.status(200).json({
+      success: true,
+      message: 'Berhasil mengambil daftar kata sandi trainee.',
+      total: result.rows.length,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('[Credential Portal] GET /audit/password-changes error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data audit kata sandi.',
+      error: error.message
+    });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     await ensureCredentialPortalTable();
@@ -248,7 +320,7 @@ router.put('/:id', async (req, res) => {
 
     const updateRes = await db.query(`
       UPDATE credential_portal
-      SET "Name" = $2, "MEMBERSHIP STATUS" = $3, "Password" = $4
+      SET "Name" = $2, "MEMBERSHIP STATUS" = $3, "Password" = $4, updated_at = NOW()
       WHERE "ID" = $1
       RETURNING *;
     `, [id, updateName, updateStatus, updatePass]);
