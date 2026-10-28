@@ -5,20 +5,20 @@ const { ensureMyByCoinTables, getTraineeProfile } = require('../portal/myby_coin
 
 const JWT_SECRET = process.env.JWT_SECRET || 'smlone_secret_key_12345';
 
-// Master hadiah prompt -> katalog existing
+// Master hadiah prompt -> katalog existing (fallback jika database tidak tersedia)
 const GIFT_MAP = {
-  'keychain-pena': { catalogId: 'rew-1', nama: 'Keychain / Pena SMLONE', cost: 30 },
-  'lego-mini': { catalogId: 'rew-2', nama: 'Lego Mini / Notebook A6', cost: 50 },
-  'notebook-a5': { catalogId: 'rew-3', nama: 'Notebook A5', cost: 80 },
-  'payung-tiket': { catalogId: 'rew-4', nama: 'Payung SMLONE / 1 Tiket XXI-CGV', cost: 100 },
+  'keychain-pena': { catalogId: 'rew-1', nama: 'Keychain / Pena SMLONE', cost: 5 },
+  'lego-mini': { catalogId: 'rew-2', nama: 'Lego Mini / Notebook A6', cost: 10 },
+  'notebook-a5': { catalogId: 'rew-3', nama: 'Notebook A5', cost: 15 },
+  'payung-tiket': { catalogId: 'rew-4', nama: 'Payung SMLONE / 1 Tiket Nonton', cost: 20 },
   // Dukung juga ID katalog langsung (kompatibilitas frontend reward card)
-  'rew-1': { catalogId: 'rew-1', nama: 'Keychain / Pena SMLONE', cost: 30 },
-  'rew-2': { catalogId: 'rew-2', nama: 'Lego Mini / Notebook A6', cost: 50 },
-  'rew-3': { catalogId: 'rew-3', nama: 'Notebook A5', cost: 80 },
-  'rew-4': { catalogId: 'rew-4', nama: 'Payung SMLONE / 1 Tiket XXI-CGV', cost: 100 },
-  'rew-5': { catalogId: 'rew-5', nama: 'Agenda SMLONE / 2 Tiket Nonton', cost: 150 },
-  'rew-6': { catalogId: 'rew-6', nama: 'Tumblr SMLONE', cost: 200 },
-  'rew-7': { catalogId: 'rew-7', nama: 'Jaket / Tas SMLONE', cost: 250 },
+  'rew-1': { catalogId: 'rew-1', nama: 'Keychain / Pena SMLONE', cost: 5 },
+  'rew-2': { catalogId: 'rew-2', nama: 'Lego Mini / Notebook A6', cost: 10 },
+  'rew-3': { catalogId: 'rew-3', nama: 'Notebook A5', cost: 15 },
+  'rew-4': { catalogId: 'rew-4', nama: 'Payung SMLONE / 1 Tiket Nonton', cost: 20 },
+  'rew-5': { catalogId: 'rew-5', nama: 'Agenda SMLONE / 2 Tiket Nonton', cost: 30 },
+  'rew-6': { catalogId: 'rew-6', nama: 'Tumblr SMLONE', cost: 40 },
+  'rew-7': { catalogId: 'rew-7', nama: 'Jaket / Tas SMLONE', cost: 50 },
   'rew-promo-bubo': { catalogId: 'rew-promo-bubo', nama: 'Bubo Custom A5 Notebook SMLONE', cost: 5 },
 };
 
@@ -139,19 +139,21 @@ async function handleGiftClaim(req, res) {
       return res.status(400).json({ success: false, error: 'gift_id wajib diisi.' });
     }
 
-    let gift = GIFT_MAP[rawGiftId];
+    let gift = null;
+    try {
+      const catRes = await db.query('SELECT * FROM myby_rewards_catalog WHERE id = $1 OR LOWER(id) = $1 LIMIT 1', [rawGiftId]);
+      if (catRes.rows.length > 0) {
+        const r = catRes.rows[0];
+        gift = {
+          catalogId: r.id,
+          nama: r.title || r.name,
+          cost: Number(r.cost || 0)
+        };
+      }
+    } catch (_) {}
+
     if (!gift) {
-      try {
-        const catRes = await db.query('SELECT * FROM myby_rewards_catalog WHERE id = $1 OR LOWER(id) = $1 LIMIT 1', [rawGiftId]);
-        if (catRes.rows.length > 0) {
-          const r = catRes.rows[0];
-          gift = {
-            catalogId: r.id,
-            nama: r.title || r.name,
-            cost: Number(r.cost || 0)
-          };
-        }
-      } catch (_) {}
+      gift = GIFT_MAP[rawGiftId];
     }
 
     if (!gift) {
@@ -160,8 +162,8 @@ async function handleGiftClaim(req, res) {
 
     // Ambil profile trainee lengkap (Nama dan Email)
     const profile = await getTraineeProfile(traineeId);
-    let userName = String(user.name || user.Name || user.nama || profile.Name || 'Trainee SMLONE').trim();
-    let userEmail = String(user.email || user.Email || '').trim().toLowerCase();
+    let userName = String(req.body?.name || req.body?.Nama || user.name || user.Name || user.nama || profile.Name || 'Trainee SMLONE').trim();
+    let userEmail = String(req.body?.email || req.body?.Email || user.email || user.Email || '').trim().toLowerCase();
 
     if (!userEmail) {
       try {
