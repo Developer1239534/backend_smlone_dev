@@ -24,6 +24,21 @@ const upload = multer({
   }
 });
 
+// Helper: Periksa apakah Cloudinary telah dikonfigurasi secara valid
+function isCloudinaryConfigured() {
+  const cName = process.env.CLOUDINARY_CLOUD_NAME;
+  const cKey = process.env.CLOUDINARY_API_KEY;
+  const cSecret = process.env.CLOUDINARY_API_SECRET;
+  return Boolean(
+    cName &&
+    cName !== 'smlone' &&
+    cKey &&
+    !cKey.includes('*') &&
+    cSecret &&
+    !cSecret.includes('*')
+  );
+}
+
 // Helper: Ekstrak buffer & mimetype dari multipart file atau base64
 function extractImagePayload(req) {
   if (req.file && req.file.buffer) {
@@ -70,26 +85,28 @@ router.post('/:id/avatar', upload.single('avatar'), async (req, res) => {
 
     let avatarUrl = '';
 
-    // 1. Coba upload ke Cloudinary terlebih dahulu jika kredensial aktif
-    try {
-      const dataUri = `data:${payload.mimetype};base64,${payload.buffer.toString('base64')}`;
-      const uploadResult = await cloudinary.uploader.upload(dataUri, {
-        folder: 'smlone/avatars',
-        public_id: cleanId,
-        overwrite: true,
-        invalidate: true,
-        resource_type: 'image',
-        transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }, { quality: 'auto', fetch_format: 'auto' }]
-      });
-      if (uploadResult && uploadResult.secure_url) {
-        avatarUrl = uploadResult.secure_url;
+    // 1. Coba upload ke Cloudinary hanya jika kredensial resmi telah dikonfigurasi
+    if (isCloudinaryConfigured()) {
+      try {
+        const dataUri = `data:${payload.mimetype};base64,${payload.buffer.toString('base64')}`;
+        const uploadResult = await cloudinary.uploader.upload(dataUri, {
+          folder: 'smlone/avatars',
+          public_id: cleanId,
+          overwrite: true,
+          invalidate: true,
+          resource_type: 'image',
+          transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }, { quality: 'auto', fetch_format: 'auto' }]
+        });
+        if (uploadResult && uploadResult.secure_url) {
+          avatarUrl = uploadResult.secure_url;
+        }
+      } catch (cErr) {
+        // Fallback ke storage lokal VPS
+        console.log('[Avatar Upload] Cloudinary fallback ke storage lokal VPS:', cErr.message);
       }
-    } catch (cErr) {
-      // Abaikan error Cloudinary dan langsung gunakan storage lokal VPS
-      console.warn('[Avatar Upload] Cloudinary bypass/fallback ke local VPS:', cErr.message);
     }
 
-    // 2. Jika Cloudinary tidak mengembalikan URL, simpan ke VPS disk /uploads/avatars/
+    // 2. Jika Cloudinary tidak aktif/tidak mengembalikan URL, simpan ke VPS disk /uploads/avatars/
     if (!avatarUrl) {
       const filename = `${cleanId}.${payload.extension}`;
       const filePath = path.join(UPLOADS_DIR, filename);
@@ -132,10 +149,12 @@ router.delete('/:id/avatar', async (req, res) => {
       return res.status(404).json({ success: false, message: `Trainee ID ${cleanId} tidak ditemukan.` });
     }
 
-    // Hapus dari Cloudinary jika ada
-    try {
-      await cloudinary.uploader.destroy(`smlone/avatars/${cleanId}`);
-    } catch (_) {}
+    // Hapus dari Cloudinary jika kredensial aktif
+    if (isCloudinaryConfigured()) {
+      try {
+        await cloudinary.uploader.destroy(`smlone/avatars/${cleanId}`);
+      } catch (_) {}
+    }
 
     // Hapus dari disk lokal
     const possibleExts = ['jpg', 'png', 'webp', 'jpeg'];
