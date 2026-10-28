@@ -71,12 +71,19 @@ async function ensureAdminTables() {
         avatar TEXT DEFAULT NULL,
         role VARCHAR(50) NOT NULL DEFAULT 'pending',
         status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        access_coin_reward TINYINT(1) DEFAULT 0,
         google_id VARCHAR(255) DEFAULT NULL,
         last_login DATETIME DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
+    try {
+      await db.query(`ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS access_coin_reward TINYINT(1) DEFAULT 0`);
+    } catch (_) {}
+    try {
+      await db.query(`ALTER TABLE credential_admin ADD COLUMN IF NOT EXISTS access_coin_reward TINYINT(1) DEFAULT 0`);
+    } catch (_) {}
   } catch (err) {
     console.error('[Admin RBAC] Ensure table error:', err.message);
   }
@@ -246,7 +253,7 @@ router.post('/auth/google', async (req, res) => {
 
     // Cek apakah akun sudah terdaftar
     const existingRes = await db.query(
-      'SELECT id, email, name, avatar, role, status, google_id, created_at, updated_at FROM admin_users WHERE email = $1 OR LOWER(email) = LOWER($1) LIMIT 1',
+      'SELECT id, email, name, avatar, role, status, access_coin_reward, google_id, created_at, updated_at FROM admin_users WHERE email = $1 OR LOWER(email) = LOWER($1) LIMIT 1',
       [cleanEmail]
     );
 
@@ -258,15 +265,16 @@ router.post('/auth/google', async (req, res) => {
       const isSuper = cleanEmail === 'developer@smlone.com' || cleanEmail.startsWith('developer@');
       const initialRole = isSuper ? 'superadmin' : 'pending';
       const initialStatus = isSuper ? 'active' : 'pending';
+      const initialCoinAccess = isSuper ? 1 : 0;
 
       await db.query(
-        `INSERT INTO admin_users (email, name, avatar, role, status, google_id, last_login)
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-        [cleanEmail, finalName, finalAvatar, initialRole, initialStatus, finalGoogleId]
+        `INSERT INTO admin_users (email, name, avatar, role, status, access_coin_reward, google_id, last_login)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+        [cleanEmail, finalName, finalAvatar, initialRole, initialStatus, initialCoinAccess, finalGoogleId]
       );
 
       const newRow = await db.query(
-        'SELECT id, email, name, avatar, role, status, google_id, created_at, updated_at FROM admin_users WHERE email = $1 LIMIT 1',
+        'SELECT id, email, name, avatar, role, status, access_coin_reward, google_id, created_at, updated_at FROM admin_users WHERE email = $1 LIMIT 1',
         [cleanEmail]
       );
       admin = newRow.rows[0];
@@ -274,15 +282,16 @@ router.post('/auth/google', async (req, res) => {
       // Sinkronisasi ke credential_admin jika belum ada
       try {
         await db.query(
-          `INSERT INTO credential_admin ("Nama", "Password", email, name, avatar, role, status)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
+          `INSERT INTO credential_admin ("Nama", "Password", email, name, avatar, role, status, access_coin_reward)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            ON CONFLICT ("Nama") DO UPDATE SET
              email = EXCLUDED.email,
              name = EXCLUDED.name,
              avatar = EXCLUDED.avatar,
              role = EXCLUDED.role,
-             status = EXCLUDED.status`,
-          [cleanEmail, 'GOOGLE_OAUTH_AUTH', cleanEmail, finalName, finalAvatar, initialRole, initialStatus]
+             status = EXCLUDED.status,
+             access_coin_reward = EXCLUDED.access_coin_reward`,
+          [cleanEmail, 'GOOGLE_OAUTH_AUTH', cleanEmail, finalName, finalAvatar, initialRole, initialStatus, initialCoinAccess]
         );
       } catch (errSync) {
         console.warn('[Admin RBAC] Sync to credential_admin warning:', errSync.message);
@@ -304,7 +313,7 @@ router.post('/auth/google', async (req, res) => {
 
       // Re-fetch
       const refreshed = await db.query(
-        'SELECT id, email, name, avatar, role, status, google_id, created_at, updated_at FROM admin_users WHERE id = $1 LIMIT 1',
+        'SELECT id, email, name, avatar, role, status, access_coin_reward, google_id, created_at, updated_at FROM admin_users WHERE id = $1 LIMIT 1',
         [admin.id]
       );
       admin = refreshed.rows[0];
@@ -337,6 +346,7 @@ router.post('/auth/google', async (req, res) => {
         role: admin.role,
         role_title: getRoleTitle(admin.role),
         status: admin.status,
+        access_coin_reward: Boolean(admin.access_coin_reward),
         is_pending: isPending,
         created_at: admin.created_at,
         updated_at: admin.updated_at
@@ -362,7 +372,7 @@ router.get('/auth/me', authenticateAdminToken, async (req, res) => {
     const userEmail = req.adminUser.email;
 
     const result = await db.query(
-      'SELECT id, email, name, avatar, role, status, google_id, last_login, created_at, updated_at FROM admin_users WHERE id = $1 OR email = $2 LIMIT 1',
+      'SELECT id, email, name, avatar, role, status, access_coin_reward, google_id, last_login, created_at, updated_at FROM admin_users WHERE id = $1 OR email = $2 LIMIT 1',
       [userId, userEmail]
     );
 
@@ -386,6 +396,7 @@ router.get('/auth/me', authenticateAdminToken, async (req, res) => {
         role: admin.role,
         role_title: getRoleTitle(admin.role),
         status: admin.status,
+        access_coin_reward: Boolean(admin.access_coin_reward),
         is_pending:
           admin.status === 'pending' ||
           admin.status === 'suspended' ||
@@ -414,7 +425,7 @@ router.get('/users', requireSuperAdmin, async (req, res) => {
     await ensureAdminTables();
     const { role, status, search } = req.query;
 
-    let query = 'SELECT id, email, name, avatar, role, status, google_id, last_login, created_at, updated_at FROM admin_users';
+    let query = 'SELECT id, email, name, avatar, role, status, access_coin_reward, google_id, last_login, created_at, updated_at FROM admin_users';
     const params = [];
     const conds = [];
 
@@ -444,6 +455,7 @@ router.get('/users', requireSuperAdmin, async (req, res) => {
 
     const enriched = result.rows.map(user => ({
       ...user,
+      access_coin_reward: Boolean(user.access_coin_reward),
       role_title: getRoleTitle(user.role),
       is_pending:
         user.status === 'pending' ||
@@ -474,33 +486,15 @@ router.get('/users', requireSuperAdmin, async (req, res) => {
 // -------------------------------------------------------------
 router.patch('/users/:id/role', requireSuperAdmin, async (req, res) => {
   const { id } = req.params;
-  const { role, status, name } = req.body || {};
+  const { role, status, name, access_coin_reward } = req.body || {};
 
   try {
     await ensureAdminTables();
 
-    if (!role) {
-      return res.status(400).json({
-        success: false,
-        message: 'Field "role" wajib diisi.',
-        available_roles: OFFICIAL_ROLES
-      });
-    }
-
-    const normalizedRole = normalizeRole(role);
-
-    if (!normalizedRole) {
-      return res.status(400).json({
-        success: false,
-        message: `Role "${role}" tidak valid. Pilih dari daftar role resmi yang tersedia.`,
-        available_roles: OFFICIAL_ROLES
-      });
-    }
-
     // Cari user yang ditargetkan
     const findQuery = /^\d+$/.test(id)
-      ? 'SELECT id, email, name, role, status FROM admin_users WHERE id = $1 LIMIT 1'
-      : 'SELECT id, email, name, role, status FROM admin_users WHERE email = $1 OR LOWER(email) = LOWER($1) LIMIT 1';
+      ? 'SELECT id, email, name, role, status, access_coin_reward FROM admin_users WHERE id = $1 LIMIT 1'
+      : 'SELECT id, email, name, role, status, access_coin_reward FROM admin_users WHERE email = $1 OR LOWER(email) = LOWER($1) LIMIT 1';
     
     const findRes = await db.query(findQuery, [/^\d+$/.test(id) ? parseInt(id, 10) : id]);
 
@@ -513,24 +507,43 @@ router.patch('/users/:id/role', requireSuperAdmin, async (req, res) => {
 
     const targetUser = findRes.rows[0];
 
+    let normalizedRole = targetUser.role;
+    if (role !== undefined && role !== null && role !== '') {
+      normalizedRole = normalizeRole(role);
+      if (!normalizedRole) {
+        return res.status(400).json({
+          success: false,
+          message: `Role "${role}" tidak valid. Pilih dari daftar role resmi yang tersedia.`,
+          available_roles: OFFICIAL_ROLES
+        });
+      }
+    }
+
     // Tentukan status baru: jika role diubah ke divisi aktif dan status tidak dinyatakan lain, otomatis 'active'
     let targetStatus = status;
-    if (!targetStatus) {
-      targetStatus = normalizedRole === 'pending' ? 'pending' : 'active';
+    if (targetStatus === undefined || targetStatus === null) {
+      targetStatus = targetUser.status || (normalizedRole === 'pending' ? 'pending' : 'active');
     } else {
       targetStatus = String(targetStatus).toLowerCase();
     }
 
     const targetName = name ? String(name).trim() : targetUser.name;
 
+    // Tentukan hak akses modul Koin & Hadiah
+    let targetCoinAccess = targetUser.access_coin_reward !== undefined ? Number(targetUser.access_coin_reward) : 0;
+    if (access_coin_reward !== undefined) {
+      targetCoinAccess = (access_coin_reward === true || access_coin_reward === 1 || access_coin_reward === '1' || access_coin_reward === 'true') ? 1 : 0;
+    }
+
     await db.query(
       `UPDATE admin_users SET 
          role = $1, 
          status = $2, 
          name = $3, 
+         access_coin_reward = $4,
          updated_at = NOW() 
-       WHERE id = $4`,
-      [normalizedRole, targetStatus, targetName, targetUser.id]
+       WHERE id = $5`,
+      [normalizedRole, targetStatus, targetName, targetCoinAccess, targetUser.id]
     );
 
     // Sinkronisasi perubahan ke credential_admin jika ada
@@ -540,14 +553,15 @@ router.patch('/users/:id/role', requireSuperAdmin, async (req, res) => {
            role = $1, 
            status = $2, 
            name = $3, 
+           access_coin_reward = $4,
            updated_at = NOW() 
-         WHERE email = $4 OR "Nama" = $4`,
-        [normalizedRole, targetStatus, targetName, targetUser.email]
+         WHERE email = $5 OR "Nama" = $5`,
+        [normalizedRole, targetStatus, targetName, targetCoinAccess, targetUser.email]
       );
     } catch (_) {}
 
     const updatedRes = await db.query(
-      'SELECT id, email, name, avatar, role, status, google_id, last_login, created_at, updated_at FROM admin_users WHERE id = $1 LIMIT 1',
+      'SELECT id, email, name, avatar, role, status, access_coin_reward, google_id, last_login, created_at, updated_at FROM admin_users WHERE id = $1 LIMIT 1',
       [targetUser.id]
     );
 
@@ -555,9 +569,10 @@ router.patch('/users/:id/role', requireSuperAdmin, async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Role staf "${updatedUser.name}" (${updatedUser.email}) berhasil diubah menjadi "${getRoleTitle(normalizedRole)}".`,
+      message: `Role staf "${updatedUser.name}" (${updatedUser.email}) berhasil diperbarui.`,
       data: {
         ...updatedUser,
+        access_coin_reward: Boolean(updatedUser.access_coin_reward),
         role_title: getRoleTitle(updatedUser.role),
         is_pending: updatedUser.status === 'pending' || updatedUser.role === 'pending'
       }
