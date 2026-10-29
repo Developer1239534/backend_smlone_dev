@@ -37,7 +37,8 @@ const COLUMNS = [
   'Trainee WhatsApp Number',
   'School Name',
   'Program',
-  'avatar_url'
+  'avatar_url',
+  'Gold Point per Term'
 ];
 
 function normalizeBranch(raw) {
@@ -162,7 +163,8 @@ async function runProfileTraineeReconciliation() {
       dbItem['Trainee WhatsApp Number'] || '',
       dbItem['School Name'] || '',
       dbItem.Program || '-',
-      dbItem.avatar_url || ''
+      dbItem.avatar_url || '',
+      dbItem['Gold Point per Term'] || '0'
     ];
   });
 
