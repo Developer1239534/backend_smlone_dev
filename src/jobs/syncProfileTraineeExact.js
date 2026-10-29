@@ -38,7 +38,8 @@ const COLUMNS = [
   'School Name',
   'Program',
   'avatar_url',
-  'Gold Point per Term'
+  'Gold Term Q2',
+  'Gold Term Q3'
 ];
 
 function normalizeBranch(raw) {
@@ -164,7 +165,8 @@ async function runProfileTraineeReconciliation() {
       dbItem['School Name'] || '',
       dbItem.Program || '-',
       dbItem.avatar_url || '',
-      dbItem['Gold Point per Term'] || '0'
+      dbItem['Gold Term Q2'] || '0',
+      dbItem['Gold Term Q3'] || '0'
     ];
   });
 
