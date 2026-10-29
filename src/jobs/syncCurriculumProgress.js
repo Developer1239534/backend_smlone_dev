@@ -64,6 +64,7 @@ async function syncCurriculumFromSheet() {
       const name = (r[1] || '').trim();
       if (!sid) continue;
 
+      const report_link = (r[9] || '').trim();
       const level = (r[12] || '').trim();
       const sp_pct = (r[72] || '0%').trim();
       const discipline = (r[73] || '0%').trim();
@@ -93,13 +94,14 @@ async function syncCurriculumFromSheet() {
 
       await db.query(`
         INSERT INTO student_curriculum_progress (
-          student_id, name, level, speaking_pct, life_pct,
+          student_id, name, report_link, level, speaking_pct, life_pct,
           discipline, family_life, school_life, basic_manner, survival_skill, appreciation, free_project,
           sp_1, sp_2, sp_3, sp_4, sp_5, sp_6, sp_7, sp_8, sp_9, sp_10,
           last_speaker_date, last_life_project_date, last_life_project, last_attendance
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
           name = VALUES(name),
+          report_link = VALUES(report_link),
           level = VALUES(level),
           speaking_pct = VALUES(speaking_pct),
           life_pct = VALUES(life_pct),
@@ -125,7 +127,7 @@ async function syncCurriculumFromSheet() {
           last_life_project = VALUES(last_life_project),
           last_attendance = VALUES(last_attendance)
       `, [
-        sid, name, level, sp_pct, life_pct,
+        sid, name, report_link, level, sp_pct, life_pct,
         discipline, family_life, school_life, basic_manner, survival_skill, appreciation, free_project,
         sp_1, sp_2, sp_3, sp_4, sp_5, sp_6, sp_7, sp_8, sp_9, sp_10,
         last_speaker_date, last_lp_date, last_lp, last_att

@@ -56,10 +56,36 @@ async function getStudentLevel6Reports(req, res) {
     `;
 
     const result = await db.query(query, [studentId]);
+    let reports = result.rows || [];
+
+    // Fallback: Jika di student_level6_reports belum ada laporan, ambil Students Report Link dari student_curriculum_progress
+    if (reports.length === 0) {
+      try {
+        const currRes = await db.query(
+          'SELECT report_link, updated_at, created_at FROM student_curriculum_progress WHERE student_id = ? LIMIT 1',
+          [String(studentId)]
+        );
+        if (currRes.rows && currRes.rows.length > 0 && currRes.rows[0].report_link) {
+          const rLink = currRes.rows[0].report_link.trim();
+          if (rLink && rLink.startsWith('http')) {
+            reports.push({
+              id: `curriculum_report_${studentId}`,
+              student_id: studentId,
+              report_type: 'Rapor Berjalan',
+              report_title: 'Laporan Perkembangan Trainee',
+              report_link: rLink,
+              created_at: currRes.rows[0].updated_at || currRes.rows[0].created_at || new Date().toISOString()
+            });
+          }
+        }
+      } catch (errCurr) {
+        console.warn('[StudentLevel6] Fallback curriculum report error:', errCurr.message);
+      }
+    }
 
     return res.status(200).json({
       success: true,
-      data: result.rows
+      data: reports
     });
   } catch (error) {
     console.error('[StudentLevel6] GET level6-reports error:', error.message);

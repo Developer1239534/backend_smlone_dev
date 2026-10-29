@@ -76,7 +76,12 @@ async function ensureHouseAllegianceTables() {
 router.get('/', async (req, res) => {
   try {
     await ensureHouseAllegianceTables();
-    const result = await db.query('SELECT "id", "question", "options" FROM questions ORDER BY "id"::int ASC');
+    let result;
+    try {
+      result = await db.query('SELECT "id", "question", "options" FROM questions ORDER BY CAST(id AS UNSIGNED) ASC');
+    } catch {
+      result = await db.query('SELECT "id", "question", "options" FROM questions ORDER BY id ASC');
+    }
     
     const formatted = result.rows.map(row => {
       let parsedOptions = row.options;
@@ -101,7 +106,12 @@ router.get('/', async (req, res) => {
 router.get('/questions', async (req, res) => {
   try {
     await ensureHouseAllegianceTables();
-    const result = await db.query('SELECT "id", "question", "options" FROM questions ORDER BY "id"::int ASC');
+    let result;
+    try {
+      result = await db.query('SELECT "id", "question", "options" FROM questions ORDER BY CAST(id AS UNSIGNED) ASC');
+    } catch {
+      result = await db.query('SELECT "id", "question", "options" FROM questions ORDER BY id ASC');
+    }
     
     const formatted = result.rows.map(row => {
       let parsedOptions = row.options;

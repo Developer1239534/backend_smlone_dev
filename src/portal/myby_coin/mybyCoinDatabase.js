@@ -31,7 +31,8 @@ async function getTraineeProfile(traineeId) {
     );
     if (profRes.rows.length > 0) {
       profile.ID = profRes.rows[0].ID;
-      profile.Name = profRes.rows[0].Name || profile.Name;
+      const cleanName = (profRes.rows[0].Name || '').trim();
+      profile.Name = cleanName || `Trainee ${profile.ID}`;
       profile.HOUSE = profRes.rows[0].HOUSE || profile.HOUSE;
       profile.Class = profRes.rows[0].Class || profile.Class;
       return profile;
@@ -43,7 +44,8 @@ async function getTraineeProfile(traineeId) {
     );
     if (credRes.rows.length > 0) {
       profile.ID = credRes.rows[0].ID;
-      profile.Name = credRes.rows[0].Name || profile.Name;
+      const cleanName = (credRes.rows[0].Name || '').trim();
+      profile.Name = cleanName || `Trainee ${profile.ID}`;
     }
   } catch (e) {
     console.warn('[MyBy Coin] Profile fetch fallback:', e.message);

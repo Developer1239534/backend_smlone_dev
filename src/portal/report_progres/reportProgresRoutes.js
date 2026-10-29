@@ -323,6 +323,10 @@ router.get('/:id', async (req, res) => {
       latest['Last Life Project date'] = currRow.last_life_project_date || '';
       latest['Last Attendance'] = currRow.last_attendance || '';
       latest['Level'] = currRow.level || latest['Level'] || '';
+      if (currRow.report_link) {
+        latest['Students Report Link'] = currRow.report_link;
+        latest['report_link'] = currRow.report_link;
+      }
       
       // Data rincian modul
       latest['curriculum_progress'] = currRow;

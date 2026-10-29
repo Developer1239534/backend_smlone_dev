@@ -212,9 +212,10 @@ router.get('/:identifier', async (req, res) => {
     const result = await db.query(query, [identifier]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: `Data Voucher Real Stage tidak ditemukan untuk: ${identifier}`
+      return res.json({
+        success: true,
+        data: null,
+        message: `Voucher Real Stage belum tersedia untuk ID: ${identifier}`
       });
     }
 

@@ -139,7 +139,7 @@ function formatProfileRow(row) {
 // 1. GET / - Ambil semua data Profile Trainee (search & filter) murni dari database Neon
 router.get('/', async (req, res) => {
   try {
-    const { search, house, class_name, membership, branch, level, limit, page } = req.query;
+    const { search, house, class_name, membership, branch, level, timeFilter, limit, page } = req.query;
 
     let query = `
       SELECT 
@@ -183,11 +183,37 @@ router.get('/', async (req, res) => {
       conditions.push(`"Level" ILIKE $${params.length}`);
     }
 
+    if (timeFilter === 'today') {
+      conditions.push(`STR_TO_DATE("FIRST ENROLL", '%d %b %Y') = CURDATE()`);
+    } else if (timeFilter === 'last_week') {
+      conditions.push(`STR_TO_DATE("FIRST ENROLL", '%d %b %Y') >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`);
+    } else if (timeFilter === 'last_month') {
+      conditions.push(`STR_TO_DATE("FIRST ENROLL", '%d %b %Y') >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)`);
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(timeFilter)) {
+      conditions.push(`DATE(STR_TO_DATE("FIRST ENROLL", '%d %b %Y')) = '${timeFilter}'`);
+    }
+
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
 
-    query += ' ORDER BY "ID" ASC';
+    // Prioritaskan data yang lengkap terisi (Cabang, Kelas, House, Program, WA Parent, Asal Sekolah, Tanggal Lahir) berada di paling atas
+    query += `
+      ORDER BY 
+        (
+          (CASE WHEN "Class" IS NOT NULL AND "Class" != '' AND "Class" != '-' THEN 1 ELSE 0 END) +
+          (CASE WHEN "Program" IS NOT NULL AND "Program" != '' AND "Program" != '-' THEN 1 ELSE 0 END) +
+          (CASE WHEN "HOUSE" IS NOT NULL AND "HOUSE" != '' AND "HOUSE" != '-' THEN 1 ELSE 0 END) +
+          (CASE WHEN "Branch" IS NOT NULL AND "Branch" != '' AND "Branch" != '-' THEN 1 ELSE 0 END) +
+          (CASE WHEN "Parent WhatsApp Number" IS NOT NULL AND "Parent WhatsApp Number" != '' AND "Parent WhatsApp Number" != '-' THEN 1 ELSE 0 END) +
+          (CASE WHEN "Parents Email Account" IS NOT NULL AND "Parents Email Account" != '' AND "Parents Email Account" != '-' THEN 1 ELSE 0 END) +
+          (CASE WHEN "School Name" IS NOT NULL AND "School Name" != '' AND "School Name" != '-' THEN 1 ELSE 0 END) +
+          (CASE WHEN "Date of Birth" IS NOT NULL AND "Date of Birth" != '' AND "Date of Birth" != '-' THEN 1 ELSE 0 END) +
+          (CASE WHEN "Trainer" IS NOT NULL AND "Trainer" != '' AND "Trainer" != '-' THEN 1 ELSE 0 END) +
+          (CASE WHEN "FIRST ENROLL" IS NOT NULL AND "FIRST ENROLL" != '' AND "FIRST ENROLL" != '-' THEN 1 ELSE 0 END)
+        ) DESC,
+        CAST("ID" AS UNSIGNED) ASC
+    `;
 
     if (limit) {
       const parsedLimit = parseInt(limit, 10) || 50;

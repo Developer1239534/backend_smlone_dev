@@ -59,17 +59,27 @@ router.post(['/token', '/login'], async (req, res) => {
 
     const trainee = cred.rows[0];
     if (rawPass && String(trainee.Password) !== rawPass) {
-      // Async Discord Logging (Gagal - Password Salah)
+      const defaultPassword = `SML${trainee.ID}`;
+      const isTryingOldPassword = rawPass === defaultPassword && String(trainee.Password) !== defaultPassword;
+
+      // Async Discord Logging (Gagal - Password Salah / Pakai Password Lama)
       setImmediate(() => {
         logPortalLogin({
           traineeId: trainee.ID,
           traineeName: trainee.Name,
           success: false,
-          statusText: 'Password Salah',
+          statusText: isTryingOldPassword ? 'Login Gagal: Memakai Password Lama (Sudah Diganti)' : 'Password Salah',
           ip: clientIp,
           userAgent
         });
       });
+
+      if (isTryingOldPassword) {
+        return res.status(401).json({
+          success: false,
+          error: 'Password lama sudah tidak berlaku karena sudah diganti. Gunakan password baru!'
+        });
+      }
 
       return res.status(401).json({ success: false, error: 'Password salah.' });
     }
