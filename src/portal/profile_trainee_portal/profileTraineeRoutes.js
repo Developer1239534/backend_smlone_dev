@@ -106,8 +106,10 @@ function formatProfileRow(row) {
     "Parent WhatsApp Number": row["Parent WhatsApp Number"] ?? '',
     "Trainee WhatsApp Number": row["Trainee WhatsApp Number"] ?? '',
     "School Name": row["School Name"] ?? '',
+    "Gold Point per Term": row["Gold Point per Term"] ?? row["gold_point_term"] ?? '0',
     "avatar_url": row["avatar_url"] ?? row["avatar_URL"] ?? '',
     // Alias kompatibilitas frontend
+    gold_point_term: row["Gold Point per Term"] ?? row["gold_point_term"] ?? '0',
     id: row["ID"] ?? '',
     name: row["Name"] ?? '',
     class: row["Class"] ?? '',
@@ -146,7 +148,7 @@ router.get('/', async (req, res) => {
         "Class", "Program", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
         "Date of Birth", "Class in School", "Parents Email Account", "Trainee Email Account", "Parent WhatsApp Number",
-        "Trainee WhatsApp Number", "School Name", "avatar_url"
+        "Trainee WhatsApp Number", "School Name", "avatar_url", "Gold Point per Term"
       FROM profile_trainee
     `;
     const conditions = [];
@@ -259,7 +261,7 @@ router.get('/:id', async (req, res) => {
         "Class", "Program", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
         "Date of Birth", "Class in School", "Parents Email Account", "Trainee Email Account", "Parent WhatsApp Number",
-        "Trainee WhatsApp Number", "School Name", "avatar_url"
+        "Trainee WhatsApp Number", "School Name", "avatar_url", "Gold Point per Term"
       FROM profile_trainee 
       WHERE "ID" = $1
       LIMIT 1`,
