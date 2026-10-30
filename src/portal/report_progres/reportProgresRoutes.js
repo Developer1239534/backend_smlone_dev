@@ -25,34 +25,103 @@ const db = require('../../db/neonClient');
  * ============================================================
  */
 
+const monthMap = {
+  jan: 0, feb: 1, mar: 2, apr: 3, mei: 4, may: 4, jun: 5, jul: 6,
+  agu: 7, aug: 7, sep: 8, okt: 9, oct: 9, nov: 10, des: 11, dec: 11
+};
+
+function parseDateToTimestamp(dStr) {
+  if (!dStr) return 0;
+  const clean = String(dStr).trim();
+  const m1 = clean.match(/^(\d{1,2})\s+([A-Za-z]{3,9})(?:\s+(\d{2,4}))?$/);
+  if (m1) {
+    const day = parseInt(m1[1], 10);
+    const mStr = m1[2].toLowerCase().slice(0, 3);
+    const month = monthMap[mStr];
+    let year = m1[3] ? parseInt(m1[3], 10) : 2026;
+    if (year < 100) year += 2000;
+    if (month !== undefined) return new Date(year, month, day).getTime();
+  }
+  const m2 = clean.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+  if (m2) {
+    const day = parseInt(m2[1], 10);
+    const month = parseInt(m2[2], 10) - 1;
+    let year = parseInt(m2[3], 10);
+    if (year < 100) year += 2000;
+    return new Date(year, month, day).getTime();
+  }
+  const parsed = Date.parse(clean);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function normalizeAndSortSessions(rawList) {
+  if (!Array.isArray(rawList)) return [];
+  const normalized = rawList.map((s, idx) => ({
+    date: s.date || s.Date || s.tanggal || s.Tanggal || '',
+    trainer: s.trainer || s.Trainer || s.class_trainers || s['Class Trainers'] || '',
+    feedback: s.feedback || s.Feedback || s.coach_feedback || s['Coach Feedback'] || '',
+    challenge: s.challenge || s.Challenge || '',
+    speaking_project: s.speaking_project || s.speakingProject || s['Speaking Project'] || '-',
+    life_project: s.life_project || s.lifeProject || s['Life Project'] || '-',
+    latest_speaking_project: s.latest_speaking_project || s.latestSpeakingProject || s['Latest Speaking Project'] || '-',
+    last_time_speaking: s.last_time_speaking || s.lastTimeSpeaking || s['Last Time Speaking'] || '-',
+    role_2: s.role_2 || s.role2 || s['Role 2'] || '-',
+    role_3: s.role_3 || s.role3 || s['Role 3'] || '-',
+    role_4: s.role_4 || s.role4 || s['Role 4'] || '-',
+    _idx: idx
+  }));
+
+  return normalized.sort((a, b) => {
+    const tA = parseDateToTimestamp(a.date);
+    const tB = parseDateToTimestamp(b.date);
+    if (tA !== tB) return tB - tA; // Tanggal terbaru (Oktober) di index 0
+    return b._idx - a._idx;
+  }).map(({ _idx, ...rest }) => rest);
+}
+
 function parseSessionsFromRow(row) {
-  if (Array.isArray(row.sessions) && row.sessions.length > 0) return row.sessions;
+  if (Array.isArray(row.sessions) && row.sessions.length > 0) {
+    return normalizeAndSortSessions(row.sessions);
+  }
   if (typeof row.sessions === 'string' && row.sessions.trim() && row.sessions !== '[]') {
     try {
       const parsed = JSON.parse(row.sessions);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return normalizeAndSortSessions(parsed);
+      }
     } catch {}
   }
-  const rawDates = (row["Date"] || row["date"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
-  const rawSpeakings = (row["Speaking Project"] || row["speaking_project"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
-  const rawR2 = (row["Role 2"] || row["role_2"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
-  const rawR3 = (row["Role 3"] || row["role_3"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
-  const rawR4 = (row["Role 4"] || row["role_4"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
-  const rawLifes = (row["Life Project"] || row["life_project"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
+  const rawDates = (row["Date"] || row["date"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
+  const rawTrainers = (row["Class Trainers"] || row["class_trainers"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
+  const rawFeedbacks = (row["Coach Feedback"] || row["coach_feedback"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
+  const rawChallenges = (row["Challenge"] || row["challenge"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
+  const rawSpeakings = (row["Speaking Project"] || row["speaking_project"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
+  const rawR2 = (row["Role 2"] || row["role_2"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
+  const rawR3 = (row["Role 3"] || row["role_3"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
+  const rawR4 = (row["Role 4"] || row["role_4"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
+  const rawLifes = (row["Life Project"] || row["life_project"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
   const lsp = row["Latest Speaking Project"] || row["latest_speaking_project"] || (rawSpeakings.length > 0 ? rawSpeakings[rawSpeakings.length - 1] : "-");
   const lts = row["Last Time Speaking Date"] || row["Last Time Speaking"] || (rawDates.length > 0 ? rawDates[rawDates.length - 1] : "-");
 
-  if (rawDates.length > 0) {
-    return rawDates.map((d, i) => ({
-      date: d,
-      speaking_project: rawSpeakings[i] || (i === rawDates.length - 1 && lsp !== '-' ? lsp : '-'),
-      role_2: rawR2[i] || (i === rawDates.length - 1 && rawR2.length > 0 ? rawR2[0] : '-'),
-      role_3: rawR3[i] || (i === rawDates.length - 1 && rawR3.length > 0 ? rawR3[0] : '-'),
-      role_4: rawR4[i] || (i === rawDates.length - 1 && rawR4.length > 0 ? rawR4[0] : '-'),
-      life_project: rawLifes[i] || (i === rawDates.length - 1 && rawLifes.length > 0 ? rawLifes[0] : '-'),
-      latest_speaking_project: lsp,
-      last_time_speaking: lts
-    }));
+  const total = Math.max(rawDates.length, rawFeedbacks.length, rawChallenges.length, 0);
+  if (total > 0) {
+    const list = [];
+    for (let i = 0; i < total; i++) {
+      list.push({
+        date: rawDates[i] || '',
+        trainer: rawTrainers[i] || (rawTrainers.length > 0 ? rawTrainers[0] : ''),
+        feedback: rawFeedbacks[i] || '',
+        challenge: rawChallenges[i] || '',
+        speaking_project: rawSpeakings[i] || '-',
+        role_2: rawR2[i] || '-',
+        role_3: rawR3[i] || '-',
+        role_4: rawR4[i] || '-',
+        life_project: rawLifes[i] || '-',
+        latest_speaking_project: lsp,
+        last_time_speaking: lts
+      });
+    }
+    return normalizeAndSortSessions(list);
   }
   return [];
 }
