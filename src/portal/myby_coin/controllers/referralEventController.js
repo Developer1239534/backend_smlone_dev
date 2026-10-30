@@ -196,7 +196,7 @@ async function handleClaimReferralCoins(req, res) {
     await db.query('BEGIN');
 
     // Update Saldo Wallet
-    const walletUpdate = await db.query(`
+    await db.query(`
       INSERT INTO myby_trainee_wallets ("ID", "Name", balance, total_earned)
       VALUES ($1, $2, $3, $3)
       ON CONFLICT ("ID")
@@ -205,10 +205,10 @@ async function handleClaimReferralCoins(req, res) {
         total_earned = myby_trainee_wallets.total_earned + $3,
         "Name" = EXCLUDED."Name",
         updated_at = NOW()
-      RETURNING balance
     `, [profile.ID, profile.Name, coinsToClaim]);
 
-    const newBalance = walletUpdate.rows[0] ? walletUpdate.rows[0].balance : coinsToClaim;
+    const wRes = await db.query('SELECT balance FROM myby_trainee_wallets WHERE "ID" = $1 LIMIT 1', [profile.ID]);
+    const newBalance = wRes.rows[0] ? Number(wRes.rows[0].balance) : coinsToClaim;
 
     // Catat Riwayat Transaksi Resmi
     const txId = `tx-refevent-${Date.now()}`;
