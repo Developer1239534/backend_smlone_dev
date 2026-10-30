@@ -109,11 +109,23 @@ function formatProfileRow(row) {
     "Gold Point per Term": row["Gold Point per Term"] ?? row["gold_point_term"] ?? '0',
     "Gold Term Q2": row["Gold Term Q2"] ?? row["gold_term_q2"] ?? '0',
     "Gold Term Q3": row["Gold Term Q3"] ?? row["gold_term_q3"] ?? '0',
+    "Speaking Project": row["Speaking Project"] ?? row["speaking_project"] ?? '',
+    "Life Project": row["Life Project"] ?? row["life_project"] ?? '',
+    "Last Time Speaking Date": row["Last Time Speaking Date"] ?? row["last_time_speaking_date"] ?? '',
+    "Role 2": row["Role 2"] ?? row["role_2"] ?? '',
+    "Role 3": row["Role 3"] ?? row["role_3"] ?? '',
+    "Role 4": row["Role 4"] ?? row["role_4"] ?? '',
     "avatar_url": row["avatar_url"] ?? row["avatar_URL"] ?? '',
     // Alias kompatibilitas frontend
     gold_point_term: row["Gold Point per Term"] ?? row["gold_point_term"] ?? '0',
     gold_term_q2: row["Gold Term Q2"] ?? row["gold_term_q2"] ?? '0',
     gold_term_q3: row["Gold Term Q3"] ?? row["gold_term_q3"] ?? '0',
+    speaking_project: row["Speaking Project"] ?? row["speaking_project"] ?? '',
+    life_project: row["Life Project"] ?? row["life_project"] ?? '',
+    last_time_speaking_date: row["Last Time Speaking Date"] ?? row["last_time_speaking_date"] ?? '',
+    role_2: row["Role 2"] ?? row["role_2"] ?? '',
+    role_3: row["Role 3"] ?? row["role_3"] ?? '',
+    role_4: row["Role 4"] ?? row["role_4"] ?? '',
     id: row["ID"] ?? '',
     name: row["Name"] ?? '',
     class: row["Class"] ?? '',
@@ -152,7 +164,8 @@ router.get('/', async (req, res) => {
         "Class", "Program", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
         "Date of Birth", "Class in School", "Parents Email Account", "Trainee Email Account", "Parent WhatsApp Number",
-        "Trainee WhatsApp Number", "School Name", "avatar_url", "Gold Point per Term", "Gold Term Q2", "Gold Term Q3"
+        "Trainee WhatsApp Number", "School Name", "avatar_url", "Gold Point per Term", "Gold Term Q2", "Gold Term Q3",
+        "Speaking Project", "Life Project", "Last Time Speaking Date", "Role 2", "Role 3", "Role 4"
       FROM profile_trainee
     `;
     const conditions = [];
@@ -265,7 +278,8 @@ router.get('/:id', async (req, res) => {
         "Class", "Program", "Day", "Time", "Room", "Branch", "ID", "Name", "Level", "HOUSE", "House Role",
         "Trainee Homeroom", "Homeroom kelas", "Trainer", "MEMBERSHIP", "EXPIRY DATE", "FIRST ENROLL",
         "Date of Birth", "Class in School", "Parents Email Account", "Trainee Email Account", "Parent WhatsApp Number",
-        "Trainee WhatsApp Number", "School Name", "avatar_url", "Gold Point per Term", "Gold Term Q2", "Gold Term Q3"
+        "Trainee WhatsApp Number", "School Name", "avatar_url", "Gold Point per Term", "Gold Term Q2", "Gold Term Q3",
+        "Speaking Project", "Life Project", "Last Time Speaking Date", "Role 2", "Role 3", "Role 4"
       FROM profile_trainee 
       WHERE "ID" = $1
       LIMIT 1`,

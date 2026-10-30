@@ -80,9 +80,11 @@ function formatReportProgresRow(row) {
     "Latest Speaking Project": row["Latest Speaking Project"],
     latest_speaking_project: row["Latest Speaking Project"],
     // Last Time Speaking
-    "Last Time Speaking": row["Last Time Speaking"],
-    last_time_speaking: row["Last Time Speaking"],
-    last_speaking_time: row["Last Time Speaking"],
+    "Last Time Speaking": row["Last Time Speaking Date"] || row["Last Time Speaking"],
+    "Last Time Speaking Date": row["Last Time Speaking Date"] || row["Last Time Speaking"],
+    last_time_speaking_date: row["Last Time Speaking Date"] || row["Last Time Speaking"],
+    last_time_speaking: row["Last Time Speaking Date"] || row["Last Time Speaking"],
+    last_speaking_time: row["Last Time Speaking Date"] || row["Last Time Speaking"],
     // Class
     Class: row["Class"],
     class: row["Class"],
@@ -276,6 +278,7 @@ const REPORT_PROGRES_COLS = `
   "Level",
   "Latest Speaking Project",
   "Last Time Speaking",
+  "Last Time Speaking Date",
   "Class",
   created_at,
   updated_at
@@ -317,9 +320,10 @@ router.get('/:id', async (req, res) => {
       
       latest['Speaking Project to Next Level'] = spPct;
       latest['Life Project to Next Level'] = lpPct;
-      latest['Latest Speaking Project'] = currRow.last_speaker_date ? `L. Speaking (${currRow.last_speaker_date})` : (latest['Latest Speaking Project'] || 'Speaking Project');
-      latest['Latest Life Project'] = currRow.last_life_project || latest['Latest Life Project'] || 'Life Project';
-      latest['Last Speaker date'] = currRow.last_speaker_date || '';
+      latest['Latest Speaking Project'] = latest['Latest Speaking Project'] || (currRow.last_speaker_date ? `L. Speaking (${currRow.last_speaker_date})` : 'Speaking Project');
+      latest['Latest Life Project'] = latest['Latest Life Project'] || currRow.last_life_project || 'Life Project';
+      latest['Last Speaker date'] = latest['Last Time Speaking Date'] || latest['Last Time Speaking'] || currRow.last_speaker_date || '';
+      latest['Last Time Speaking Date'] = latest['Last Time Speaking Date'] || latest['Last Time Speaking'] || currRow.last_speaker_date || '';
       latest['Last Life Project date'] = currRow.last_life_project_date || '';
       latest['Last Attendance'] = currRow.last_attendance || '';
       latest['Level'] = currRow.level || latest['Level'] || '';
