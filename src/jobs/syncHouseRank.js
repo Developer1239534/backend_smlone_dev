@@ -55,19 +55,22 @@ async function syncHouseRank() {
       const program = cols[5];
       const rankCore = cols[6] || '';
       const rankOrator = cols[7] || '';
+      const totalMembers = parseInt(cols[14] || '0', 10);
+      const avgGold = parseFloat(cols[15] || '0');
+      const rankAvg = parseInt(cols[16] || '0', 10);
       if (house && house.startsWith('House of')) {
-        updates.push({ house, totalGold, rank, className, cabang, program, rankCore, rankOrator });
+        updates.push({ house, totalGold, rank, className, cabang, program, rankCore, rankOrator, totalMembers, avgGold, rankAvg });
       }
     }
   }
 
   console.log(`[Sync House Rank] Found ${updates.length} houses from sheet:`);
   for (const u of updates) {
-    console.log(`  - Rank ${u.rank}: ${u.house} (${u.totalGold} GP) | Class: ${u.className} | Branch: ${u.cabang}`);
+    console.log(`  - Rank ${u.rank}: ${u.house} (${u.totalGold} GP | ${u.totalMembers} Members | Avg: ${u.avgGold} GP) | Class: ${u.className}`);
     await db.query(`
       INSERT INTO house_rank (
-        \`HOUSE\`, \`TOTAL GOLD/HOUSE\`, \`RANK\`, \`CLASS\`, \`CABANG\`, \`PROGRAM\`, \`RANK/CORE\`, \`RANK/ORATOR\`
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        \`HOUSE\`, \`TOTAL GOLD/HOUSE\`, \`RANK\`, \`CLASS\`, \`CABANG\`, \`PROGRAM\`, \`RANK/CORE\`, \`RANK/ORATOR\`, \`TOTAL_MEMBERS\`, \`AVG_GOLD\`, \`RANK_AVG\`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         \`TOTAL GOLD/HOUSE\` = VALUES(\`TOTAL GOLD/HOUSE\`),
         \`RANK\` = VALUES(\`RANK\`),
@@ -75,8 +78,11 @@ async function syncHouseRank() {
         \`CABANG\` = VALUES(\`CABANG\`),
         \`PROGRAM\` = VALUES(\`PROGRAM\`),
         \`RANK/CORE\` = VALUES(\`RANK/CORE\`),
-        \`RANK/ORATOR\` = VALUES(\`RANK/ORATOR\`)
-    `, [u.house, u.totalGold, u.rank, u.className, u.cabang, u.program, u.rankCore, u.rankOrator]);
+        \`RANK/ORATOR\` = VALUES(\`RANK/ORATOR\`),
+        \`TOTAL_MEMBERS\` = VALUES(\`TOTAL_MEMBERS\`),
+        \`AVG_GOLD\` = VALUES(\`AVG_GOLD\`),
+        \`RANK_AVG\` = VALUES(\`RANK_AVG\`)
+    `, [u.house, u.totalGold, u.rank, u.className, u.cabang, u.program, u.rankCore, u.rankOrator, u.totalMembers, u.avgGold, u.rankAvg]);
   }
 
   console.log('[Sync House Rank] Sync successfully written to MySQL database!');

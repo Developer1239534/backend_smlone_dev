@@ -47,6 +47,9 @@ function formatHouseRankRow(row) {
   const program = row["PROGRAM"] ?? '';
   const rankCore = row["RANK/CORE"] ?? '';
   const rankOrator = row["RANK/ORATOR"] ?? '';
+  const totalMembers = parseInt(row["TOTAL_MEMBERS"] ?? row.total_members ?? 0, 10);
+  const avgGold = parseFloat(row["AVG_GOLD"] ?? row.avg_gold ?? 0) || (totalMembers > 0 ? parseFloat((parseInt(totalGold, 10) / totalMembers).toFixed(2)) : 0);
+  const rankAvg = parseInt(row["RANK_AVG"] ?? row.rank_avg ?? 0, 10);
 
   return {
     "HOUSE": house,
@@ -57,11 +60,19 @@ function formatHouseRankRow(row) {
     "PROGRAM": program,
     "RANK/CORE": rankCore,
     "RANK/ORATOR": rankOrator,
+    "TOTAL_MEMBERS": totalMembers,
+    "AVG_GOLD": avgGold,
+    "RANK_AVG": rankAvg,
     // Alias kompatibilitas frontend
     house: house,
     house_name: house,
     total_gold: parseInt(totalGold, 10) || 0,
     total_gold_house: parseInt(totalGold, 10) || 0,
+    total_members: totalMembers,
+    member_count: totalMembers,
+    avg_gold: avgGold,
+    average_gold: avgGold,
+    rank_avg: rankAvg,
     rank: parseInt(rank, 10) || 1,
     class: className,
     class_name: className,
@@ -88,7 +99,10 @@ router.get('/', async (req, res) => {
         "CABANG", 
         "PROGRAM", 
         "RANK/CORE", 
-        "RANK/ORATOR"
+        "RANK/ORATOR",
+        "TOTAL_MEMBERS",
+        "AVG_GOLD",
+        "RANK_AVG"
       FROM house_rank
     `;
     const conditions = [];
