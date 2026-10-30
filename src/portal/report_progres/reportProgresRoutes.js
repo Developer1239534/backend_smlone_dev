@@ -25,6 +25,38 @@ const db = require('../../db/neonClient');
  * ============================================================
  */
 
+function parseSessionsFromRow(row) {
+  if (Array.isArray(row.sessions) && row.sessions.length > 0) return row.sessions;
+  if (typeof row.sessions === 'string' && row.sessions.trim() && row.sessions !== '[]') {
+    try {
+      const parsed = JSON.parse(row.sessions);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {}
+  }
+  const rawDates = (row["Date"] || row["date"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
+  const rawSpeakings = (row["Speaking Project"] || row["speaking_project"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
+  const rawR2 = (row["Role 2"] || row["role_2"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
+  const rawR3 = (row["Role 3"] || row["role_3"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
+  const rawR4 = (row["Role 4"] || row["role_4"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
+  const rawLifes = (row["Life Project"] || row["life_project"] || "").split(" | ").map(s => s.trim()).filter(Boolean);
+  const lsp = row["Latest Speaking Project"] || row["latest_speaking_project"] || (rawSpeakings.length > 0 ? rawSpeakings[rawSpeakings.length - 1] : "-");
+  const lts = row["Last Time Speaking Date"] || row["Last Time Speaking"] || (rawDates.length > 0 ? rawDates[rawDates.length - 1] : "-");
+
+  if (rawDates.length > 0) {
+    return rawDates.map((d, i) => ({
+      date: d,
+      speaking_project: rawSpeakings[i] || (i === rawDates.length - 1 && lsp !== '-' ? lsp : '-'),
+      role_2: rawR2[i] || (i === rawDates.length - 1 && rawR2.length > 0 ? rawR2[0] : '-'),
+      role_3: rawR3[i] || (i === rawDates.length - 1 && rawR3.length > 0 ? rawR3[0] : '-'),
+      role_4: rawR4[i] || (i === rawDates.length - 1 && rawR4.length > 0 ? rawR4[0] : '-'),
+      life_project: rawLifes[i] || (i === rawDates.length - 1 && rawLifes.length > 0 ? rawLifes[0] : '-'),
+      latest_speaking_project: lsp,
+      last_time_speaking: lts
+    }));
+  }
+  return [];
+}
+
 // Helper to format output with fallback keys for frontend & external system compatibility
 function formatReportProgresRow(row) {
   if (!row) return null;
@@ -89,7 +121,9 @@ function formatReportProgresRow(row) {
     Class: row["Class"],
     class: row["Class"],
     "Class Name": row["Class"],
-    class_name: row["Class"]
+    class_name: row["Class"],
+    // Detailed session list strictly parsed from real data
+    sessions: parseSessionsFromRow(row)
   };
 }
 
@@ -280,6 +314,7 @@ const REPORT_PROGRES_COLS = `
   "Last Time Speaking",
   "Last Time Speaking Date",
   "Class",
+  sessions,
   created_at,
   updated_at
 `;
