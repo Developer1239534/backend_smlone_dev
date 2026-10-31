@@ -54,6 +54,12 @@ function parseDateToTimestamp(dStr) {
   return isNaN(parsed) ? 0 : parsed;
 }
 
+function cleanSingleItem(val) {
+  if (!val || typeof val !== 'string' || val === '-') return val;
+  const parts = val.split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
+  return parts.length > 0 ? parts[parts.length - 1] : val;
+}
+
 function normalizeAndSortSessions(rawList) {
   if (!Array.isArray(rawList)) return [];
   const normalized = rawList.map((s, idx) => ({
@@ -61,9 +67,9 @@ function normalizeAndSortSessions(rawList) {
     trainer: s.trainer || s.Trainer || s.class_trainers || s['Class Trainers'] || '',
     feedback: s.feedback || s.Feedback || s.coach_feedback || s['Coach Feedback'] || '',
     challenge: s.challenge || s.Challenge || '',
-    speaking_project: s.speaking_project || s.speakingProject || s['Speaking Project'] || '-',
-    life_project: s.life_project || s.lifeProject || s['Life Project'] || '-',
-    latest_speaking_project: s.latest_speaking_project || s.latestSpeakingProject || s['Latest Speaking Project'] || '-',
+    speaking_project: cleanSingleItem(s.speaking_project || s.speakingProject || s['Speaking Project'] || '-'),
+    life_project: cleanSingleItem(s.life_project || s.lifeProject || s['Life Project'] || '-'),
+    latest_speaking_project: cleanSingleItem(s.latest_speaking_project || s.latestSpeakingProject || s['Latest Speaking Project'] || '-'),
     last_time_speaking: s.last_time_speaking || s.lastTimeSpeaking || s['Last Time Speaking'] || '-',
     role_2: s.role_2 || s.role2 || s['Role 2'] || '-',
     role_3: s.role_3 || s.role3 || s['Role 3'] || '-',
@@ -177,9 +183,12 @@ function formatReportProgresRow(row) {
     // Level
     Level: row["Level"],
     level: row["Level"],
-    // Latest Speaking Project
-    "Latest Speaking Project": row["Latest Speaking Project"],
-    latest_speaking_project: row["Latest Speaking Project"],
+    // Latest Speaking Project (Hanya satu nilai terakhir, tanpa pipe |)
+    "Latest Speaking Project": cleanSingleItem(row["Latest Speaking Project"]),
+    latest_speaking_project: cleanSingleItem(row["Latest Speaking Project"]),
+    // Latest Life Project (Hanya satu nilai terakhir, tanpa pipe |)
+    "Latest Life Project": cleanSingleItem(row["Latest Life Project"] || row["Life Project"]),
+    latest_life_project: cleanSingleItem(row["Latest Life Project"] || row["Life Project"]),
     // Last Time Speaking
     "Last Time Speaking": row["Last Time Speaking Date"] || row["Last Time Speaking"],
     "Last Time Speaking Date": row["Last Time Speaking Date"] || row["Last Time Speaking"],

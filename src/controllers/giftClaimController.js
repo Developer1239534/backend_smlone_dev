@@ -257,9 +257,9 @@ async function handleGiftClaim(req, res) {
         branchName = bRes.rows[0]?.Branch;
       } catch (_) {}
       if (!branchName) {
-        if (String(profile.ID).startsWith('901')) branchName = 'Cemara Asri';
-        else if (String(profile.ID).startsWith('701')) branchName = 'Tritura';
-        else branchName = 'Timor';
+        if (String(profile.ID).startsWith('901')) branchName = 'SMLONE Cemara Asri';
+        else if (String(profile.ID).startsWith('701')) branchName = 'SMLONE Tritura';
+        else branchName = 'SMLONE Timor';
       }
 
       await db.query(

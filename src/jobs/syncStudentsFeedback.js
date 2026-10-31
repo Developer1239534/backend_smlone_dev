@@ -205,7 +205,12 @@ async function runSync() {
     const role2Str = cleanSessions.map(s => s.role_2).join(' | ');
     const role3Str = cleanSessions.map(s => s.role_3).join(' | ');
     const role4Str = cleanSessions.map(s => s.role_4).join(' | ');
-    const latestSpeakingStr = rec.latestSpeaking || (cleanSessions.find(s => s.speaking_project && s.speaking_project !== '-') || {}).speaking_project || '';
+    const extractSingle = (val) => {
+      if (!val || typeof val !== 'string') return '';
+      const parts = val.split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
+      return parts.length > 0 ? parts[parts.length - 1] : '';
+    };
+    const latestSpeakingStr = extractSingle(rec.latestSpeaking) || extractSingle((cleanSessions.find(s => s.speaking_project && s.speaking_project !== '-') || {}).speaking_project) || '';
     const lastTimeSpeakingStr = rec.lastTimeSpeaking || (cleanSessions.find(s => s.last_time_speaking && s.last_time_speaking !== '-') || {}).last_time_speaking || '';
 
     return {

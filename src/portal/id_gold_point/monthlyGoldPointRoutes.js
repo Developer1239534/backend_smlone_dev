@@ -200,6 +200,64 @@ router.get('/stream', (req, res) => {
   req.on('close', () => clearInterval(interval));
 });
 
+// GET /summary/:id - Rekap gold point pertahun, perbulan, perterm spesifik trainee
+router.get('/summary/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const mysql = require('../../db/mysqlClient');
+    const result = await mysql.query('SELECT * FROM trainee_gold_summary WHERE id = ? LIMIT 1', [id]);
+    if (result.rows.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          id,
+          name: '',
+          membership: 'Active',
+          total_gold_pertahun: 0,
+          total_gold_perbulan: 0,
+          total_gold_perterm: 0
+        }
+      });
+    }
+    const r = result.rows[0];
+    res.json({
+      success: true,
+      data: {
+        id: r.id,
+        name: r.name,
+        membership: r.membership,
+        total_gold_pertahun: Number(r.total_gold_pertahun) || 0,
+        total_gold_perbulan: Number(r.total_gold_perbulan) || 0,
+        total_gold_perterm: Number(r.total_gold_perterm) || 0
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /summary - Rekap gold point seluruh trainee
+router.get('/summary', async (req, res) => {
+  try {
+    const mysql = require('../../db/mysqlClient');
+    const result = await mysql.query('SELECT * FROM trainee_gold_summary');
+    res.json({
+      success: true,
+      count: result.rows.length,
+      data: result.rows.map(r => ({
+        id: r.id,
+        name: r.name,
+        membership: r.membership,
+        total_gold_pertahun: Number(r.total_gold_pertahun) || 0,
+        total_gold_perbulan: Number(r.total_gold_perbulan) || 0,
+        total_gold_perterm: Number(r.total_gold_perterm) || 0
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // 2. GET /:id - Ambil detail trainee berdasarkan ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;

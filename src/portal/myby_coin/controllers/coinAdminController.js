@@ -464,10 +464,10 @@ async function handleAdminListRedeems(req, res) {
                NULLIF(TRIM(r.Branch), ''),
                NULLIF(TRIM(p.Branch), ''),
                CASE 
-                 WHEN r.trainee_id LIKE '901%' THEN 'Cemara Asri'
-                 WHEN r.trainee_id LIKE '701%' THEN 'Tritura'
-                 WHEN LENGTH(r.trainee_id) <= 4 THEN 'Timor'
-                 ELSE 'Timor'
+                 WHEN r.trainee_id LIKE '901%' THEN 'SMLONE Cemara Asri'
+                 WHEN r.trainee_id LIKE '701%' THEN 'SMLONE Tritura'
+                 WHEN LENGTH(r.trainee_id) <= 4 THEN 'SMLONE Timor'
+                 ELSE 'SMLONE Timor'
                END
              ) AS "Branch",
              COALESCE(NULLIF(TRIM(p.Class), ''), '-') AS "Class"
@@ -491,10 +491,10 @@ async function handleAdminGetRedeem(req, res) {
                NULLIF(TRIM(r.Branch), ''),
                NULLIF(TRIM(p.Branch), ''),
                CASE 
-                 WHEN r.trainee_id LIKE '901%' THEN 'Cemara Asri'
-                 WHEN r.trainee_id LIKE '701%' THEN 'Tritura'
-                 WHEN LENGTH(r.trainee_id) <= 4 THEN 'Timor'
-                 ELSE 'Timor'
+                 WHEN r.trainee_id LIKE '901%' THEN 'SMLONE Cemara Asri'
+                 WHEN r.trainee_id LIKE '701%' THEN 'SMLONE Tritura'
+                 WHEN LENGTH(r.trainee_id) <= 4 THEN 'SMLONE Timor'
+                 ELSE 'SMLONE Timor'
                END
              ) AS "Branch",
              COALESCE(NULLIF(TRIM(p.Class), ''), '-') AS "Class"

@@ -150,9 +150,9 @@ async function handleRedeemReward(req, res) {
     const claimCode = genClaimCode();
     let branchName = profile.Branch || profile.branch || null;
     if (!branchName) {
-      if (String(profile.ID).startsWith('901')) branchName = 'Cemara Asri';
-      else if (String(profile.ID).startsWith('701')) branchName = 'Tritura';
-      else branchName = 'Timor';
+      if (String(profile.ID).startsWith('901')) branchName = 'SMLONE Cemara Asri';
+      else if (String(profile.ID).startsWith('701')) branchName = 'SMLONE Tritura';
+      else branchName = 'SMLONE Timor';
     }
     await db.query(`
       INSERT INTO myby_redeem_requests (id, trainee_id, "Name", Branch, reward_id, reward_title, coins_spent, notes, claim_code, status)
