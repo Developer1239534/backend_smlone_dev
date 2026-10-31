@@ -34,7 +34,8 @@ function convertPgToMysql(sql, params = []) {
   convertedSql = convertedSql.replace(/\bJSONB\b/gi, 'JSON');
   convertedSql = convertedSql.replace(/CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS[\s\S]+?;/gi, '');
 
-  // 0b. Remove PostgreSQL typecasts (e.g. ::int, ::TEXT, ::DATE, ::jsonb) & NULLS LAST/FIRST
+  // 0b. Convert numeric PostgreSQL typecasts (e.g. "col"::int -> CAST(`col` AS SIGNED)) & remove other casts
+  convertedSql = convertedSql.replace(/["`]([^"`]+)["`]::(?:int|integer|bigint)\b/gi, 'CAST(`$1` AS SIGNED)');
   convertedSql = convertedSql.replace(/::[a-zA-Z0-9_]+/g, '');
   convertedSql = convertedSql.replace(/\bNULLS\s+(LAST|FIRST)\b/gi, '');
 
