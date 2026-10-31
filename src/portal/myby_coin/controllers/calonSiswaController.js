@@ -22,14 +22,14 @@ async function handleRegisterCalonSiswa(req, res) {
     let inviterName = null;
 
     const now = new Date();
-    const eventEnd = new Date('2026-10-31T23:59:59+07:00');
+    const eventEnd = new Date('2026-11-14T23:59:59+07:00');
     const isEventClosed = now.getTime() > eventEnd.getTime();
 
     if (referral_code && typeof referral_code === 'string') {
       if (isEventClosed) {
         return res.status(400).json({
           success: false,
-          error: 'Event referral SMLONE telah berakhir pada 31 Oktober 2026. Pendaftaran dengan kode referral tidak lagi dapat diterima.'
+          error: 'Event referral SMLONE telah berakhir pada 14 November 2026. Pendaftaran dengan kode referral tidak lagi dapat diterima.'
         });
       }
       const trimmedCode = referral_code.trim();

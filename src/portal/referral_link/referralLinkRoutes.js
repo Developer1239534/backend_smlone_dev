@@ -305,12 +305,12 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Validasi Batas Waktu: Ditutup sampai 31 Oktober 2026 pukul 23:59:59 WIB
-    const DEADLINE_EPOCH = new Date('2026-10-31T23:59:59+07:00').getTime();
+    // Validasi Batas Waktu: Ditutup sampai 14 November 2026 pukul 23:59:59 WIB
+    const DEADLINE_EPOCH = new Date('2026-11-14T23:59:59+07:00').getTime();
     if (Date.now() > DEADLINE_EPOCH) {
       return res.status(400).json({
         success: false,
-        message: 'Periode pendaftaran dan klaim ID referral telah ditutup pada 31 Oktober 2026.'
+        message: 'Periode pendaftaran dan klaim ID referral telah ditutup pada 14 November 2026.'
       });
     }
 

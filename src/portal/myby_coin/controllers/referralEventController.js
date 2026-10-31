@@ -3,13 +3,13 @@ const { ensureMyByCoinTables, getTraineeProfile } = require('../mybyCoinDatabase
 
 /**
  * Konfigurasi Resmi Event Referral SMLONE
- * - Berakhir: 31 Oktober 2026, 23:59:59 WIB (Asia/Jakarta / UTC+7)
- * - Klaim Koin Dimulai: 1 November 2026, 00:00:00 WIB
+ * - Berakhir: 14 November 2026, 23:59:59 WIB (Asia/Jakarta / UTC+7)
+ * - Klaim Koin Dimulai: 15 November 2026, 00:00:00 WIB
  * - Nilai Koin: 2 Koin per teman pendaftar
  */
 const REFERRAL_CONFIG = {
-  EVENT_END_ISO: '2026-10-31T23:59:59+07:00',
-  CLAIM_START_ISO: '2026-11-01T00:00:00+07:00',
+  EVENT_END_ISO: '2026-11-14T23:59:59+07:00',
+  CLAIM_START_ISO: '2026-11-15T00:00:00+07:00',
   COIN_PER_REFERRAL: 2,
 };
 
@@ -128,7 +128,7 @@ async function handleGetReferralEventStatus(req, res) {
         isClosed,
         canClaim,
         serverTime: now.toISOString(),
-        description: 'Event referral ditutup 31 Oktober 2026 pukul 23:59 WIB. Klaim koin dapat dilakukan mulai 1 November 2026.'
+        description: 'Event referral ditutup 14 November 2026 pukul 23:59 WIB. Klaim koin dapat dilakukan mulai 15 November 2026.'
       },
       data: userStats
     });
@@ -140,7 +140,7 @@ async function handleGetReferralEventStatus(req, res) {
 
 /**
  * POST /api/portal/myby-coin/referral-event/claim
- * Memproses klaim koin referral setelah event 31 Oktober 2026 selesai (Atomic Transaction)
+ * Memproses klaim koin referral setelah event 14 November 2026 selesai (Atomic Transaction)
  */
 async function handleClaimReferralCoins(req, res) {
   const { traineeId } = req.body || {};
@@ -153,11 +153,11 @@ async function handleClaimReferralCoins(req, res) {
     await ensureMyByCoinTables();
     const { canClaim } = getEventDates();
 
-    // 1. Cek apakah periode event sudah selesai (mulai 1 November 2026)
+    // 1. Cek apakah periode event sudah selesai (mulai 15 November 2026)
     if (!canClaim) {
       return res.status(400).json({
         success: false,
-        message: 'Periode klaim koin referral baru dibuka pada 1 November 2026 setelah event selesai (31 Oktober 2026 23:59 WIB).'
+        message: 'Periode klaim koin referral baru dibuka pada 15 November 2026 setelah event selesai (14 November 2026 23:59 WIB).'
       });
     }
 
