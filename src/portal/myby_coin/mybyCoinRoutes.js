@@ -81,7 +81,7 @@ router.get('/streak/calendar', handleGetStreakCalendar);
 router.get('/leaderboard', handleGetLeaderboard);
 router.get('/leaderboard-referral', handleGetLeaderboardReferral);
 
-// 3.0 Event Referral (Batas 31 Okt 2026 & Klaim Reward)
+// 3.0 Event Referral (Batas 14 Nov 2026 & Klaim Reward)
 router.get('/referral-event/status', handleGetReferralEventStatus);
 router.post('/referral-event/claim', handleClaimReferralCoins);
 

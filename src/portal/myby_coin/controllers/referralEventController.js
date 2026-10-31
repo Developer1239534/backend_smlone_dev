@@ -71,7 +71,7 @@ async function calculateTraineeReferrals(traineeId) {
 
 /**
  * GET /api/portal/myby-coin/referral-event/status
- * Cek status event referral, batas waktu 31 Oktober 2026, dan hak klaim koin trainee
+ * Cek status event referral, batas waktu 14 November 2026, dan hak klaim koin trainee
  */
 async function handleGetReferralEventStatus(req, res) {
   const traineeId = req.query.traineeId || req.query.id;
