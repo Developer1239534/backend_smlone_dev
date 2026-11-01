@@ -9,7 +9,8 @@ const activeThreads = new Map();
 // Antrean asynchronous throttled agar aman dari rate-limit Discord saat lonjakan 400 user
 const logQueue = [];
 let isProcessingQueue = false;
-const DISCORD_DELAY_MS = 1200; // Jeda aman ~50 pesan per menit
+const DISCORD_DELAY_MS = 1500; // Jeda aman ~40 pesan per menit
+let nextDelayMs = DISCORD_DELAY_MS;
 
 function enqueueLog(taskFn) {
   logQueue.push(taskFn);
@@ -28,9 +29,11 @@ async function processLogQueue() {
   try {
     await nextTask();
   } catch (err) {
-    console.error('[DiscordPortalLogger] Queue item error:', err.message);
+    console.warn('[DiscordPortalLogger] Queue item warning:', err.message);
   }
-  setTimeout(processLogQueue, DISCORD_DELAY_MS);
+  const delay = nextDelayMs;
+  nextDelayMs = DISCORD_DELAY_MS;
+  setTimeout(processLogQueue, delay);
 }
 
 function getDiscordToken() {
@@ -120,17 +123,27 @@ async function logPortalLogin({ traineeId, traineeName, success, statusText, ip,
                 nowWIB
               });
             } catch (err) {
-              console.error('[DiscordPortalLogger] Failed to parse thread response:', err.message);
+              console.warn('[DiscordPortalLogger] Failed to parse thread response:', err.message);
+            }
+          } else if (res.statusCode === 429) {
+            try {
+              const parsed = JSON.parse(responseBody);
+              const retryAfter = Number(parsed.retry_after) || 5;
+              nextDelayMs = Math.ceil(retryAfter * 1000) + 1000;
+              console.warn(`[DiscordPortalLogger] Thread rate limited (429), pausing queue for ${nextDelayMs}ms`);
+            } catch {
+              nextDelayMs = 10000;
+              console.warn('[DiscordPortalLogger] Thread rate limited (429), pausing queue for 10s');
             }
           } else {
-            console.error(`[DiscordPortalLogger] Thread HTTP ${res.statusCode}:`, responseBody);
+            console.warn(`[DiscordPortalLogger] Thread HTTP ${res.statusCode}:`, responseBody);
           }
           resolve();
         });
       });
 
       req.on('error', (e) => {
-        console.error('[DiscordPortalLogger] Request error:', e.message);
+        console.warn('[DiscordPortalLogger] Request warning:', e.message);
         resolve();
       });
 
@@ -226,16 +239,30 @@ function postRawToThread(token, threadId, contentText) {
   enqueueLog(() => {
     return new Promise((resolve) => {
       const req = https.request(options, (res) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          console.log(`[DiscordPortalLogger] Activity posted to thread ${threadId}`);
-        } else {
-          console.error(`[DiscordPortalLogger] HTTP ${res.statusCode} posting to thread ${threadId}`);
-        }
-        resolve();
+        let resBody = '';
+        res.on('data', (c) => { resBody += c; });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log(`[DiscordPortalLogger] Activity posted to thread ${threadId}`);
+          } else if (res.statusCode === 429) {
+            try {
+              const parsed = JSON.parse(resBody);
+              const retryAfter = Number(parsed.retry_after) || 5;
+              nextDelayMs = Math.ceil(retryAfter * 1000) + 1000;
+              console.warn(`[DiscordPortalLogger] Message rate limited (429), pausing queue for ${nextDelayMs}ms`);
+            } catch {
+              nextDelayMs = 5000;
+              console.warn('[DiscordPortalLogger] Message rate limited (429), pausing queue for 5s');
+            }
+          } else {
+            console.warn(`[DiscordPortalLogger] HTTP ${res.statusCode} posting to thread ${threadId}`);
+          }
+          resolve();
+        });
       });
 
       req.on('error', (e) => {
-        console.error('[DiscordPortalLogger] Post error:', e.message);
+        console.warn('[DiscordPortalLogger] Post warning:', e.message);
         resolve();
       });
 
