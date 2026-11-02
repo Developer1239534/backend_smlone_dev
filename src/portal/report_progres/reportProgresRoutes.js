@@ -56,8 +56,9 @@ function parseDateToTimestamp(dStr) {
 
 function cleanSingleItem(val) {
   if (!val || typeof val !== 'string' || val === '-') return val;
-  const parts = val.split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-  return parts.length > 0 ? parts[parts.length - 1] : val;
+  const parts = val.split(/\s*\|\s*/).map(s => s.trim()).filter(s => s && s !== '-' && s.toLowerCase() !== 'null');
+  // Sesuai urutan data SMLONE: indeks 0 adalah data sesi dengan tanggal TERBARU!
+  return parts.length > 0 ? parts[0] : val;
 }
 
 function normalizeAndSortSessions(rawList) {
