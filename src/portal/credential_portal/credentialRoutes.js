@@ -72,7 +72,12 @@ router.get('/audit/password-changes', async (req, res) => {
       FROM credential_portal c
       LEFT JOIN profile_trainee p ON c.ID = p.ID
       ${whereClause}
-      ORDER BY c.updated_at DESC
+      ORDER BY 
+        CASE 
+          WHEN p.avatar_url IS NOT NULL AND p.avatar_url != '' THEN 1 
+          ELSE 0 
+        END DESC, 
+        c.updated_at DESC
       ${limitClause};
     `;
     const result = await db.query(query, params);
