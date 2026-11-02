@@ -89,27 +89,28 @@ function parseSessionsFromRow(row) {
   if (Array.isArray(row.sessions) && row.sessions.length > 0) {
     return normalizeAndSortSessions(row.sessions);
   }
-  if (typeof row.sessions === 'string' && row.sessions.trim() && row.sessions !== '[]') {
+  const rawSessionsJson = row.sessions_json || row.sessions;
+  if (typeof rawSessionsJson === 'string' && rawSessionsJson.trim() && rawSessionsJson !== '[]') {
     try {
-      const parsed = JSON.parse(row.sessions);
+      const parsed = JSON.parse(rawSessionsJson);
       if (Array.isArray(parsed) && parsed.length > 0) {
         return normalizeAndSortSessions(parsed);
       }
     } catch {}
   }
   const rawDates = (row["Date"] || row["date"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-  const rawTrainers = (row["Class Trainers"] || row["class_trainers"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-  const rawFeedbacks = (row["Coach Feedback"] || row["coach_feedback"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-  const rawChallenges = (row["Challenge"] || row["challenge"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-  const rawSpeakings = (row["Speaking Project"] || row["speaking_project"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-  const rawR2 = (row["Role 2"] || row["role_2"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-  const rawR3 = (row["Role 3"] || row["role_3"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-  const rawR4 = (row["Role 4"] || row["role_4"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-  const rawLifes = (row["Life Project"] || row["life_project"] || "").split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-  const lsp = row["Latest Speaking Project"] || row["latest_speaking_project"] || (rawSpeakings.length > 0 ? rawSpeakings[rawSpeakings.length - 1] : "-");
-  const lts = row["Last Time Speaking Date"] || row["Last Time Speaking"] || (rawDates.length > 0 ? rawDates[rawDates.length - 1] : "-");
+  const rawTrainers = (row["Class Trainers"] || row["class_trainers"] || "").split(/\s*\|\s*/).map(s => s.trim());
+  const rawFeedbacks = (row["Coach Feedback"] || row["coach_feedback"] || "").split(/\s*\|\s*/).map(s => s.trim());
+  const rawChallenges = (row["Challenge"] || row["challenge"] || "").split(/\s*\|\s*/).map(s => s.trim());
+  const rawSpeakings = (row["Speaking Project"] || row["speaking_project"] || "").split(/\s*\|\s*/).map(s => s.trim());
+  const rawR2 = (row["Role 2"] || row["role_2"] || "").split(/\s*\|\s*/).map(s => s.trim());
+  const rawR3 = (row["Role 3"] || row["role_3"] || "").split(/\s*\|\s*/).map(s => s.trim());
+  const rawR4 = (row["Role 4"] || row["role_4"] || "").split(/\s*\|\s*/).map(s => s.trim());
+  const rawLifes = (row["Life Project"] || row["life_project"] || "").split(/\s*\|\s*/).map(s => s.trim());
+  const lsp = row["Latest Speaking Project"] || row["latest_speaking_project"] || "-";
+  const lts = row["Last Time Speaking Date"] || row["Last Time Speaking"] || "-";
 
-  const total = Math.max(rawDates.length, rawFeedbacks.length, rawChallenges.length, 0);
+  const total = rawDates.length;
   if (total > 0) {
     const list = [];
     for (let i = 0; i < total; i++) {
@@ -118,11 +119,11 @@ function parseSessionsFromRow(row) {
         trainer: rawTrainers[i] || (rawTrainers.length > 0 ? rawTrainers[0] : ''),
         feedback: rawFeedbacks[i] || '',
         challenge: rawChallenges[i] || '',
-        speaking_project: rawSpeakings[i] || '-',
-        role_2: rawR2[i] || '-',
-        role_3: rawR3[i] || '-',
-        role_4: rawR4[i] || '-',
-        life_project: rawLifes[i] || '-',
+        speaking_project: rawSpeakings[i] && rawSpeakings[i] !== '' ? rawSpeakings[i] : '-',
+        role_2: rawR2[i] && rawR2[i] !== '' ? rawR2[i] : '-',
+        role_3: rawR3[i] && rawR3[i] !== '' ? rawR3[i] : '-',
+        role_4: rawR4[i] && rawR4[i] !== '' ? rawR4[i] : '-',
+        life_project: rawLifes[i] && rawLifes[i] !== '' ? rawLifes[i] : '-',
         latest_speaking_project: lsp,
         last_time_speaking: lts
       });
