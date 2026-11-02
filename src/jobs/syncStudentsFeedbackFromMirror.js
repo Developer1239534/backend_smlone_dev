@@ -96,6 +96,31 @@ async function run() {
   const lines = csvRaw.split(/\r?\n/);
   console.log(`[Sheet] Loaded ${lines.length} lines.`);
 
+  console.log('[2.5/4] Downloading Report Link Master CSV (for authoritative Latest Speaking Project)...');
+  const REPORT_LINK_URL = 'https://docs.google.com/spreadsheets/d/1Ed60KEQ5gWeKMZcUSs2sPlW7Ua4qruwhjyKf_cclooI/export?format=csv&gid=264691834';
+  const reportLinkLspMap = new Map();
+  const reportLinkLtsMap = new Map();
+  try {
+    const rlRaw = await fetchUrl(REPORT_LINK_URL);
+    const rlLines = rlRaw.split(/\r?\n/);
+    for (let i = 2; i < rlLines.length; i++) {
+      const r = parseCSVLine(rlLines[i]);
+      if (r.length < 2) continue;
+      const rlId = String(r[0] || '').trim();
+      const rlLsp = String(r[71] || '').trim();
+      const rlLts = String(r[69] || r[119] || '').trim();
+      if (rlId && rlLsp) {
+        reportLinkLspMap.set(rlId, rlLsp);
+      }
+      if (rlId && rlLts) {
+        reportLinkLtsMap.set(rlId, rlLts);
+      }
+    }
+    console.log(`[Report Link] Loaded ${reportLinkLspMap.size} latest speaking records.`);
+  } catch (rlErr) {
+    console.warn('[Report Link] Warning failed to load Report Link CSV:', rlErr.message);
+  }
+
   const aggregatedMap = new Map();
 
   for (let i = 2; i < lines.length; i++) {
@@ -191,11 +216,18 @@ async function run() {
     const role4Str = cleanSessions.map(s => s.role_4).join(' | ');
     const extractSingle = (val) => {
       if (!val || typeof val !== 'string') return '';
-      const parts = val.split(/\s*\|\s*/).map(s => s.trim()).filter(Boolean);
-      return parts.length > 0 ? parts[parts.length - 1] : '';
+      const parts = val.split(/\s*\|\s*/).map(s => s.trim()).filter(s => s && s !== '-' && s.toLowerCase() !== 'null');
+      return parts.length > 0 ? parts[0] : '';
     };
-    const latestSpeakingStr = extractSingle(rec.latestSpeaking) || extractSingle((cleanSessions.find(s => s.speaking_project && s.speaking_project !== '-') || {}).speaking_project) || '';
-    const lastTimeSpeakingStr = rec.lastTimeSpeaking || (cleanSessions.find(s => s.last_time_speaking && s.last_time_speaking !== '-') || {}).last_time_speaking || '';
+    // Sesuai instruksi Bos Rakha: Ambil data TERBARU dari Report Link (Col 71) atau sesi tanggal terbaru
+    const newestSpeakingSession = cleanSessions.find(s => s.speaking_project && s.speaking_project !== '-' && s.speaking_project.toLowerCase() !== 'null');
+    const rlSpeaking = reportLinkLspMap.get(id);
+    const sessionSpeaking = newestSpeakingSession ? newestSpeakingSession.speaking_project : '';
+    const latestSpeakingStr = rlSpeaking || sessionSpeaking || extractSingle(rec.latestSpeaking) || '';
+
+    const rlLts = reportLinkLtsMap.get(id);
+    const newestLtsSession = cleanSessions.find(s => s.last_time_speaking && s.last_time_speaking !== '-');
+    const lastTimeSpeakingStr = rlLts || rec.lastTimeSpeaking || (newestLtsSession ? newestLtsSession.last_time_speaking : '');
 
     return {
       id,
