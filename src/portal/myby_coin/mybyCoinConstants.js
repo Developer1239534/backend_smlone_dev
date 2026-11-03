@@ -50,7 +50,7 @@ const DEFAULT_REWARDS = [
     stock: 100,
     tag: 'Favorit',
     image_url: '/asset/reward-notebook-a5.jpg?v=2',
-    description: 'Buku catatan ukuran A5 hardcover elegan untuk mencatat materi modul dan proyek coding.'
+    description: 'Buku catatan ukuran A5 hardcover elegan untuk mencatat materi modul dan speech project.'
   },
   {
     id: 'rew-4',

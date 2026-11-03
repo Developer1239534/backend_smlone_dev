@@ -54,7 +54,7 @@ const DEFAULT_REWARDS = [
     stock: 35,
     tag: 'Favorit',
     image_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
-    description: 'Buku catatan ukuran A5 hardcover elegan untuk mencatat materi modul dan proyek coding.'
+    description: 'Buku catatan ukuran A5 hardcover elegan untuk mencatat materi modul dan speech project.'
   },
   {
     id: 'rew-4',
