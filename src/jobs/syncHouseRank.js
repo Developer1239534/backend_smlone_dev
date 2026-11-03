@@ -43,21 +43,15 @@ async function syncHouseRank() {
   const csvData = await fetchCSV(sheetUrl);
   const lines = csvData.split('\n').map(l => l.trim()).filter(Boolean);
 
-  // Dynamic count of trainees who chose/are assigned to each house
-  console.log('[Sync House Rank] Querying dynamic trainee counts from database...');
-  const memberSql = `
-    SELECT house_name, COUNT(DISTINCT student_id) as count FROM (
-      SELECT \`ID\` AS student_id, \`House\` AS house_name FROM history_houses WHERE \`House\` IS NOT NULL AND \`House\` != ''
-      UNION
-      SELECT \`id\` AS student_id, \`house\` AS house_name FROM profile_trainee WHERE \`house\` IS NOT NULL AND \`house\` != ''
-    ) combined WHERE house_name LIKE 'House of%' GROUP BY house_name
-  `;
-  const { rows: memberRows } = await db.query(memberSql);
-  const memberCounts = {};
-  for (const r of memberRows) {
-    memberCounts[r.house_name] = parseInt(r.count, 10);
-  }
-  console.log('[Sync House Rank] Dynamic Trainee Member Counts per House:', memberCounts);
+  // Official Trainee Member Counts per House from HOUSE SUMMARY sheet (gid=0):
+  // https://docs.google.com/spreadsheets/d/13Z3ab2j8Dbe-ilcVo0H7iOTRVc3K2OhdfElH9KYyKeU/edit?gid=0#gid=0
+  const houseSummaryCounts = {
+    'House of Thenova': 268,
+    'House of Havaria': 159,
+    'House of Quorion': 101,
+    'House of Creanova': 53,
+    'House of Reverion': 52
+  };
 
   const updates = [];
   for (let i = 3; i <= 7; i++) {
@@ -70,7 +64,7 @@ async function syncHouseRank() {
       const program = cols[5];
       const rankCore = cols[6] || '';
       const rankOrator = cols[7] || '';
-      const totalMembers = memberCounts[house] || 1;
+      const totalMembers = houseSummaryCounts[house] || 1;
       const finalGold = Math.round(rawGold / totalMembers);
       const avgGold = parseFloat((rawGold / totalMembers).toFixed(2));
       if (house && house.startsWith('House of')) {
