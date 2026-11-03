@@ -19,7 +19,7 @@ const GIFT_MAP = {
   'rew-5': { catalogId: 'rew-5', nama: 'Agenda SMLONE / 2 Tiket Nonton', cost: 30 },
   'rew-6': { catalogId: 'rew-6', nama: 'Tumblr SMLONE', cost: 40 },
   'rew-7': { catalogId: 'rew-7', nama: 'Jaket / Tas SMLONE', cost: 50 },
-  'rew-promo-bubo': { catalogId: 'rew-promo-bubo', nama: 'Bubo Custom A5 Notebook SMLONE', cost: 5 },
+  'rew-promo-bubo': { catalogId: 'rew-promo-bubo', nama: 'SMLONE Exclusive Notebook A5', cost: 5 },
 };
 
 function genClaimCode(){
