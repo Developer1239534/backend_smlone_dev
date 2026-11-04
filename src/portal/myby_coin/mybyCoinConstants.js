@@ -14,13 +14,13 @@ const DAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 const DEFAULT_REWARDS = [
   {
     id: 'rew-promo-bubo',
-    title: 'SMLONE Exclusive Notebook A5',
+    title: 'Custom Notebook Bubbo A6',
     category: 'Promo Spesial',
     cost: 5,
     stock: 100,
     tag: 'PROMO',
     image_url: '/asset/bubo_idle.png',
-    description: 'Buku catatan eksklusif A5 edisi kustom maskot Bubo SMLONE.'
+    description: 'Buku catatan eksklusif A6 edisi kustom maskot Bubo SMLONE.'
   },
   {
     id: 'rew-1',
