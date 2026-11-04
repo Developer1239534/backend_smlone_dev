@@ -46,10 +46,10 @@ async function syncHouseRank() {
   // Official Trainee Member Counts per House from HOUSE SUMMARY sheet (gid=0):
   // https://docs.google.com/spreadsheets/d/13Z3ab2j8Dbe-ilcVo0H7iOTRVc3K2OhdfElH9KYyKeU/edit?gid=0#gid=0
   const houseSummaryCounts = {
-    'House of Thenova': 268,
-    'House of Havaria': 159,
-    'House of Quorion': 101,
-    'House of Creanova': 53,
+    'House of Thenova': 269,
+    'House of Havaria': 161,
+    'House of Quorion': 102,
+    'House of Creanova': 55,
     'House of Reverion': 52
   };
 

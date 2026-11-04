@@ -118,6 +118,11 @@ async function syncMonthlyGoldPoints() {
     if (jyRaw.toLowerCase() === 'junior' || jyRaw.toLowerCase() === 'core') coreOrator = 'Core';
     else if (jyRaw.toLowerCase() === 'youth' || jyRaw.toLowerCase() === 'orator') coreOrator = 'Orator';
 
+    // Strictly skip Apprentice from monthly gold point ranking
+    if (jyRaw.toLowerCase() === 'apprentice' || coreOrator.toLowerCase() === 'apprentice') {
+      continue;
+    }
+
     const rankCore = String(row[9] || '').trim();
     const rankOrator = String(row[10] || '').trim();
     const rankCoreCemara = String(row[15] || '').trim();

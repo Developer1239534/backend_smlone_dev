@@ -205,6 +205,23 @@ router.get('/summary/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const mysql = require('../../db/mysqlClient');
+
+    // Trainee program Apprentice tidak memiliki metrik Gold Point
+    const checkApp = await mysql.query('SELECT Program FROM profile_trainee WHERE ID = ? LIMIT 1', [id]);
+    if (checkApp.rows.length > 0 && String(checkApp.rows[0].Program).toLowerCase().trim() === 'apprentice') {
+      return res.json({
+        success: true,
+        data: {
+          id,
+          name: '',
+          membership: 'Active',
+          total_gold_pertahun: 0,
+          total_gold_perbulan: 0,
+          total_gold_perterm: 0
+        }
+      });
+    }
+
     const result = await mysql.query('SELECT * FROM trainee_gold_summary WHERE id = ? LIMIT 1', [id]);
     if (result.rows.length === 0) {
       return res.json({

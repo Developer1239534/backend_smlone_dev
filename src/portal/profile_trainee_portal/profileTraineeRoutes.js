@@ -81,6 +81,11 @@ ensureProfileOnce(); // prewarm boot-only
 
 // Format row untuk menghasilkan kolom resmi dan alias kompatibilitas frontend
 function formatProfileRow(row) {
+  const isApprentice = String(row["Program"] ?? '').toLowerCase().trim() === 'apprentice';
+  const gptVal = isApprentice ? '0' : (row["Gold Point per Term"] ?? row["gold_point_term"] ?? '0');
+  const q2Val = isApprentice ? '0' : (row["Gold Term Q2"] ?? row["gold_term_q2"] ?? '0');
+  const q3Val = isApprentice ? '0' : (row["Gold Term Q3"] ?? row["gold_term_q3"] ?? '0');
+
   return {
     "Class": row["Class"] ?? '',
     "Program": row["Program"] ?? '',
@@ -106,9 +111,9 @@ function formatProfileRow(row) {
     "Parent WhatsApp Number": row["Parent WhatsApp Number"] ?? '',
     "Trainee WhatsApp Number": row["Trainee WhatsApp Number"] ?? '',
     "School Name": row["School Name"] ?? '',
-    "Gold Point per Term": row["Gold Point per Term"] ?? row["gold_point_term"] ?? '0',
-    "Gold Term Q2": row["Gold Term Q2"] ?? row["gold_term_q2"] ?? '0',
-    "Gold Term Q3": row["Gold Term Q3"] ?? row["gold_term_q3"] ?? '0',
+    "Gold Point per Term": gptVal,
+    "Gold Term Q2": q2Val,
+    "Gold Term Q3": q3Val,
     "Speaking Project": row["Speaking Project"] ?? row["speaking_project"] ?? '',
     "Life Project": row["Life Project"] ?? row["life_project"] ?? '',
     "Last Time Speaking Date": row["Last Time Speaking Date"] ?? row["last_time_speaking_date"] ?? '',
@@ -117,9 +122,9 @@ function formatProfileRow(row) {
     "Role 4": row["Role 4"] ?? row["role_4"] ?? '',
     "avatar_url": row["avatar_url"] ?? row["avatar_URL"] ?? '',
     // Alias kompatibilitas frontend
-    gold_point_term: row["Gold Point per Term"] ?? row["gold_point_term"] ?? '0',
-    gold_term_q2: row["Gold Term Q2"] ?? row["gold_term_q2"] ?? '0',
-    gold_term_q3: row["Gold Term Q3"] ?? row["gold_term_q3"] ?? '0',
+    gold_point_term: gptVal,
+    gold_term_q2: q2Val,
+    gold_term_q3: q3Val,
     speaking_project: row["Speaking Project"] ?? row["speaking_project"] ?? '',
     life_project: row["Life Project"] ?? row["life_project"] ?? '',
     last_time_speaking_date: row["Last Time Speaking Date"] ?? row["last_time_speaking_date"] ?? '',
