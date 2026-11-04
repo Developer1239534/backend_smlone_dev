@@ -2,6 +2,14 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../db/neonClient');
 
+// Anti-cache middleware agar data report & feedback selalu real-time
+router.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 /**
  * ============================================================
  * ROUTE: Report Progres / Weekly Report
