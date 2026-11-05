@@ -19,7 +19,7 @@ const DEFAULT_REWARDS = [
     cost: 5,
     stock: 100,
     tag: 'PROMO',
-    image_url: '/asset/bubo_idle.png',
+    image_url: '/asset/reward-custom-notebook-bubbo-a6.webp',
     description: 'Buku catatan eksklusif A6 edisi kustom maskot Bubo SMLONE.'
   },
   {
