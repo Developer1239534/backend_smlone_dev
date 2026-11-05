@@ -54,23 +54,33 @@ const DEFAULT_REWARDS = [
   },
   {
     id: 'rew-4',
-    title: 'Payung SMLONE / 1 Tiket Nonton',
-    category: 'Voucher & Perk',
+    title: 'Payung SMLONE',
+    category: 'Merchandise',
     cost: 20,
     stock: 100,
     tag: 'Pilihan Seru',
     image_url: '/asset/reward-payung.jpg?v=2',
-    description: 'Payung lipat eksklusif tahan cuaca atau 1 voucher tiket nonton bioskop XXI/CGV. (Note: Tiket Nonton hanya berlaku untuk trainee di program Core & Orator)'
+    description: 'Payung lipat eksklusif tahan cuaca berlogo resmi SMLONE.'
   },
   {
     id: 'rew-5',
-    title: 'Agenda SMLONE / 2 Tiket Nonton',
-    category: 'Voucher & Perk',
+    title: 'Agenda SMLONE',
+    category: 'Stationery',
     cost: 30,
     stock: 100,
     tag: 'Spesial',
     image_url: '/asset/reward-agenda.jpg?v=2',
-    description: 'Buku agenda kerja eksklusif SMLONE atau paket 2 voucher tiket nonton bioskop. (Note: Tiket Nonton hanya berlaku untuk trainee di program Core & Orator)'
+    description: 'Buku agenda kerja eksklusif SMLONE hardcover elegan untuk mencatat aktivitas dan jadwal harian.'
+  },
+  {
+    id: 'rew-tiket-nonton',
+    title: 'Tiket Nonton',
+    category: 'Voucher & Perk',
+    cost: 30,
+    stock: 100,
+    tag: 'Spesial',
+    image_url: '/asset/reward-tiket-nonton.webp',
+    description: '1 voucher tiket nonton bioskop XXI/CGV. (Note: Tiket Nonton hanya berlaku untuk trainee di program Core & Orator)'
   },
   {
     id: 'rew-6',
