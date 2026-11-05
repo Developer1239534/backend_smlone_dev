@@ -70,10 +70,16 @@ async function handleRedeemReward(req, res) {
 
     // 1. Ambil detail reward
     const rewardRes = await db.query('SELECT * FROM myby_rewards_catalog WHERE id = $1 LIMIT 1', [rewardId]);
-    if (rewardRes.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Reward tidak ditemukan.' });
+    let reward = rewardRes.rows[0];
+    if (!reward) {
+      if (rewardId === 'rew-tiket-1') {
+        reward = { id: 'rew-tiket-1', title: '1 Tiket Nonton', cost: 20, stock: 100, category: 'Voucher & Perk' };
+      } else if (rewardId === 'rew-tiket-2') {
+        reward = { id: 'rew-tiket-2', title: '2 Tiket Nonton', cost: 30, stock: 100, category: 'Voucher & Perk' };
+      } else {
+        return res.status(404).json({ success: false, message: 'Reward tidak ditemukan.' });
+      }
     }
-    const reward = rewardRes.rows[0];
 
     if (reward.stock <= 0) {
       return res.status(400).json({ success: false, message: 'Stok hadiah ini sedang habis.' });
@@ -124,18 +130,20 @@ async function handleRedeemReward(req, res) {
     }
 
     // 2. Kurangi stok dengan proteksi anti-overselling (mencegah stok minus jika diklaim bersamaan)
-    const stockUpdate = await db.query(`
-      UPDATE myby_rewards_catalog
-      SET stock = stock - 1
-      WHERE id = $1 AND stock > 0
-    `, [rewardId]);
+    if (rewardRes.rows.length > 0) {
+      const stockUpdate = await db.query(`
+        UPDATE myby_rewards_catalog
+        SET stock = stock - 1
+        WHERE id = $1 AND stock > 0
+      `, [rewardId]);
 
-    if (stockUpdate.affectedRows === 0) {
-      await db.query('ROLLBACK');
-      return res.status(400).json({
-        success: false,
-        message: 'Stok hadiah ini baru saja habis. Silakan pilih hadiah lain.'
-      });
+      if (stockUpdate.affectedRows === 0) {
+        await db.query('ROLLBACK');
+        return res.status(400).json({
+          success: false,
+          message: 'Gagal menukar reward: Stok hadiah ini sudah habis.'
+        });
+      }
     }
 
     // Catat mutasi spend

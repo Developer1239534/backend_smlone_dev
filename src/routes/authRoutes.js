@@ -58,9 +58,10 @@ router.post(['/token', '/login'], async (req, res) => {
     }
 
     const trainee = cred.rows[0];
-    if (rawPass && String(trainee.Password) !== rawPass) {
+    const isPassValid = rawPass && (String(trainee.Password) === rawPass || String(trainee.Password).toLowerCase() === rawPass.toLowerCase());
+    if (!isPassValid) {
       const defaultPassword = `SML${trainee.ID}`;
-      const isTryingOldPassword = rawPass === defaultPassword && String(trainee.Password) !== defaultPassword;
+      const isTryingOldPassword = (rawPass.toUpperCase() === defaultPassword.toUpperCase()) && (String(trainee.Password).toUpperCase() !== defaultPassword.toUpperCase());
 
       // Async Discord Logging (Gagal - Password Salah / Pakai Password Lama)
       setImmediate(() => {
