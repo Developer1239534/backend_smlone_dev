@@ -29,7 +29,7 @@ const uploadSingleAvatar = (req, res, next) => {
   upload.single('avatar')(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ success: false, message: 'Ukuran file foto maksimal 2 MB!' });
+        return res.status(400).json({ success: false, message: 'Maksimal foto 2 MB!' });
       }
       return res.status(400).json({ success: false, message: err.message || 'Gagal memproses file upload.' });
     }
@@ -94,7 +94,7 @@ router.post('/:id/avatar', uploadSingleAvatar, async (req, res) => {
   if (payload.buffer && payload.buffer.length > 2 * 1024 * 1024) {
     return res.status(400).json({
       success: false,
-      message: 'Ukuran file foto maksimal 2 MB!'
+      message: 'Maksimal foto 2 MB!'
     });
   }
 
