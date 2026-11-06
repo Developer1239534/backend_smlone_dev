@@ -16,13 +16,26 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // Max 10MB
+  limits: { fileSize: 2 * 1024 * 1024 }, // Batas ketat 2 MB
   fileFilter: (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error('Format file tidak didukung. Gunakan JPG, PNG, atau WebP.'), false);
   }
 });
+
+// Middleware penanganan limit ukuran multer 2 MB
+const uploadSingleAvatar = (req, res, next) => {
+  upload.single('avatar')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'Ukuran file foto maksimal 2 MB!' });
+      }
+      return res.status(400).json({ success: false, message: err.message || 'Gagal memproses file upload.' });
+    }
+    next();
+  });
+};
 
 // Helper: Periksa apakah Cloudinary telah dikonfigurasi secara valid
 function isCloudinaryConfigured() {
@@ -64,7 +77,7 @@ function extractImagePayload(req) {
 }
 
 // POST /api/profile-trainee/:id/avatar — upload / update foto profil real-time
-router.post('/:id/avatar', upload.single('avatar'), async (req, res) => {
+router.post('/:id/avatar', uploadSingleAvatar, async (req, res) => {
   const { id } = req.params;
   const cleanId = String(id || '').trim();
   if (!cleanId) return res.status(400).json({ success: false, message: 'ID trainee wajib diisi.' });
@@ -74,6 +87,14 @@ router.post('/:id/avatar', upload.single('avatar'), async (req, res) => {
     return res.status(400).json({
       success: false,
       message: 'File foto wajib diupload via multipart field "avatar" atau JSON base64 "avatar".'
+    });
+  }
+
+  // Validasi batas ukuran 2 MB untuk base64 / buffer
+  if (payload.buffer && payload.buffer.length > 2 * 1024 * 1024) {
+    return res.status(400).json({
+      success: false,
+      message: 'Ukuran file foto maksimal 2 MB!'
     });
   }
 
