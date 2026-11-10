@@ -475,7 +475,7 @@ async function handleAdminListRedeems(req, res) {
       LEFT JOIN profile_trainee p ON r.trainee_id = p.ID
     ` + baseWhere + ` ORDER BY COALESCE(r.scanned_at, r.updated_at, r.created_at) DESC, r.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     const dataRes = await db.query(query, [...params, Number(limit), Number(offset)]);
-    return res.status(200).json({ success: true, total: totalCount, data: dataRes.rows });
+    return res.status(200).json({ success: true, total: totalCount, grandTotal: totalCount, data: dataRes.rows });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Gagal mengambil redeem.', error: error.message });
   }
