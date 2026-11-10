@@ -145,9 +145,11 @@ router.get('/', async (req, res) => {
       conditions.push(`"Class" ILIKE $${params.length}`);
     }
 
+    let countQuery = 'SELECT COUNT(*) AS total FROM referral_link';
     if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
+      countQuery += ' WHERE ' + conditions.join(' AND ');
     }
+    const countParams = [...params];
 
     query += ' ORDER BY "ID" ASC';
 
@@ -161,14 +163,19 @@ router.get('/', async (req, res) => {
       query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
     }
 
-    const result = await db.query(query, params);
+    const [result, countResult] = await Promise.all([
+      db.query(query, params),
+      db.query(countQuery, countParams)
+    ]);
     const formatted = result.rows.map(formatReferralLinkRow);
+    const totalRecords = parseInt(countResult.rows[0]?.total || 0, 10);
 
     return res.json({
       success: true,
       message: 'Berhasil mengambil data Referal Link.',
       count: formatted.length,
-      total: formatted.length,
+      total: totalRecords,
+      grandTotal: totalRecords,
       data: formatted
     });
   } catch (error) {
