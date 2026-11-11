@@ -97,8 +97,14 @@ async function upsertStudentLevel6Reports(req, res) {
     for (const item of items) {
       const sId = item.student_id ? parseInt(String(item.student_id).replace(/\D+/g, ''), 10) : defaultStudentId;
       const reportType = item.report_type || item.type || null;
-      const reportTitle = String(item.report_title || item.title || '').trim();
+      let reportTitle = String(item.report_title || item.title || '').trim();
       const reportLink = String(item.report_link || item.link || item.url || '').trim();
+
+      // Normalisasi karakter mojibake / \uFFFD / corrupted emoji pada Progress Video
+      const cleanTitleCandidate = reportTitle.replace(/[\uFFFD\uFE0F\u25B6\u25B7▶]+/g, '').trim();
+      if (/^progress\s+video/i.test(cleanTitleCandidate)) {
+        reportTitle = '▶️ Progress Video';
+      }
 
       if (isNaN(sId) || !reportTitle || !reportLink) {
         continue;
