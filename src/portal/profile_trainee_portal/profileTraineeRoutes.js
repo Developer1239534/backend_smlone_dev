@@ -95,8 +95,10 @@ function formatProfileRow(row) {
   const q3Val = isApprentice ? '0' : (row["Gold Term Q3"] ?? row["gold_term_q3"] ?? '0');
 
   let rawProg = String(row["Program"] ?? '').trim();
-  if (/junior|youth/i.test(rawProg)) {
-    rawProg = /apprentice/i.test(rawProg) ? 'Apprentice / Core' : 'Core';
+  if (/junior/i.test(rawProg)) {
+    rawProg = 'Core';
+  } else if (/youth/i.test(rawProg)) {
+    rawProg = 'Orator';
   }
 
   return {
