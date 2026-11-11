@@ -164,6 +164,14 @@ async function handleClaimReferralCoins(req, res) {
     const cleanId = String(traineeId).trim();
     const profile = await getTraineeProfile(cleanId);
 
+    // Proteksi Keanggotaan: Trainee yang tidak aktif (Expired) tidak bisa klaim koin referral
+    if (profile.MEMBERSHIP && !profile.MEMBERSHIP.toLowerCase().includes('active')) {
+      return res.status(403).json({
+        success: false,
+        message: `Klaim koin referral ditolak: Trainee ${cleanId} berstatus '${profile.MEMBERSHIP}' (tidak aktif). Hanya trainee berstatus Active yang berhak mengklaim reward referral.`
+      });
+    }
+
     // 2. Cek apakah sudah pernah klaim sebelumnya (Proteksi 1x Seumur Hidup)
     const txCheck = await db.query(`
       SELECT id, amount, created_at 

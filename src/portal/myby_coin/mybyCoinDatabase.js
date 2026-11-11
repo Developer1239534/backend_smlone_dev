@@ -26,7 +26,7 @@ async function getTraineeProfile(traineeId) {
 
   try {
     const profRes = await db.query(
-      'SELECT "ID", "Name", "HOUSE", "Class" FROM profile_trainee WHERE "ID" = $1 LIMIT 1',
+      'SELECT "ID", "Name", "HOUSE", "Class", "MEMBERSHIP" FROM profile_trainee WHERE "ID" = $1 LIMIT 1',
       [profile.ID]
     );
     if (profRes.rows.length > 0) {
@@ -35,6 +35,7 @@ async function getTraineeProfile(traineeId) {
       profile.Name = cleanName || `Trainee ${profile.ID}`;
       profile.HOUSE = profRes.rows[0].HOUSE || profile.HOUSE;
       profile.Class = profRes.rows[0].Class || profile.Class;
+      profile.MEMBERSHIP = profRes.rows[0].MEMBERSHIP || 'Active';
       return profile;
     }
 

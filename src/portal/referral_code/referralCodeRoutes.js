@@ -49,18 +49,26 @@ function formatReferralCodeRow(row) {
     ''
   ).trim();
   const name = String(row["Name"] ?? row.name ?? row.nama ?? '').trim();
+  const membership = String(row["membership"] ?? row["MEMBERSHIP"] ?? 'Active').trim();
+  const isActive = row.is_active !== undefined ? Boolean(Number(row.is_active)) : membership.toLowerCase().includes('active');
 
   return {
     // 3 Kolom resmi sesuai format tabel
     "ID": id,
     "Referral Code": referralCode,
     "Name": name,
+    "MEMBERSHIP": membership,
+    "is_active": isActive,
+    "status": isActive ? 'Active' : 'Non-Active (Expired)',
 
     // Alias untuk kompatibilitas frontend & konsumsi API mudah
     id: id,
     referral_code: referralCode,
     referralCode: referralCode,
     name: name,
+    membership: membership,
+    is_active: isActive,
+    status: isActive ? 'Active' : 'Non-Active (Expired)',
     created_at: row.created_at ?? null,
     updated_at: row.updated_at ?? null
   };
@@ -86,12 +94,18 @@ router.get('/', async (req, res) => {
 
     let query = `
       SELECT
-        "ID",
-        "Referral Code",
-        "Name",
-        "created_at",
-        "updated_at"
-      FROM referral_code
+        rc."ID",
+        rc."Referral Code",
+        rc."Name",
+        COALESCE(p."MEMBERSHIP", 'Active') AS "membership",
+        CASE 
+          WHEN LOWER(COALESCE(p."MEMBERSHIP", 'Active')) LIKE '%active%' THEN 1 
+          ELSE 0 
+        END AS "is_active",
+        rc."created_at",
+        rc."updated_at"
+      FROM referral_code rc
+      LEFT JOIN profile_trainee p ON rc."ID" = p."ID"
     `;
 
     const conditions = [];
@@ -101,9 +115,9 @@ router.get('/', async (req, res) => {
     if (search && String(search).trim()) {
       params.push(`%${String(search).trim()}%`);
       conditions.push(`(
-        "ID" ILIKE $${params.length}
-        OR "Referral Code" ILIKE $${params.length}
-        OR "Name" ILIKE $${params.length}
+        rc."ID" ILIKE $${params.length}
+        OR rc."Referral Code" ILIKE $${params.length}
+        OR rc."Name" ILIKE $${params.length}
       )`);
     }
 
@@ -111,23 +125,23 @@ router.get('/', async (req, res) => {
     const targetId = id || id_trainee;
     if (targetId) {
       params.push(String(targetId).trim());
-      conditions.push(`"ID" = $${params.length}`);
+      conditions.push(`rc."ID" = $${params.length}`);
     }
 
     // Filter by Referral Code
     const targetCode = referral_code || code;
     if (targetCode) {
       params.push(String(targetCode).trim());
-      conditions.push(`("Referral Code" = $${params.length} OR "Referral Code" ILIKE $${params.length})`);
+      conditions.push(`(rc."Referral Code" = $${params.length} OR rc."Referral Code" ILIKE $${params.length})`);
     }
 
     // Filter by Name
     if (name) {
       params.push(`%${String(name).trim()}%`);
-      conditions.push(`"Name" ILIKE $${params.length}`);
+      conditions.push(`rc."Name" ILIKE $${params.length}`);
     }
 
-    let countQuery = 'SELECT COUNT(*) AS total FROM referral_code';
+    let countQuery = 'SELECT COUNT(*) AS total FROM referral_code rc LEFT JOIN profile_trainee p ON rc."ID" = p."ID"';
     if (conditions.length > 0) {
       countQuery += ' WHERE ' + conditions.join(' AND ');
     }
@@ -137,7 +151,7 @@ router.get('/', async (req, res) => {
       query += ' WHERE ' + conditions.join(' AND ');
     }
 
-    query += ' ORDER BY "ID" ASC';
+    query += ' ORDER BY rc."ID" ASC';
 
     // Pagination
     if (limit && !isNaN(limit)) {
@@ -270,19 +284,25 @@ router.get('/:identifier', async (req, res) => {
 
     const query = `
       SELECT
-        "ID",
-        "Referral Code",
-        "Name",
-        "created_at",
-        "updated_at"
-      FROM referral_code
+        rc."ID",
+        rc."Referral Code",
+        rc."Name",
+        COALESCE(p."MEMBERSHIP", 'Active') AS "membership",
+        CASE 
+          WHEN LOWER(COALESCE(p."MEMBERSHIP", 'Active')) LIKE '%active%' THEN 1 
+          ELSE 0 
+        END AS "is_active",
+        rc."created_at",
+        rc."updated_at"
+      FROM referral_code rc
+      LEFT JOIN profile_trainee p ON rc."ID" = p."ID"
       WHERE
-        "ID" = $1
-        OR "ID" ILIKE $1
-        OR "Referral Code" = $1
-        OR "Referral Code" ILIKE $1
-        OR "Name" ILIKE $1
-      ORDER BY "ID" ASC
+        rc."ID" = $1
+        OR rc."ID" ILIKE $1
+        OR rc."Referral Code" = $1
+        OR rc."Referral Code" ILIKE $1
+        OR rc."Name" ILIKE $1
+      ORDER BY rc."ID" ASC
       LIMIT 1
     `;
 
@@ -295,10 +315,15 @@ router.get('/:identifier', async (req, res) => {
       });
     }
 
+    const formatted = formatReferralCodeRow(result.rows[0]);
+
     return res.json({
       success: true,
-      message: 'Data Referral Code ditemukan.',
-      data: formatReferralCodeRow(result.rows[0])
+      is_active: formatted.is_active,
+      message: formatted.is_active 
+        ? 'Data Referral Code aktif dan dapat digunakan.' 
+        : `Kode referral tidak aktif. Pemilik referral (${formatted.name}) memiliki status keanggotaan '${formatted.membership}'.`,
+      data: formatted
     });
   } catch (error) {
     console.error('[Referral Code] GET by identifier error:', error.message);

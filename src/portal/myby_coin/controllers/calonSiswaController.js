@@ -34,10 +34,21 @@ async function handleRegisterCalonSiswa(req, res) {
       }
       const trimmedCode = referral_code.trim();
       const codeCheck = await db.query(
-        'SELECT "ID", "Name" FROM referral_code WHERE LOWER(TRIM("Referral Code")) = LOWER($1) OR LOWER(TRIM("ID")) = LOWER($1) LIMIT 1',
+        `SELECT rc."ID", rc."Name", p."MEMBERSHIP" 
+         FROM referral_code rc 
+         LEFT JOIN profile_trainee p ON rc."ID" = p."ID" 
+         WHERE LOWER(TRIM(rc."Referral Code")) = LOWER($1) OR LOWER(TRIM(rc."ID")) = LOWER($1) 
+         LIMIT 1`,
         [trimmedCode]
       );
       if (codeCheck.rows.length > 0) {
+        const inviterMem = String(codeCheck.rows[0].MEMBERSHIP || '').trim().toLowerCase();
+        if (inviterMem && !inviterMem.includes('active')) {
+          return res.status(403).json({
+            success: false,
+            error: `Kode referral '${trimmedCode}' tidak dapat digunakan karena status pemilik referral (${codeCheck.rows[0].Name || 'Trainee'}) tidak aktif (${codeCheck.rows[0].MEMBERSHIP || 'Expired'}).`
+          });
+        }
         inviterId = codeCheck.rows[0].ID;
         inviterName = codeCheck.rows[0].Name;
       }

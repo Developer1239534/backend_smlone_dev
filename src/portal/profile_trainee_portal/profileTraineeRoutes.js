@@ -94,9 +94,14 @@ function formatProfileRow(row) {
   const q2Val = isApprentice ? '0' : (row["Gold Term Q2"] ?? row["gold_term_q2"] ?? '0');
   const q3Val = isApprentice ? '0' : (row["Gold Term Q3"] ?? row["gold_term_q3"] ?? '0');
 
+  let rawProg = String(row["Program"] ?? '').trim();
+  if (/junior|youth/i.test(rawProg)) {
+    rawProg = /apprentice/i.test(rawProg) ? 'Apprentice / Core' : 'Core';
+  }
+
   return {
     "Class": row["Class"] ?? '',
-    "Program": row["Program"] ?? '',
+    "Program": rawProg,
     "Day": row["Day"] ?? '',
     "Time": row["Time"] ?? '',
     "Room": row["Room"] ?? '',

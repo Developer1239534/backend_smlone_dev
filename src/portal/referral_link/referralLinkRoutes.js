@@ -56,18 +56,33 @@ function formatReferralLinkRow(row) {
     ''
   ).trim();
 
+  const membership = String(row.membership ?? row.MEMBERSHIP ?? 'Active').trim();
+  const isActive = row.is_active !== undefined ? Boolean(Number(row.is_active)) : membership.toLowerCase().includes('active');
+  const inviterMembership = String(row.inviter_membership ?? 'Active').trim();
+  const isInviterActive = inviterMembership.toLowerCase().includes('active');
+
   return {
     // Kolom resmi sesuai permintaan pengguna
     "ID": id,
     "Name": name,
     "Class": cls,
     "Referal By": referalBy,
+    "MEMBERSHIP": membership,
+    "is_active": isActive,
+    "status": isActive ? 'Active' : 'Expired',
+    "inviter_membership": inviterMembership,
+    "is_inviter_active": isInviterActive,
     "created_at": row.created_at ?? null,
 
     // Alias pendukung
     id: id,
     name: name,
     class: cls,
+    membership: membership,
+    is_active: isActive,
+    status: isActive ? 'Active' : 'Expired',
+    inviter_membership: inviterMembership,
+    is_inviter_active: isInviterActive,
     referal_by: referalBy,
     referral_by: referalBy,
     referalBy: referalBy,
@@ -97,13 +112,22 @@ router.get('/', async (req, res) => {
 
     let query = `
       SELECT
-        "ID",
-        "Name",
-        "Class",
-        "Referal By",
-        "created_at",
-        "updated_at"
-      FROM referral_link
+        rl."ID",
+        rl."Name",
+        rl."Class",
+        rl."Referal By",
+        COALESCE(p."MEMBERSHIP", 'Active') AS "membership",
+        CASE 
+          WHEN LOWER(COALESCE(p."MEMBERSHIP", 'Active')) LIKE '%active%' THEN 1 
+          ELSE 0 
+        END AS "is_active",
+        COALESCE(inv_p."MEMBERSHIP", 'Active') AS "inviter_membership",
+        rl."created_at",
+        rl."updated_at"
+      FROM referral_link rl
+      LEFT JOIN profile_trainee p ON rl."ID" = p."ID"
+      LEFT JOIN referral_code rc ON LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."Referral Code")) OR LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."ID"))
+      LEFT JOIN profile_trainee inv_p ON rc."ID" = inv_p."ID"
     `;
 
     const conditions = [];
@@ -319,6 +343,42 @@ router.post('/', async (req, res) => {
         success: false,
         message: 'Periode pendaftaran dan klaim ID referral telah ditutup pada 14 November 2026.'
       });
+    }
+
+    // Proteksi Status Trainee: Trainee yang tidak aktif (Expired) tidak bisa menggunakan referral
+    const userProfileCheck = await db.query(
+      'SELECT "ID", "Name", "MEMBERSHIP" FROM profile_trainee WHERE "ID" = $1 LIMIT 1',
+      [id]
+    );
+    if (userProfileCheck.rows.length > 0) {
+      const userMembership = String(userProfileCheck.rows[0]["MEMBERSHIP"] || '').trim().toLowerCase();
+      if (userMembership && !userMembership.includes('active')) {
+        return res.status(403).json({
+          success: false,
+          message: `Pendaftaran ditolak: Trainee ${id} berstatus '${userProfileCheck.rows[0]["MEMBERSHIP"]}' (tidak aktif). Sesuai kebijakan terbaru, hanya trainee dengan status Active yang dapat menggunakan fitur referral.`
+        });
+      }
+    }
+
+    // Proteksi Pengundang: Jika pengundang (inviter) berstatus tidak aktif (Expired), kodenya tidak bisa digunakan
+    if (referalBy) {
+      const inviterCodeCheck = await db.query(
+        `SELECT rc."ID", rc."Name", p."MEMBERSHIP" 
+         FROM referral_code rc 
+         LEFT JOIN profile_trainee p ON rc."ID" = p."ID" 
+         WHERE LOWER(TRIM(rc."Referral Code")) = LOWER(TRIM($1)) OR LOWER(TRIM(rc."ID")) = LOWER(TRIM($1)) 
+         LIMIT 1`,
+        [referalBy.trim()]
+      );
+      if (inviterCodeCheck.rows.length > 0) {
+        const inviterMembership = String(inviterCodeCheck.rows[0]["MEMBERSHIP"] || '').trim().toLowerCase();
+        if (inviterMembership && !inviterMembership.includes('active')) {
+          return res.status(403).json({
+            success: false,
+            message: `Pendaftaran ditolak: Kode referral dari pengundang (${inviterCodeCheck.rows[0]["Name"] || referalBy}) sudah tidak dapat digunakan karena status membership pengundang telah kedaluwarsa (${inviterCodeCheck.rows[0]["MEMBERSHIP"] || 'Expired'}).`
+          });
+        }
+      }
     }
 
     // Proteksi Self-Referral: Dilarang mendaftar menggunakan referral milik sendiri
