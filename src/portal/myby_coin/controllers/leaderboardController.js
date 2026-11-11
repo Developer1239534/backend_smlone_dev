@@ -111,11 +111,14 @@ async function handleGetLeaderboardReferral(req, res) {
           COUNT(DISTINCT rl."ID") AS link_count
         FROM referral_link rl
         LEFT JOIN referral_code rc ON LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."Referral Code")) OR LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."ID"))
+        LEFT JOIN profile_trainee invited ON rl."ID" = invited."ID"
         WHERE rl."Referal By" IS NOT NULL AND rl."Referal By" != ''
           AND LOWER(TRIM(rl."ID")) != LOWER(TRIM(COALESCE(rc."ID", '')))
           AND LOWER(TRIM(rl."ID")) != LOWER(TRIM(rl."Referal By"))
           AND LOWER(TRIM(rl."Referal By")) != LOWER(CONCAT('smlone-', TRIM(rl."ID")))
           AND LOWER(TRIM(rl."Referal By")) != LOWER(CONCAT('myby-', TRIM(rl."ID")))
+          AND LOWER(COALESCE(invited."MEMBERSHIP", 'Active')) LIKE '%active%'
+          AND LOWER(COALESCE(invited."Program", '')) NOT LIKE '%professional%'
         GROUP BY COALESCE(
           rc."ID",
           CASE
