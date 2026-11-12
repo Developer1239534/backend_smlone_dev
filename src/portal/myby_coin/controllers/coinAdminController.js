@@ -250,6 +250,10 @@ async function handleAdminListTransactions(req, res) {
     if (type) {
       if (type === 'redeem') {
         conds.push(`(badge ILIKE '%Hadiah%' OR badge ILIKE '%Redeem%' OR title ILIKE '%Klaim Hadiah%')`);
+      } else if (type === 'deposit') {
+        conds.push(`(badge ILIKE '%Deposit%' OR title ILIKE '%Deposit%' OR title ILIKE '%Top Up%' OR badge ILIKE '%Admin Adjustment%')`);
+      } else if (type === 'streak') {
+        conds.push(`(badge ILIKE '%Streak%' OR title ILIKE '%Streak%')`);
       } else {
         params.push(type);
         conds.push(`type = $${params.length}`);
