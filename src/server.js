@@ -24,6 +24,7 @@ const credentialAdminRoutes = require('./portal/credential_admin/credentialAdmin
 const adminRbacRoutes = require('./portal/credential_admin/adminRbacRoutes');
 const telemetryRoutes = require('./routes/telemetryRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
+const happinessSurveyRoutes = require('./portal/happiness_survey/happinessSurveyRoutes');
 const db = require('./db/neonClient');
 
 const app = express();
@@ -219,6 +220,10 @@ app.use('/api/admin/credential', credentialAdminRoutes);
 app.use('/api/v1/telemetry', telemetryRoutes);
 app.use('/api/telemetry', telemetryRoutes);
 app.use('/api/portal/telemetry', telemetryRoutes);
+
+// Monthly Happiness Survey
+app.use('/api/happiness-survey', happinessSurveyRoutes);
+app.use('/api/portal/happiness-survey', happinessSurveyRoutes);
 
 // Jira Cloud Ticketing Integration (Project KAN)
 // Alias publik singkat untuk form tiket & papan monitoring: /bantuan, /tiket, /helpdesk, /board, /admin-tiket
