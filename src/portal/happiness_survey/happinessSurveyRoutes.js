@@ -43,6 +43,17 @@ router.get('/check/:traineeId', async (req, res) => {
       return res.status(400).json({ success: false, message: 'ID Trainee diperlukan' });
     }
 
+    // KETAT SESUAI ARAHAN BOS RAKHA: Hanya aktif di akun preview ID 9999
+    if (traineeId !== '9999') {
+      return res.json({
+        success: true,
+        hasSubmitted: true, // Non-9999 dipastikan tidak akan memunculkan pop-up sama sekali
+        submission: null,
+        currentMonth: month,
+        currentMonthLabel: formatMonthLabel(month)
+      });
+    }
+
     const result = await mysql.query(
       'SELECT id, trainee_id, nama, kelas, cabang, bulan, hasil, catatan, created_at, updated_at FROM monthly_happiness_surveys WHERE trainee_id = ? AND bulan = ? LIMIT 1',
       [traineeId, month]
@@ -74,6 +85,15 @@ router.post('/submit', async (req, res) => {
     if (!cleanId) {
       return res.status(400).json({ success: false, message: 'ID Trainee tidak boleh kosong' });
     }
+
+    // KETAT SESUAI ARAHAN BOS RAKHA: Pengiriman survei hanya diizinkan untuk ID 9999
+    if (cleanId !== '9999') {
+      return res.status(403).json({
+        success: false,
+        message: 'Fitur survei kebahagiaan saat ini khusus aktif untuk akun preview ID 9999.'
+      });
+    }
+
     if (isNaN(cleanScore) || cleanScore < 1 || cleanScore > 5) {
       return res.status(400).json({ success: false, message: 'Skor harus bernilai 1 hingga 5' });
     }
