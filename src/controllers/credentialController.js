@@ -66,13 +66,19 @@ async function handleSendCredential(req, res) {
     setImmediate(async () => {
       const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n-jua7.srv1825659.hstgr.cloud/webhook/send-credential-email';
       try {
+        let passwordToSend = String(trainee.Password || '').trim();
+        const isDateLike = /^\d{1,2}\s+[A-Za-z]{3}\s+\d{2}$/.test(passwordToSend) || /^\d{1,2}\s+[A-Za-z]{3,10}\s+\d{2,4}$/.test(passwordToSend);
+        if (!passwordToSend || isDateLike) {
+          passwordToSend = 'SML' + actualId;
+        }
+
         const n8nRes = await axios.post(
           n8nWebhookUrl,
           {
             id: actualId,
             name: traineeName,
             email: trimmedEmail,
-            password: trainee.Password,
+            password: passwordToSend,
             dob,
             parent_email: parentEmail
           },
