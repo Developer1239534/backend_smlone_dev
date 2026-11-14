@@ -1,114 +1,137 @@
-const https = require('https');
-const db = require('/root/backend_smlone_dev/src/db/mysqlClient');
+const { google } = require('googleapis');
+const mysql = require('/root/backend_smlone_dev/src/db/mysqlClient');
+const neon = require('/root/backend_smlone_dev/src/db/neonClient');
 
-const sheetUrl = 'https://docs.google.com/spreadsheets/d/1JMhLNw-DIJCCkK_RBhPBp61sQZTMNkzYhPgxE_WLnlU/gviz/tq?tqx=out:csv&gid=154343977';
+// MASTERFILE PORTAL - SINGLE SOURCE OF TRUTH (Tab: House Rank Dan Class)
+const SPREADSHEET_ID = '14XLu5-7umfsyVXy9bvIjdumBeOGF57wvxxxd5ZsS0jU';
+const RANGE = 'House Rank Dan Class!A2:F7';
 
-function fetchCSV(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve(data));
-      res.on('error', reject);
-    });
-  });
-}
-
-function parseCSVLine(line) {
-  const result = [];
-  let cur = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') {
-      if (inQuotes && line[i+1] === '"') {
-        cur += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (c === ',' && !inQuotes) {
-      result.push(cur.trim());
-      cur = '';
-    } else {
-      cur += c;
-    }
-  }
-  result.push(cur.trim());
-  return result;
-}
+// Member counts per house from Masterfile Portal table E & F
+const MEMBER_LOOKUP = {
+  'THENOVA': 270,
+  'HAVARIA': 163,
+  'REVERION': 52,
+  'QUORION': 103,
+  'CREANOVA': 56
+};
 
 async function syncHouseRank() {
-  console.log('[Sync House Rank] Fetching latest data from Master Sheet...');
-  const csvData = await fetchCSV(sheetUrl);
-  const lines = csvData.split('\n').map(l => l.trim()).filter(Boolean);
+  console.log('[Sync House Rank] Mengambil data House Rank langsung dari Masterfile Portal...');
+  console.log(`Sheet ID: ${SPREADSHEET_ID} (Tab: House Rank Dan Class)`);
 
-  // Official Trainee Member Counts per House from HOUSE SUMMARY sheet (gid=0):
-  // https://docs.google.com/spreadsheets/d/13Z3ab2j8Dbe-ilcVo0H7iOTRVc3K2OhdfElH9KYyKeU/edit?gid=0#gid=0
-  const houseSummaryCounts = {
-    'House of Thenova': 269,
-    'House of Havaria': 161,
-    'House of Quorion': 102,
-    'House of Creanova': 55,
-    'House of Reverion': 52
-  };
+  const auth = new google.auth.GoogleAuth({
+    keyFile: '/root/service_account_n8n.json',
+    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+  });
+  const sheets = google.sheets({ version: 'v4', auth });
 
-  const updates = [];
-  for (let i = 3; i <= 7; i++) {
-    if (lines[i]) {
-      const cols = parseCSVLine(lines[i]);
-      const house = cols[0];
-      const rawGold = parseInt(cols[1] || '0', 10);
-      const className = cols[3];
-      const cabang = cols[4];
-      const program = cols[5];
-      const rankCore = cols[6] || '';
-      const rankOrator = cols[7] || '';
-      const totalMembers = houseSummaryCounts[house] || 1;
-      const finalGold = Math.round(rawGold / totalMembers);
-      const avgGold = parseFloat((rawGold / totalMembers).toFixed(2));
-      if (house && house.startsWith('House of')) {
-        updates.push({ house, rawGold, totalGold: String(finalGold), finalGold, avgGold, className, cabang, program, rankCore, rankOrator, totalMembers });
-      }
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: RANGE,
+    valueRenderOption: 'FORMATTED_VALUE'
+  });
+
+  const rows = res.data.values || [];
+  console.log(`[Sync House Rank] Berhasil membaca ${rows.length} baris dari Masterfile Portal.`);
+
+  // 1. Build dynamic memberMap from Col E & F if present
+  const dynamicMemberMap = { ...MEMBER_LOOKUP };
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const eName = String(r[4] || '').trim().toUpperCase();
+    const fCount = parseInt(String(r[5] || '0').replace(/[^0-9]/g, ''), 10);
+    if (eName && fCount > 0) {
+      dynamicMemberMap[eName] = fCount;
     }
   }
 
-  // Sort by finalGold descending to re-rank cleanly
-  updates.sort((a, b) => b.finalGold - a.finalGold);
-  updates.forEach((u, idx) => {
-    u.rank = String(idx + 1);
+  // 2. Parse house metrics from Col A, B, C, D
+  const houseData = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const rawHouseName = (r[0] || '').trim();
+    if (!rawHouseName || !rawHouseName.startsWith('House of')) continue;
+
+    const shortName = rawHouseName.replace(/^House of\s+/i, '').trim().toUpperCase();
+    const rawTotalGold = parseInt(String(r[1] || '0').replace(/[^0-9]/g, ''), 10) || 0;
+    
+    // Look up member count for THIS house
+    const members = dynamicMemberMap[shortName] || MEMBER_LOOKUP[shortName] || 1;
+
+    // Col D is Average Amount Members : Total GP House
+    let dividedGold = parseInt(String(r[3] || '0').replace(/[^0-9]/g, ''), 10);
+    if (!dividedGold || isNaN(dividedGold)) {
+      dividedGold = Math.round(rawTotalGold / members);
+    }
+
+    const avgFloat = parseFloat((rawTotalGold / members).toFixed(2));
+
+    houseData.push({
+      house: rawHouseName,
+      shortName,
+      rawTotalGold,
+      members,
+      dividedGold,
+      avgFloat
+    });
+  }
+
+  // Sort by dividedGold descending (sesuai aturan pembagian poin per member)
+  houseData.sort((a, b) => b.dividedGold - a.dividedGold);
+  houseData.forEach((h, idx) => {
+    h.rank = idx + 1;
   });
 
-  console.log(`[Sync House Rank] Found ${updates.length} houses from sheet (Divided by Dynamic Trainee Count):`);
-  for (const u of updates) {
-    console.log(`  - Rank ${u.rank}: ${u.house} (${u.totalGold} GP [Bulat] | Raw: ${u.rawGold} ÷ ${u.totalMembers} Members | Avg: ${u.avgGold}) | Class: ${u.className}`);
-    await db.query(`
+  console.log('[Sync House Rank] Hasil kalkulasi presisi dari Masterfile Portal:');
+  console.table(houseData);
+
+  // Update ke MariaDB dan Neon PG
+  for (const h of houseData) {
+    const finalGoldStr = String(h.dividedGold);
+    const rankStr = String(h.rank);
+
+    // Update MariaDB
+    await mysql.query(`
       INSERT INTO house_rank (
-        \`HOUSE\`, \`TOTAL GOLD/HOUSE\`, \`RANK\`, \`CLASS\`, \`CABANG\`, \`PROGRAM\`, \`RANK/CORE\`, \`RANK/ORATOR\`, \`TOTAL_MEMBERS\`, \`AVG_GOLD\`, \`RANK_AVG\`
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        \`HOUSE\`, \`TOTAL GOLD/HOUSE\`, \`RANK\`, \`TOTAL_MEMBERS\`, \`AVG_GOLD\`, \`RANK_AVG\`
+      ) VALUES (?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         \`TOTAL GOLD/HOUSE\` = VALUES(\`TOTAL GOLD/HOUSE\`),
         \`RANK\` = VALUES(\`RANK\`),
-        \`CLASS\` = VALUES(\`CLASS\`),
-        \`CABANG\` = VALUES(\`CABANG\`),
-        \`PROGRAM\` = VALUES(\`PROGRAM\`),
-        \`RANK/CORE\` = VALUES(\`RANK/CORE\`),
-        \`RANK/ORATOR\` = VALUES(\`RANK/ORATOR\`),
         \`TOTAL_MEMBERS\` = VALUES(\`TOTAL_MEMBERS\`),
         \`AVG_GOLD\` = VALUES(\`AVG_GOLD\`),
         \`RANK_AVG\` = VALUES(\`RANK_AVG\`)
-    `, [u.house, u.totalGold, u.rank, u.className, u.cabang, u.program, u.rankCore, u.rankOrator, u.totalMembers, u.avgGold, parseInt(u.rank, 10)]);
+    `, [h.house, finalGoldStr, rankStr, h.members, h.avgFloat, h.rank]);
+
+    // Update Neon PostgreSQL
+    try {
+      await neon.query(`
+        INSERT INTO house_rank (
+          "HOUSE", "TOTAL GOLD/HOUSE", "RANK", "TOTAL_MEMBERS", "AVG_GOLD", "RANK_AVG"
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT ("HOUSE") DO UPDATE SET
+          "TOTAL GOLD/HOUSE" = EXCLUDED."TOTAL GOLD/HOUSE",
+          "RANK" = EXCLUDED."RANK",
+          "TOTAL_MEMBERS" = EXCLUDED."TOTAL_MEMBERS",
+          "AVG_GOLD" = EXCLUDED."AVG_GOLD",
+          "RANK_AVG" = EXCLUDED."RANK_AVG"
+      `, [h.house, finalGoldStr, rankStr, h.members, h.avgFloat, h.rank]);
+    } catch (neonErr) {
+      console.warn(`[Neon Warning] ${h.house}:`, neonErr.message);
+    }
   }
 
-  console.log('[Sync House Rank] Sync successfully written to MySQL database!');
-  process.exit(0);
+  console.log('✅ [Sync House Rank] Sinkronisasi House Rank dari Masterfile Portal sukses diperbarui ke MariaDB & Neon PG!');
+  return houseData;
 }
 
 if (require.main === module) {
-  syncHouseRank().catch(err => {
-    console.error('Error syncing house rank:', err);
-    process.exit(1);
-  });
+  syncHouseRank()
+    .then(() => process.exit(0))
+    .catch(err => {
+      console.error('Error saat sync:', err);
+      process.exit(1);
+    });
 }
 
 module.exports = { syncHouseRank };
