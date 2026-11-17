@@ -17,7 +17,6 @@ const MEMBER_LOOKUP = {
 
 async function syncHouseRank() {
   console.log('[Sync House Rank] Mengambil data House Rank langsung dari Masterfile Portal...');
-  console.log(`Sheet ID: ${SPREADSHEET_ID} (Tab: House Rank Dan Class)`);
 
   const auth = new google.auth.GoogleAuth({
     keyFile: '/root/service_account_n8n.json',
@@ -25,9 +24,19 @@ async function syncHouseRank() {
   });
   const sheets = google.sheets({ version: 'v4', auth });
 
+  // Cari tab secara dinamis berdasarkan SheetId 1468967371 atau regex
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  let targetSheet = meta.data.sheets.find(s => s.properties.sheetId === 1468967371);
+  if (!targetSheet) {
+    targetSheet = meta.data.sheets.find(s => /house\s*rank/i.test(s.properties.title));
+  }
+  const tabTitle = targetSheet ? targetSheet.properties.title : 'House Rank';
+  const range = `'${tabTitle}'!A2:F7`;
+  console.log(`Sheet ID: ${SPREADSHEET_ID} (Tab: "${tabTitle}", Range: ${range})`);
+
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: RANGE,
+    range: range,
     valueRenderOption: 'FORMATTED_VALUE'
   });
 

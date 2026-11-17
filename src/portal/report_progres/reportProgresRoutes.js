@@ -95,13 +95,23 @@ function normalizeAndSortSessions(rawList) {
 }
 
 function parseSessionsFromRow(row) {
-  if (Array.isArray(row.sessions) && row.sessions.length > 0) {
-    return normalizeAndSortSessions(row.sessions);
-  }
-  const rawSessionsJson = row.sessions_json || row.sessions;
+  // 1. Prioritaskan sessions_json dari sinkronisasi Masterfile Portal
+  const rawSessionsJson = row.sessions_json;
   if (typeof rawSessionsJson === 'string' && rawSessionsJson.trim() && rawSessionsJson !== '[]') {
     try {
       const parsed = JSON.parse(rawSessionsJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return normalizeAndSortSessions(parsed);
+      }
+    } catch {}
+  }
+  // 2. Cek sessions (bisa berupa Array hasil auto-parse MySQL atau JSON string)
+  if (Array.isArray(row.sessions) && row.sessions.length > 0) {
+    return normalizeAndSortSessions(row.sessions);
+  }
+  if (typeof row.sessions === 'string' && row.sessions.trim() && row.sessions !== '[]') {
+    try {
+      const parsed = JSON.parse(row.sessions);
       if (Array.isArray(parsed) && parsed.length > 0) {
         return normalizeAndSortSessions(parsed);
       }
@@ -403,6 +413,7 @@ const REPORT_PROGRES_COLS = `
   "Last Time Speaking Date",
   "Class",
   sessions,
+  sessions_json,
   created_at,
   updated_at
 `;

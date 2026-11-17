@@ -311,8 +311,10 @@ async function syncWeeklyReportAndTranskrip() {
     const pgPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
     try {
       let pgUpdated = 0;
-      for (const rec of recordsToUpsert) {
-        await pgPool.query(`
+      const PG_CHUNK_SIZE = 25;
+      for (let i = 0; i < recordsToUpsert.length; i += PG_CHUNK_SIZE) {
+        const chunk = recordsToUpsert.slice(i, i + PG_CHUNK_SIZE);
+        await Promise.all(chunk.map(rec => pgPool.query(`
           INSERT INTO report_progres (
             "ID",
             "Student Name",
@@ -362,8 +364,8 @@ async function syncWeeklyReportAndTranskrip() {
           rec.speakingProject, rec.role2, rec.role3, rec.role4, rec.lifeProject,
           rec.totalGold, rec.latestSpeakingProject, rec.className, rec.house, rec.level,
           rec.lastTimeSpeakingDate, rec.lastTimeSpeakingDate, rec.sessionsJson, rec.sessionsJson
-        ]);
-        pgUpdated++;
+        ])));
+        pgUpdated += chunk.length;
       }
       console.log(`   ✅ Selesai memperbarui ${pgUpdated} record di Neon PostgreSQL.`);
     } catch (pgErr) {
