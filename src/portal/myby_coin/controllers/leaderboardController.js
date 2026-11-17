@@ -110,7 +110,14 @@ async function handleGetLeaderboardReferral(req, res) {
           ) AS trainee_id,
           COUNT(DISTINCT rl."ID") AS link_count
         FROM referral_link rl
-        LEFT JOIN referral_code rc ON LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."Referral Code")) OR LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."ID"))
+        LEFT JOIN referral_code rc ON (
+          LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."ID"))
+          OR (
+            LOWER(TRIM(rl."Referal By")) = LOWER(TRIM(rc."Referral Code"))
+            AND rc."Name" IS NOT NULL AND TRIM(rc."Name") != ''
+            AND NOT EXISTS (SELECT 1 FROM referral_code exact_id WHERE LOWER(TRIM(exact_id."ID")) = LOWER(TRIM(rl."Referal By")))
+          )
+        )
         LEFT JOIN profile_trainee invited ON rl."ID" = invited."ID"
         WHERE rl."Referal By" IS NOT NULL AND rl."Referal By" != ''
           AND LOWER(TRIM(rl."ID")) != LOWER(TRIM(COALESCE(rc."ID", '')))
@@ -166,6 +173,7 @@ async function handleGetLeaderboardReferral(req, res) {
       LEFT JOIN credential_portal cp ON a.trainee_id = cp."ID" OR LOWER(a.trainee_id) = LOWER(cp."ID")
       LEFT JOIN referral_code rc ON a.trainee_id = rc."ID" OR LOWER(a.trainee_id) = LOWER(rc."ID")
       WHERE a.trainee_id IS NOT NULL AND a.trainee_id != ''
+        AND COALESCE(TRIM(p."Name"), TRIM(cp."Name"), TRIM(rc."Name"), '') != ''
       ORDER BY total_referrals DESC, bonus_coins DESC, name ASC;
     `;
 
