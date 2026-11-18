@@ -18,23 +18,48 @@ async function handleSendCredential(req, res) {
   const trimmedEmail = String(email).trim().toLowerCase();
 
   try {
-    // 2. Validasi cepat ke Database Neon PostgreSQL
-    const checkUser = await db.query(
+    // 2. Validasi ke Database: credential_portal atau profile_trainee
+    let checkUser = await db.query(
       'SELECT "ID", "Name", "Password" FROM public.credential_portal WHERE "ID" = $1 OR "ID" ILIKE $1 LIMIT 1',
       [trimmedId]
     );
 
     if (checkUser.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'ID Trainee atau email tidak sesuai dengan data sistem.'
-      });
+      // Cek apakah siswa terdaftar di profile_trainee (Master Data Siswa SMLONE)
+      const profCheck = await db.query(
+        'SELECT "ID", "Name", "Program", "CABANG", "MEMBERSHIP" FROM profile_trainee WHERE "ID" = $1 OR "ID" ILIKE $1 LIMIT 1',
+        [trimmedId]
+      );
+      if (profCheck.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'ID Trainee tidak terdaftar di sistem SMLONE. Silakan hubungi admin cabang.'
+        });
+      }
+
+      // Generate credential baru secara on-demand saat siswa aktivasi
+      const p = profCheck.rows[0];
+      const newPassword = 'SML' + p.ID;
+      await db.query(
+        'INSERT INTO public.credential_portal ("ID", "Name", "Password", "MEMBERSHIP STATUS", "CABANG", "Program", created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())',
+        [p.ID, p.Name, newPassword, p.MEMBERSHIP || 'Active', p.CABANG || 'SMLONE', p.Program || 'Core']
+      );
+
+      checkUser = {
+        rows: [{ ID: p.ID, Name: p.Name, Password: newPassword }]
+      };
     }
 
     const trainee = checkUser.rows[0];
     const actualId = trainee.ID;
     const traineeName = trainee.Name || 'Trainee';
     const sentAt = new Date().toISOString();
+
+    // Pastikan dompet koin terinisialisasi saat akun resmi terdaftar di portal
+    await db.query(
+      'INSERT INTO myby_trainee_wallets ("ID", "Name", balance, total_earned, total_spent, created_at, updated_at) VALUES ($1, $2, 0, 0, 0, NOW(), NOW()) ON CONFLICT ("ID") DO UPDATE SET "Name" = EXCLUDED."Name"',
+      [actualId, traineeName]
+    ).catch(() => {});
 
     let dob = '';
     let parentEmail = '';

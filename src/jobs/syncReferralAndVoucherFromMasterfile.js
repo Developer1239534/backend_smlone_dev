@@ -39,7 +39,7 @@ async function syncReferralAndVouchers() {
     const id = String(r[0] || '').trim();
     const code = String(r[4] || '').trim();
     const name = String(r[1] || '').trim();
-    if (!id || !code || id === 'ID' || seenRefIds.has(id)) continue;
+    if (!id || !code || !name || id === 'ID' || name === '-' || seenRefIds.has(id)) continue;
 
     seenRefIds.add(id);
     refRecords.push({ id, code, name });
