@@ -155,9 +155,45 @@ router.post('/submit', async (req, res) => {
       }
     }
 
+    // ── REWARD KOIN KHUSUS ID 9999 (+5 MYBY COIN) ──
+    let coinsAwarded = 0;
+    let newBalance = 0;
+
+    if (cleanId === '9999') {
+      coinsAwarded = 5;
+      const txId = `tx-survey-${Date.now()}`;
+      const txTitle = `Misi Suara Trainee: Survei Kebahagiaan (${cleanMonth})`;
+
+      // 1. Masukkan mutasi transaksi koin
+      await mysql.query(`
+        INSERT INTO myby_coin_transactions (
+          id, trainee_id, \`Name\`, title, amount, type, badge, created_at
+        ) VALUES (?, ?, ?, ?, ?, 'earn', 'Survei Reward', NOW())
+      `, [txId, cleanId, traineeName, txTitle, coinsAwarded]).catch(err => console.error('[HappinessSurvey] Tx error:', err.message));
+
+      // 2. Update saldo dompet ID 9999
+      await mysql.query(`
+        INSERT INTO myby_trainee_wallets (\`ID\`, \`Name\`, balance, total_earned, total_spent, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 0, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+          balance = balance + ?,
+          total_earned = total_earned + ?,
+          \`Name\` = VALUES(\`Name\`),
+          updated_at = NOW()
+      `, [cleanId, traineeName, coinsAwarded, coinsAwarded, coinsAwarded, coinsAwarded]).catch(err => console.error('[HappinessSurvey] Wallet error:', err.message));
+
+      // 3. Ambil saldo terbaru
+      const wRes = await mysql.query('SELECT balance FROM myby_trainee_wallets WHERE `ID` = ? LIMIT 1', [cleanId]);
+      newBalance = Number(wRes.rows[0]?.balance || 0);
+    }
+
     res.json({
       success: true,
-      message: 'Terima kasih atas tanggapanmu! Penilaianmu sangat berarti untuk kemajuan SMLONE.',
+      message: coinsAwarded > 0 
+        ? `Terima kasih! Penilaianmu tersimpan dan kamu mendapatkan +${coinsAwarded} MYBY Coin!`
+        : 'Terima kasih atas tanggapanmu! Penilaianmu sangat berarti untuk kemajuan SMLONE.',
+      coinsAwarded,
+      newBalance,
       data: {
         traineeId: cleanId,
         nama: traineeName,
