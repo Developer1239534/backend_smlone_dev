@@ -33,14 +33,24 @@ const DEFAULT_REWARDS = [
     description: 'Buku catatan eksklusif A6 edisi kustom maskot Bubo SMLONE.'
   },
   {
-    id: 'rew-1',
-    title: 'Keychain / Pena SMLONE',
+    id: 'rew-keychain',
+    title: 'Gantungan Kunci SMLONE',
     category: 'Merchandise',
     cost: 5,
-    stock: 99,
+    stock: 100,
     tag: 'Terjangkau',
     image_url: '/asset/reward-keychain.webp',
-    description: 'Pilihan gantungan kunci akrilik eksklusif atau bolpoin premium berlogo SMLONE.'
+    description: 'Gantungan kunci akrilik eksklusif berlogo resmi SMLONE.'
+  },
+  {
+    id: 'rew-pen',
+    title: 'Pulpen Eksklusif SMLONE',
+    category: 'Stationery',
+    cost: 5,
+    stock: 100,
+    tag: 'Terjangkau',
+    image_url: '/asset/reward-pen.webp',
+    description: 'Pulpen hitam retractable matte premium berlogo SMLONE.'
   },
   {
     id: 'rew-2',
