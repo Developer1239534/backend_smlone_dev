@@ -13,6 +13,16 @@ const DAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 // Katalog reward merchandise resmi bawaan
 const DEFAULT_REWARDS = [
   {
+    id: 'rew-stiker',
+    title: 'Stiker & Badge Bubbo',
+    category: 'Merchandise',
+    cost: 3,
+    stock: 100,
+    tag: 'Eksklusif',
+    image_url: '/asset/reward-stiker-bubbo.webp',
+    description: 'Lembar stiker motivasi dan badge maskot Bubbo SMLONE dengan pesan inspiratif.'
+  },
+  {
     id: 'rew-promo-bubo',
     title: 'Custom Notebook Bubbo A6',
     category: 'Promo Spesial',
@@ -29,7 +39,7 @@ const DEFAULT_REWARDS = [
     cost: 5,
     stock: 99,
     tag: 'Terjangkau',
-    image_url: '/asset/reward-keychain.jpg?v=2',
+    image_url: '/asset/reward-keychain.webp',
     description: 'Pilihan gantungan kunci akrilik eksklusif atau bolpoin premium berlogo SMLONE.'
   },
   {
@@ -39,7 +49,7 @@ const DEFAULT_REWARDS = [
     cost: 10,
     stock: 100,
     tag: 'Populer',
-    image_url: '/asset/reward-notebook-a6.jpg?v=2',
+    image_url: '/asset/reward-notebook-a6.webp',
     description: 'Miniatur Lego karakter menarik atau buku catatan mini saku A6 praktis untuk ide harian.'
   },
   {
@@ -49,7 +59,7 @@ const DEFAULT_REWARDS = [
     cost: 15,
     stock: 100,
     tag: 'Favorit',
-    image_url: '/asset/reward-notebook-a5.jpg?v=2',
+    image_url: '/asset/reward-notebook-a5.webp',
     description: 'Buku catatan ukuran A5 hardcover elegan untuk mencatat materi modul dan speech project.'
   },
   {
@@ -59,7 +69,7 @@ const DEFAULT_REWARDS = [
     cost: 20,
     stock: 100,
     tag: 'Pilihan Seru',
-    image_url: '/asset/reward-payung.jpg?v=2',
+    image_url: '/asset/reward-payung.webp',
     description: 'Payung lipat eksklusif tahan cuaca berlogo resmi SMLONE.'
   },
   {
@@ -79,7 +89,7 @@ const DEFAULT_REWARDS = [
     cost: 30,
     stock: 100,
     tag: 'Spesial',
-    image_url: '/asset/reward-agenda.jpg?v=2',
+    image_url: '/asset/reward-agenda.webp',
     description: 'Buku agenda kerja eksklusif SMLONE hardcover elegan untuk mencatat aktivitas dan jadwal harian.'
   },
   {
@@ -89,8 +99,18 @@ const DEFAULT_REWARDS = [
     cost: 30,
     stock: 100,
     tag: 'Spesial',
-    image_url: '/asset/reward-tiket-nonton.webp',
+    image_url: '/asset/reward-tiket-nonton-2.webp',
     description: 'Paket 2 voucher tiket nonton bioskop XXI/CGV. (Note: Tiket Nonton hanya berlaku untuk trainee di program Core & Orator)'
+  },
+  {
+    id: 'rew-bottle',
+    title: 'Botol Minum "My Words Build Worlds"',
+    category: 'Merchandise',
+    cost: 35,
+    stock: 100,
+    tag: 'Inspiratif',
+    image_url: '/asset/reward-botol-minum.webp',
+    description: 'Botol minum reusable eksklusif bertuliskan "My Words Build Worlds" khas SMLONE.'
   },
   {
     id: 'rew-6',
@@ -104,13 +124,23 @@ const DEFAULT_REWARDS = [
   },
   {
     id: 'rew-7',
-    title: 'Jaket / Tas SMLONE',
+    title: 'Jaket / Tas Ransel SMLONE',
     category: 'Merchandise',
     cost: 50,
     stock: 100,
     tag: 'Reward Utama',
-    image_url: '/asset/reward-jaket.jpg?v=2',
-    description: 'Jaket bomber/hoodie premium SMLONE atau tas ransel fungsional tahan air edisi terbatas.'
+    image_url: '/asset/reward-jaket.webp',
+    description: 'Jaket bomber/hoodie premium SMLONE atau tas ransel color-blocked fungsional edisi terbatas.'
+  },
+  {
+    id: 'rew-tas',
+    title: 'Tas Ransel SMLONE',
+    category: 'Merchandise',
+    cost: 50,
+    stock: 100,
+    tag: 'Eksklusif',
+    image_url: '/asset/reward-tas-ransel.webp',
+    description: 'Tas ransel color-blocked eksklusif SMLONE dengan kompartemen luas dan logo fox.'
   }
 ];
 
