@@ -1,0 +1,15 @@
+{
+  "nextNum": 5,
+  "jiraToSml": {
+    "KAN-30": "SML-1",
+    "KAN-29": "SML-2",
+    "KAN-28": "SML-3",
+    "KAN-31": "SML-4"
+  },
+  "smlToJira": {
+    "SML-1": "KAN-30",
+    "SML-2": "KAN-29",
+    "SML-3": "KAN-28",
+    "SML-4": "KAN-31"
+  }
+}
