@@ -124,13 +124,13 @@ const DEFAULT_REWARDS = [
   },
   {
     id: 'rew-7',
-    title: 'Jaket / Tas Ransel SMLONE',
+    title: 'Jaket SMLONE',
     category: 'Merchandise',
     cost: 50,
     stock: 100,
     tag: 'Reward Utama',
     image_url: '/asset/reward-jaket.webp',
-    description: 'Jaket bomber/hoodie premium SMLONE atau tas ransel color-blocked fungsional edisi terbatas.'
+    description: 'Jaket bomber/varsity premium SMLONE edisi terbatas.'
   },
   {
     id: 'rew-tas',
@@ -138,7 +138,7 @@ const DEFAULT_REWARDS = [
     category: 'Merchandise',
     cost: 50,
     stock: 100,
-    tag: 'Eksklusif',
+    tag: 'Reward Utama',
     image_url: '/asset/reward-tas-ransel.webp',
     description: 'Tas ransel color-blocked eksklusif SMLONE dengan kompartemen luas dan logo fox.'
   }
