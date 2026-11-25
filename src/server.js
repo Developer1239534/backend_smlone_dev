@@ -27,10 +27,19 @@ const ticketRoutes = require('./routes/ticketRoutes');
 const happinessSurveyRoutes = require('./portal/happiness_survey/happinessSurveyRoutes');
 const db = require('./db/neonClient');
 
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
 app.set('trust proxy', true);
+
+// Security Hardening Middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "unsafe-none" }
+}));
 
 // Middlewares
 app.use(cors({
@@ -40,6 +49,27 @@ app.use(cors({
   credentials: true,
 }));
 app.options(/(.*)/, cors());
+
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 5000, // Maksimal 5000 request per 15 menit per IP untuk umum
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Terlalu banyak permintaan dari IP ini, silakan coba lagi nanti.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 100, // Maksimal 100 kali percobaan auth per 15 menit per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Terlalu banyak percobaan autentikasi, silakan coba beberapa saat lagi.' }
+});
+
+app.use('/api/', globalLimiter);
+app.use('/api/v1/auth/', authLimiter);
+app.use('/api/auth/', authLimiter);
+app.use('/api/credential', authLimiter);
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));

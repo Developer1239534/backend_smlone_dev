@@ -358,7 +358,8 @@ router.post('/', async (req, res) => {
     const homeroomKelas = String(row['Homeroom kelas'] ?? row['homeroom_kelas'] ?? '').trim();
     const trainer = String(row['Trainer'] ?? row['trainer'] ?? '').trim();
     const membership = String(row['MEMBERSHIP'] ?? row['Membership'] ?? row['membership'] ?? '').trim();
-    const expiryDate = String(row['EXPIRY DATE'] ?? row['Expiry Date'] ?? row['expiry_date'] ?? '').trim();
+    const rawExpiry = String(row['EXPIRY DATE'] ?? row['Expiry Date'] ?? row['expiry_date'] ?? '').trim();
+    const expiryDate = rawExpiry.replace(/\b(\d{2})$/, '20$1');
     const firstEnroll = String(row['FIRST ENROLL'] ?? row['First Enroll'] ?? row['first_enroll'] ?? row['Start Date'] ?? '').trim();
     const dob = String(row['Date of Birth'] ?? row['Date of Birthday'] ?? row['date_of_birth'] ?? '').trim();
     const classInSchool = String(row['Class in School'] ?? row['class_in_school'] ?? row['Kelas'] ?? '').trim();
@@ -396,13 +397,13 @@ router.post('/', async (req, res) => {
           "MEMBERSHIP"              = EXCLUDED."MEMBERSHIP",
           "EXPIRY DATE"             = EXCLUDED."EXPIRY DATE",
           "FIRST ENROLL"            = EXCLUDED."FIRST ENROLL",
-          "Date of Birth"           = EXCLUDED."Date of Birth",
-          "Class in School"         = EXCLUDED."Class in School",
-          "Parents Email Account"   = EXCLUDED."Parents Email Account",
-          "Trainee Email Account"   = EXCLUDED."Trainee Email Account",
-          "Parent WhatsApp Number"  = EXCLUDED."Parent WhatsApp Number",
-          "Trainee WhatsApp Number" = EXCLUDED."Trainee WhatsApp Number",
-          "School Name"             = EXCLUDED."School Name"
+          "Date of Birth"           = CASE WHEN EXCLUDED."Date of Birth" != '' AND EXCLUDED."Date of Birth" IS NOT NULL THEN EXCLUDED."Date of Birth" ELSE profile_trainee."Date of Birth" END,
+          "Class in School"         = CASE WHEN EXCLUDED."Class in School" != '' AND EXCLUDED."Class in School" IS NOT NULL THEN EXCLUDED."Class in School" ELSE profile_trainee."Class in School" END,
+          "Parents Email Account"   = CASE WHEN EXCLUDED."Parents Email Account" != '' AND EXCLUDED."Parents Email Account" IS NOT NULL THEN EXCLUDED."Parents Email Account" ELSE profile_trainee."Parents Email Account" END,
+          "Trainee Email Account"   = CASE WHEN EXCLUDED."Trainee Email Account" != '' AND EXCLUDED."Trainee Email Account" IS NOT NULL THEN EXCLUDED."Trainee Email Account" ELSE profile_trainee."Trainee Email Account" END,
+          "Parent WhatsApp Number"  = CASE WHEN EXCLUDED."Parent WhatsApp Number" != '' AND EXCLUDED."Parent WhatsApp Number" IS NOT NULL THEN EXCLUDED."Parent WhatsApp Number" ELSE profile_trainee."Parent WhatsApp Number" END,
+          "Trainee WhatsApp Number" = CASE WHEN EXCLUDED."Trainee WhatsApp Number" != '' AND EXCLUDED."Trainee WhatsApp Number" IS NOT NULL THEN EXCLUDED."Trainee WhatsApp Number" ELSE profile_trainee."Trainee WhatsApp Number" END,
+          "School Name"             = CASE WHEN EXCLUDED."School Name" != '' AND EXCLUDED."School Name" IS NOT NULL THEN EXCLUDED."School Name" ELSE profile_trainee."School Name" END
       RETURNING *;
     `, [
       className, day, time, room, branch, id, name, level, house, houseRole,
@@ -470,7 +471,8 @@ router.post('/push', async (req, res) => {
       const homeroomKelas = String(row['Homeroom kelas'] ?? row['homeroom_kelas'] ?? '').trim();
       const trainer = String(row['Trainer'] ?? row['trainer'] ?? '').trim();
       const membership = String(row['MEMBERSHIP'] ?? row['Membership'] ?? row['membership'] ?? '').trim();
-      const expiryDate = String(row['EXPIRY DATE'] ?? row['Expiry Date'] ?? row['expiry_date'] ?? '').trim();
+      const rawExpiry = String(row['EXPIRY DATE'] ?? row['Expiry Date'] ?? row['expiry_date'] ?? '').trim();
+    const expiryDate = rawExpiry.replace(/\b(\d{2})$/, '20$1');
       const firstEnroll = String(row['FIRST ENROLL'] ?? row['First Enroll'] ?? row['first_enroll'] ?? '').trim();
       const dob = String(row['Date of Birth'] ?? row['Date of Birthday'] ?? row['date_of_birth'] ?? '').trim();
       const classInSchool = String(row['Class in School'] ?? row['class_in_school'] ?? row['Kelas'] ?? '').trim();
@@ -604,13 +606,13 @@ router.put('/:id', async (req, res) => {
           "MEMBERSHIP"              = EXCLUDED."MEMBERSHIP",
           "EXPIRY DATE"             = EXCLUDED."EXPIRY DATE",
           "FIRST ENROLL"            = EXCLUDED."FIRST ENROLL",
-          "Date of Birth"           = EXCLUDED."Date of Birth",
-          "Class in School"         = EXCLUDED."Class in School",
-          "Parents Email Account"   = EXCLUDED."Parents Email Account",
-          "Trainee Email Account"   = EXCLUDED."Trainee Email Account",
-          "Parent WhatsApp Number"  = EXCLUDED."Parent WhatsApp Number",
-          "Trainee WhatsApp Number" = EXCLUDED."Trainee WhatsApp Number",
-          "School Name"             = EXCLUDED."School Name"
+          "Date of Birth"           = CASE WHEN EXCLUDED."Date of Birth" != '' AND EXCLUDED."Date of Birth" IS NOT NULL THEN EXCLUDED."Date of Birth" ELSE profile_trainee."Date of Birth" END,
+          "Class in School"         = CASE WHEN EXCLUDED."Class in School" != '' AND EXCLUDED."Class in School" IS NOT NULL THEN EXCLUDED."Class in School" ELSE profile_trainee."Class in School" END,
+          "Parents Email Account"   = CASE WHEN EXCLUDED."Parents Email Account" != '' AND EXCLUDED."Parents Email Account" IS NOT NULL THEN EXCLUDED."Parents Email Account" ELSE profile_trainee."Parents Email Account" END,
+          "Trainee Email Account"   = CASE WHEN EXCLUDED."Trainee Email Account" != '' AND EXCLUDED."Trainee Email Account" IS NOT NULL THEN EXCLUDED."Trainee Email Account" ELSE profile_trainee."Trainee Email Account" END,
+          "Parent WhatsApp Number"  = CASE WHEN EXCLUDED."Parent WhatsApp Number" != '' AND EXCLUDED."Parent WhatsApp Number" IS NOT NULL THEN EXCLUDED."Parent WhatsApp Number" ELSE profile_trainee."Parent WhatsApp Number" END,
+          "Trainee WhatsApp Number" = CASE WHEN EXCLUDED."Trainee WhatsApp Number" != '' AND EXCLUDED."Trainee WhatsApp Number" IS NOT NULL THEN EXCLUDED."Trainee WhatsApp Number" ELSE profile_trainee."Trainee WhatsApp Number" END,
+          "School Name"             = CASE WHEN EXCLUDED."School Name" != '' AND EXCLUDED."School Name" IS NOT NULL THEN EXCLUDED."School Name" ELSE profile_trainee."School Name" END
       RETURNING *;
     `, [
       id, updatedClass, updatedProgram, updatedDay, updatedTime, updatedRoom, updatedBranch,

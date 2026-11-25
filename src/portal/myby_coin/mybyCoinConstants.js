@@ -53,14 +53,14 @@ const DEFAULT_REWARDS = [
     description: 'Pulpen hitam retractable matte premium berlogo SMLONE.'
   },
   {
-    id: 'rew-2',
-    title: 'Lego Mini / Notebook A6',
+    id: 'rew-lego',
+    title: 'Lego Mini',
     category: 'Merchandise',
     cost: 10,
     stock: 100,
     tag: 'Populer',
-    image_url: '/asset/reward-notebook-a6.webp',
-    description: 'Miniatur Lego karakter menarik atau buku catatan mini saku A6 praktis untuk ide harian.'
+    image_url: '/asset/reward-bricks.webp',
+    description: 'Miniatur Lego Bricks karakter koleksi seru dan menarik.'
   },
   {
     id: 'rew-3',
