@@ -190,7 +190,7 @@ router.get('/', async (req, res) => {
         "Speaking Project", "Life Project", "Last Time Speaking Date", "Role 2", "Role 3", "Role 4"
       FROM profile_trainee
     `;
-    const conditions = [];
+    const conditions = ["(\"ID\" IS NOT NULL AND \"ID\" != '' AND \"Name\" IS NOT NULL AND \"Name\" != '')"];
     const params = [];
 
     if (search) {
