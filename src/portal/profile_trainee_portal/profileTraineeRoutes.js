@@ -212,6 +212,8 @@ router.get('/', async (req, res) => {
     if (membership) {
       params.push(membership.trim());
       conditions.push(`"MEMBERSHIP" ILIKE $${params.length}`);
+    } else {
+      conditions.push(`("MEMBERSHIP" NOT ILIKE '%Expired%' OR "MEMBERSHIP" IS NULL)`);
     }
 
     if (branch) {
