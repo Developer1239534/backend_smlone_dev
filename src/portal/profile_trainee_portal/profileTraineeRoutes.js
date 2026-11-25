@@ -67,7 +67,8 @@ async function ensureProfileTraineeTable() {
         "Parent WhatsApp Number"  VARCHAR(100),
         "Trainee WhatsApp Number" VARCHAR(100),
         "School Name"             VARCHAR(255),
-        "avatar_url"              TEXT
+        "avatar_url"              TEXT,
+        "updated_at"              TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
   } catch (err) {
@@ -136,6 +137,7 @@ function formatProfileRow(row) {
     "Role 3": row["Role 3"] ?? row["role_3"] ?? '',
     "Role 4": row["Role 4"] ?? row["role_4"] ?? '',
     "avatar_url": row["avatar_url"] ?? row["avatar_URL"] ?? '',
+    "updated_at": row["updated_at"] ?? '',
     // Alias kompatibilitas frontend
     gold_point_term: gptVal,
     gold_term_q2: q2Val,
