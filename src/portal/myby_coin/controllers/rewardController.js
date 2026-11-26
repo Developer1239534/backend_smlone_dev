@@ -246,6 +246,7 @@ async function handleGetTraineeRedeems(req, res) {
       coinsSpent: Number(row.coins_spent || 0),
       claimCode: row.claim_code || '',
       scannedAt: row.scanned_at || null,
+      scanned_at: row.scanned_at || null,
       imageUrl: row.image_url || '',
       category: row.category || '',
       createdAt: row.created_at,
